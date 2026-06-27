@@ -671,9 +671,9 @@ function renderMasterList(){
     html+='<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;margin:14px 0 6px;text-transform:uppercase">'+cat+'</div>';
     grouped[cat].forEach(function(r){
       var inactive=!r['有効'];
-      var skuSafe=r['SKU_ID'].replace(/'/g,"\\'");
-      var nameSafe=(r['商品名']||'').replace(/'/g,"\\'");
-      var sizeSafe=(r['サイズ']||'').replace(/'/g,"\\'");
+      var skuSafe=escAttr(r["SKU_ID"]);
+      var nameSafe=escAttr(r["商品名"]);
+      var sizeSafe=escAttr(r["サイズ"]);
       html+='<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid '+(inactive?'#fde68a':'var(--border)')+';opacity:'+(inactive?'.65':'1')+';display:flex;align-items:center;gap:8px">'+
         '<div style="flex:1;min-width:0">'+
           '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+
@@ -710,6 +710,9 @@ function updateSkuPreview(){
   }else{
     document.getElementById('sku-preview').textContent='（カテゴリ・商品名・サイズを入力）';
   }
+}
+function escAttr(str){
+  return String(str||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\r?\n/g,' ');
 }
 function clientSkuId(cat,name,size){
   function f(s){return String(s).toUpperCase().replace(/[・]/g,'-').replace(/[（]/g,'-').replace(/[）]/g,'').replace(/[　 ]/g,'-').replace(/[.]/g,'-').replace(/[,]/g,'').replace(/--+/g,'-').trim();}
