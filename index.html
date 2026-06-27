@@ -294,7 +294,9 @@ function startSession(){
   session.warehouse=w;session.staff=s;
   if(session.mode==='移動') session.dest=d;
   if(session.mode==='出庫') session.reason=document.getElementById('sel-reason').value;
-  document.getElementById('modal').style.display='none';
+  var modal=document.getElementById('modal');
+modal.style.display='none';
+modal.classList.add('hidden');
   document.getElementById('session-bar').classList.remove('hidden');
   document.getElementById('sb-warehouse').textContent=w;
   document.getElementById('sb-staff').textContent=s;
