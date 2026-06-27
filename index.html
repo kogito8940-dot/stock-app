@@ -207,7 +207,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
   </div>
 
   <div id="screen-category" class="screen">
-    <div class="breadcrumb"><span style="color:var(--text);font-weight:600">カテゴリ</span></div>
+    <div class="breadcrumb"><span style="color:var(--text);font-weight:700;font-size:16px">カテゴリ</span></div>
     <div id="category-list"><div class="loading">読み込み中...</div></div>
   </div>
 
@@ -215,7 +215,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
     <div class="breadcrumb">
       <span class="breadcrumb-item" onclick="showScreen('category')">カテゴリ</span>
       <span class="breadcrumb-sep">›</span>
-      <span id="bc-category" style="color:var(--text);font-weight:600"></span>
+      <span id="bc-category" style="color:var(--text);font-weight:700;font-size:16px"></span>
     </div>
     <div id="product-list"></div>
   </div>
@@ -226,7 +226,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
       <span class="breadcrumb-sep">›</span>
       <span class="breadcrumb-item" onclick="showScreen('product')" id="bc-category2"></span>
       <span class="breadcrumb-sep">›</span>
-      <span id="bc-product" style="color:var(--text);font-weight:600"></span>
+      <span id="bc-product" style="color:var(--text);font-weight:700;font-size:16px"></span>
     </div>
     <div id="size-list"></div>
   </div>
@@ -290,17 +290,24 @@ async function loadData(){
 
 window.onload=function(){
   document.getElementById('modal-start-btn').addEventListener('click',startSession);
+  // 保存済み担当者名を復元
+  var savedStaff=localStorage.getItem('staff_name');
+  if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
   loadData();
 };
 
 function openModal(){
   var mode=session.mode;
-  document.getElementById('modal-title').textContent=mode==='入庫'?'入庫 作業設定':mode==='出庫'?'出庫 作業設定':mode==='移動'?'移動 作業設定':'作業設定';
+  document.getElementById('modal-title').textContent=
+    mode==='入庫'?'入庫 作業設定':
+    mode==='出庫'?'出庫 作業設定':
+    mode==='移動'?'移動 作業設定':'作業設定';
   document.getElementById('warehouse-label').textContent=mode==='移動'?'移動元倉庫':'倉庫';
-  var dg=document.getElementById('dest-group');
-  var rg=document.getElementById('reason-group');
-  dg.classList.toggle('hidden',mode!=='移動');
-  rg.classList.toggle('hidden',mode!=='出庫');
+  document.getElementById('dest-group').classList.toggle('hidden',mode!=='移動');
+  document.getElementById('reason-group').classList.toggle('hidden',mode!=='出庫');
+  // 保存済み担当者名を復元
+  var savedStaff=localStorage.getItem('staff_name');
+  if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
   document.getElementById('modal').classList.add('show');
 }
 
@@ -322,6 +329,8 @@ function startSession(){
   }
   session.warehouse=w;
   session.staff=s;
+  // 担当者名を保存
+  localStorage.setItem('staff_name',s);
 
   // セッションバー更新
   document.getElementById('session-bar').classList.remove('hidden');
@@ -335,10 +344,8 @@ function startSession(){
     destTag.classList.add('hidden');
   }
 
-  // モーダルを閉じる
   closeModal();
 
-  // 作業画面へ
   sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
   var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8'};
   var sub=document.getElementById('header-sub');
