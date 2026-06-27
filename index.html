@@ -37,7 +37,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 .bnav-icon{font-size:24px;line-height:1}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:flex-end;justify-content:center;}
 .modal-overlay.show{display:flex;}
-.modal{background:var(--surface);border-radius:24px 24px 0 0;padding:28px 20px;padding-bottom:calc(28px + env(safe-area-inset-bottom));width:100%;max-width:480px;}
+.modal{background:var(--surface);border-radius:24px 24px 0 0;padding:28px 20px;padding-bottom:calc(28px + env(safe-area-inset-bottom));width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
 .modal-title{font-size:20px;font-weight:700;margin-bottom:20px;color:var(--text)}
 .form-group{margin-bottom:14px}
 .form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.5px}
@@ -156,6 +156,74 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
   </div>
 </div>
 
+<div id="addMasterModal" class="modal-overlay">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0">新規商品登録</div>
+      <button onclick="closeAddMasterModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3)">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">カテゴリ *</label>
+      <select id="add-category" class="form-select" onchange="updateSkuPreview()"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">商品名 *</label>
+      <input id="add-name" class="form-input" type="text" placeholder="例: AC100 Base" oninput="updateSkuPreview()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">サイズ *</label>
+      <input id="add-size" class="form-input" type="text" placeholder="例: 25kg" oninput="updateSkuPreview()">
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="form-group" style="flex:1">
+        <label class="form-label">単位 *</label>
+        <select id="add-unit" class="form-select">
+          <option>袋</option><option>缶</option><option>個</option>
+          <option>本</option><option>枚</option><option>kg</option><option>L</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1">
+        <label class="form-label">商品区分 *</label>
+        <select id="add-type" class="form-select">
+          <option>輸入品</option><option>小分け品</option><option>副資材</option><option>仕入品</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="form-group" style="flex:1">
+        <label class="form-label">最低在庫数</label>
+        <input id="add-minstock" class="form-input" type="number" value="0" min="0">
+      </div>
+      <div class="form-group" style="flex:1">
+        <label class="form-label">バーコード</label>
+        <select id="add-barcode" class="form-select">
+          <option>QR</option><option>JAN</option><option>なし</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">備考</label>
+      <input id="add-note" class="form-input" type="text" placeholder="任意">
+    </div>
+    <div style="background:#f0f6ff;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text2)">
+      生成されるSKU_ID：<br>
+      <span id="sku-preview" style="font-family:monospace;font-weight:700;color:var(--primary);font-size:13px"></span>
+    </div>
+    <button class="form-btn" id="add-master-btn" onclick="submitAddMaster()">登録する</button>
+  </div>
+</div>
+
+<div id="toggleMasterModal" class="modal-overlay">
+  <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px">
+    <div class="modal-title" id="toggle-title"></div>
+    <p id="toggle-body" style="font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6"></p>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeToggleMasterModal()" style="flex:1;padding:13px;border:1.5px solid var(--border);background:#fff;border-radius:12px;font-size:14px;cursor:pointer">キャンセル</button>
+      <button id="toggle-confirm-btn" onclick="confirmToggleMaster()" style="flex:1;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;color:#fff"></button>
+    </div>
+  </div>
+</div>
+
 <div class="header">
   <button class="back-btn hidden" id="back-btn" onclick="goBack()">‹</button>
   <div class="header-title" id="header-title">在庫管理</div>
@@ -263,6 +331,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
     </div>
     <div id="stock-list"><div class="loading">読み込み中...</div></div>
   </div>
+
   <div id="screen-master" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div style="font-size:15px;font-weight:700;color:var(--text2)">商品マスタ管理</div>
@@ -279,77 +348,10 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
       <label for="masterShowInactive" style="font-size:13px;color:var(--text2)">廃番も表示する</label>
       <span id="masterCount" style="margin-left:auto;font-size:12px;color:var(--text3)"></span>
     </div>
-    <div id="master-list"></div>
+    <div id="master-list"><div class="loading">読み込み中...</div></div>
   </div>
 </div>
 
-  <div id="addMasterModal" class="modal-overlay">
-  <div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div class="modal-title" style="margin-bottom:0">新規商品登録</div>
-      <button onclick="closeAddMasterModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3)">✕</button>
-    </div>
-    <div class="form-group">
-      <label class="form-label">カテゴリ *</label>
-      <select id="add-category" class="form-select" onchange="updateSkuPreview()"></select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">商品名 *</label>
-      <input id="add-name" class="form-input" type="text" placeholder="例: AC100 Base" oninput="updateSkuPreview()">
-    </div>
-    <div class="form-group">
-      <label class="form-label">サイズ *</label>
-      <input id="add-size" class="form-input" type="text" placeholder="例: 25kg" oninput="updateSkuPreview()">
-    </div>
-    <div style="display:flex;gap:8px">
-      <div class="form-group" style="flex:1">
-        <label class="form-label">単位 *</label>
-        <select id="add-unit" class="form-select">
-          <option>袋</option><option>缶</option><option>個</option>
-          <option>本</option><option>枚</option><option>kg</option><option>L</option>
-        </select>
-      </div>
-      <div class="form-group" style="flex:1">
-        <label class="form-label">商品区分 *</label>
-        <select id="add-type" class="form-select">
-          <option>輸入品</option><option>小分け品</option><option>副資材</option><option>仕入品</option>
-        </select>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <div class="form-group" style="flex:1">
-        <label class="form-label">最低在庫数</label>
-        <input id="add-minstock" class="form-input" type="number" value="0" min="0">
-      </div>
-      <div class="form-group" style="flex:1">
-        <label class="form-label">バーコード</label>
-        <select id="add-barcode" class="form-select">
-          <option>QR</option><option>JAN</option><option>なし</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">備考</label>
-      <input id="add-note" class="form-input" type="text" placeholder="任意">
-    </div>
-    <div style="background:#f0f6ff;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text2)">
-      生成されるSKU_ID：<br>
-      <span id="sku-preview" style="font-family:monospace;font-weight:700;color:var(--primary);font-size:13px"></span>
-    </div>
-    <button class="form-btn" id="add-master-btn" onclick="submitAddMaster()">登録する</button>
-  </div>
-</div>
-
-<div id="toggleMasterModal" class="modal-overlay">
-  <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px">
-    <div class="modal-title" id="toggle-title"></div>
-    <p id="toggle-body" style="font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6"></p>
-    <div style="display:flex;gap:10px">
-      <button onclick="closeToggleMasterModal()" style="flex:1;padding:13px;border:1.5px solid var(--border);background:#fff;border-radius:12px;font-size:14px;cursor:pointer">キャンセル</button>
-      <button id="toggle-confirm-btn" onclick="confirmToggleMaster()" style="flex:1;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;color:#fff"></button>
-    </div>
-  </div>
-</div>
 <div class="toast" id="toast"></div>
 
 <div class="bnav">
@@ -376,7 +378,6 @@ async function loadData(){
 
 window.onload=function(){
   document.getElementById('modal-start-btn').addEventListener('click',startSession);
-  // 保存済み担当者名を復元
   var savedStaff=localStorage.getItem('staff_name');
   if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
   loadData();
@@ -391,7 +392,6 @@ function openModal(){
   document.getElementById('warehouse-label').textContent=mode==='移動'?'移動元倉庫':'倉庫';
   document.getElementById('dest-group').classList.toggle('hidden',mode!=='移動');
   document.getElementById('reason-group').classList.toggle('hidden',mode!=='出庫');
-  // 保存済み担当者名を復元
   var savedStaff=localStorage.getItem('staff_name');
   if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
   document.getElementById('modal').classList.add('show');
@@ -415,10 +415,7 @@ function startSession(){
   }
   session.warehouse=w;
   session.staff=s;
-  // 担当者名を保存
   localStorage.setItem('staff_name',s);
-
-  // セッションバー更新
   document.getElementById('session-bar').classList.remove('hidden');
   document.getElementById('sb-warehouse').textContent=w;
   document.getElementById('sb-staff').textContent=s;
@@ -429,9 +426,7 @@ function startSession(){
   }else{
     destTag.classList.add('hidden');
   }
-
   closeModal();
-
   sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
   var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8'};
   var sub=document.getElementById('header-sub');
@@ -459,8 +454,9 @@ function showScreen(name){
   }else{
     document.getElementById('back-btn').classList.remove('hidden');
   }
-  if(name==='master'){document.getElementById('nav-master').classList.add('active');loadMasterAll();}
+  if(name==='stock') document.getElementById('nav-stock').classList.add('active');
   if(name==='operation') document.getElementById('nav-op').classList.add('active');
+  if(name==='master'){document.getElementById('nav-master').classList.add('active');loadMasterAll();}
   if(name==='category') renderCategories();
   if(name==='stock') renderStock();
   screenStack.push(name);
@@ -615,7 +611,8 @@ function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2000);
 }
-  // ============================================================
+
+// ============================================================
 // 商品マスタ管理
 // ============================================================
 const CATEGORIES=['AC100','ADDITIVE','PIGMENT','蛍光PIGMENT','AC200','AC730 BASE','AC730 Liquid','Flex Metal Base','Flex Metal Liquid','ガラス繊維','ガラスチョップ','離型剤','コーティング剤','フィラー','意匠フィラー','カヤメック','シリコン','その他造形資材','洗浄剤','ツール','容器','段ボール','ビニール袋','備品','エポキシ','IBC'];
