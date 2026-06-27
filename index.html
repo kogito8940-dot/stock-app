@@ -289,12 +289,32 @@ function startSession(){
   var w=document.getElementById('sel-warehouse').value;
   var s=document.getElementById('inp-staff').value.trim();
   if(!s){alert('担当者名を入力してください');return;}
+  var d=document.getElementById('sel-dest').value;
+  if(session.mode==='移動'&&w===d){alert('移動元と移動先が同じ倉庫です');return;}
   session.warehouse=w;session.staff=s;
+  if(session.mode==='移動') session.dest=d;
   if(session.mode==='出庫') session.reason=document.getElementById('sel-reason').value;
   document.getElementById('modal').style.display='none';
   document.getElementById('session-bar').classList.remove('hidden');
   document.getElementById('sb-warehouse').textContent=w;
   document.getElementById('sb-staff').textContent=s;
+  var destTag=document.getElementById('sb-dest');
+  if(session.mode==='移動'){
+    destTag.textContent='→ '+d;
+    destTag.style.display='';
+  }else{
+    destTag.style.display='none';
+  }
+  // 作業画面へ遷移
+  if(session.mode){
+    sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
+    var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8'};
+    var sub=document.getElementById('header-sub');
+    sub.textContent=session.mode;
+    sub.style.background=colors[session.mode];
+    sub.classList.remove('hidden');
+    showScreen('operation');
+  }
 }
 
 function showScreen(name){
