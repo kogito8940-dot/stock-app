@@ -263,14 +263,100 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
     </div>
     <div id="stock-list"><div class="loading">読み込み中...</div></div>
   </div>
+  <div id="screen-master" class="screen">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:15px;font-weight:700;color:var(--text2)">商品マスタ管理</div>
+      <button onclick="openAddMasterModal()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">＋ 新規登録</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <select id="masterCatFilter" onchange="renderMasterList()" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--surface)">
+        <option value="">全カテゴリ</option>
+      </select>
+      <input type="text" id="masterSearch" placeholder="商品名・SKU検索" oninput="renderMasterList()" style="flex:2;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;">
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+      <input type="checkbox" id="masterShowInactive" onchange="renderMasterList()">
+      <label for="masterShowInactive" style="font-size:13px;color:var(--text2)">廃番も表示する</label>
+      <span id="masterCount" style="margin-left:auto;font-size:12px;color:var(--text3)"></span>
+    </div>
+    <div id="master-list"></div>
+  </div>
 </div>
 
+  <div id="addMasterModal" class="modal-overlay">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0">新規商品登録</div>
+      <button onclick="closeAddMasterModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3)">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">カテゴリ *</label>
+      <select id="add-category" class="form-select" onchange="updateSkuPreview()"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">商品名 *</label>
+      <input id="add-name" class="form-input" type="text" placeholder="例: AC100 Base" oninput="updateSkuPreview()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">サイズ *</label>
+      <input id="add-size" class="form-input" type="text" placeholder="例: 25kg" oninput="updateSkuPreview()">
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="form-group" style="flex:1">
+        <label class="form-label">単位 *</label>
+        <select id="add-unit" class="form-select">
+          <option>袋</option><option>缶</option><option>個</option>
+          <option>本</option><option>枚</option><option>kg</option><option>L</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1">
+        <label class="form-label">商品区分 *</label>
+        <select id="add-type" class="form-select">
+          <option>輸入品</option><option>小分け品</option><option>副資材</option><option>仕入品</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="form-group" style="flex:1">
+        <label class="form-label">最低在庫数</label>
+        <input id="add-minstock" class="form-input" type="number" value="0" min="0">
+      </div>
+      <div class="form-group" style="flex:1">
+        <label class="form-label">バーコード</label>
+        <select id="add-barcode" class="form-select">
+          <option>QR</option><option>JAN</option><option>なし</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">備考</label>
+      <input id="add-note" class="form-input" type="text" placeholder="任意">
+    </div>
+    <div style="background:#f0f6ff;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text2)">
+      生成されるSKU_ID：<br>
+      <span id="sku-preview" style="font-family:monospace;font-weight:700;color:var(--primary);font-size:13px"></span>
+    </div>
+    <button class="form-btn" id="add-master-btn" onclick="submitAddMaster()">登録する</button>
+  </div>
+</div>
+
+<div id="toggleMasterModal" class="modal-overlay">
+  <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px">
+    <div class="modal-title" id="toggle-title"></div>
+    <p id="toggle-body" style="font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6"></p>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeToggleMasterModal()" style="flex:1;padding:13px;border:1.5px solid var(--border);background:#fff;border-radius:12px;font-size:14px;cursor:pointer">キャンセル</button>
+      <button id="toggle-confirm-btn" onclick="confirmToggleMaster()" style="flex:1;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;color:#fff"></button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <div class="bnav">
   <div class="bnav-item active" onclick="showScreen('home')" id="nav-home"><div class="bnav-icon">🏠</div>ホーム</div>
   <div class="bnav-item" onclick="startOperation('入庫')" id="nav-op"><div class="bnav-icon">📦</div>入出庫</div>
   <div class="bnav-item" onclick="showScreen('stock')" id="nav-stock"><div class="bnav-icon">📊</div>在庫確認</div>
+  <div class="bnav-item" onclick="showScreen('master')" id="nav-master"><div class="bnav-icon">🗂️</div>マスタ</div>
 </div>
 
 </div>
@@ -363,7 +449,7 @@ function startOperation(mode){
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   document.getElementById('screen-'+name).classList.add('active');
-  var titles={home:'在庫管理',operation:'入出庫',category:'商品選択',product:'商品選択',size:'サイズ選択',qty:'数量入力',stock:'在庫確認'};
+  var titles={home:'在庫管理',operation:'入出庫',category:'商品選択',product:'商品選択',size:'サイズ選択',qty:'数量入力',stock:'在庫確認',master:'商品マスタ'};
   document.getElementById('header-title').textContent=titles[name]||'';
   document.querySelectorAll('.bnav-item').forEach(function(i){i.classList.remove('active');});
   if(name==='home'){
@@ -373,7 +459,7 @@ function showScreen(name){
   }else{
     document.getElementById('back-btn').classList.remove('hidden');
   }
-  if(name==='stock') document.getElementById('nav-stock').classList.add('active');
+  if(name==='master'){document.getElementById('nav-master').classList.add('active');loadMasterAll();}
   if(name==='operation') document.getElementById('nav-op').classList.add('active');
   if(name==='category') renderCategories();
   if(name==='stock') renderStock();
@@ -528,6 +614,168 @@ function renderStock(){
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2000);
+}
+  // ============================================================
+// 商品マスタ管理
+// ============================================================
+const CATEGORIES=['AC100','ADDITIVE','PIGMENT','蛍光PIGMENT','AC200','AC730 BASE','AC730 Liquid','Flex Metal Base','Flex Metal Liquid','ガラス繊維','ガラスチョップ','離型剤','コーティング剤','フィラー','意匠フィラー','カヤメック','シリコン','その他造形資材','洗浄剤','ツール','容器','段ボール','ビニール袋','備品','エポキシ','IBC'];
+let masterAll=[],toggleTarget=null;
+
+async function loadMasterAll(){
+  try{
+    const res=await fetch(API+'?action=getMasterAll');
+    const json=await res.json();
+    masterAll=json.data||json;
+    populateCategorySelects();
+    renderMasterList();
+  }catch(e){
+    document.getElementById('master-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--danger)">読み込み失敗</div>';
+  }
+}
+
+function populateCategorySelects(){
+  ['masterCatFilter','add-category'].forEach(function(id){
+    var sel=document.getElementById(id);
+    var isFilter=id==='masterCatFilter';
+    sel.innerHTML=isFilter?'<option value="">全カテゴリ</option>':'<option value="">選択してください</option>';
+    CATEGORIES.forEach(function(c){
+      var opt=document.createElement('option');
+      opt.value=c;opt.textContent=c;sel.appendChild(opt);
+    });
+  });
+}
+
+function renderMasterList(){
+  var cat=document.getElementById('masterCatFilter').value;
+  var kw=document.getElementById('masterSearch').value.trim().toLowerCase();
+  var showInactive=document.getElementById('masterShowInactive').checked;
+  var filtered=masterAll.filter(function(r){
+    if(!showInactive&&!r['有効'])return false;
+    if(cat&&r['カテゴリ']!==cat)return false;
+    if(kw){
+      var hay=(r['商品名']+r['サイズ']+r['SKU_ID']+(r['備考']||'')).toLowerCase();
+      if(hay.indexOf(kw)===-1)return false;
+    }
+    return true;
+  });
+  document.getElementById('masterCount').textContent=filtered.length+'件';
+  if(filtered.length===0){
+    document.getElementById('master-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">該当なし</div>';
+    return;
+  }
+  var grouped={};
+  filtered.forEach(function(r){
+    var c=r['カテゴリ']||'未分類';
+    if(!grouped[c])grouped[c]=[];
+    grouped[c].push(r);
+  });
+  var html='';
+  Object.keys(grouped).forEach(function(cat){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;margin:14px 0 6px;text-transform:uppercase">'+cat+'</div>';
+    grouped[cat].forEach(function(r){
+      var inactive=!r['有効'];
+      var skuSafe=r['SKU_ID'].replace(/'/g,"\\'");
+      var nameSafe=(r['商品名']||'').replace(/'/g,"\\'");
+      var sizeSafe=(r['サイズ']||'').replace(/'/g,"\\'");
+      html+='<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid '+(inactive?'#fde68a':'var(--border)')+';opacity:'+(inactive?'.65':'1')+';display:flex;align-items:center;gap:8px">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+
+            '<span style="font-size:15px;font-weight:700;color:'+(inactive?'var(--text3)':'var(--text)')+'">'+r['商品名']+'</span>'+
+            '<span style="font-size:13px;color:var(--text2)">'+r['サイズ']+'</span>'+
+            (inactive?'<span class="badge" style="background:#fef3c7;color:#92400e">廃番</span>':'')+
+          '</div>'+
+          '<div style="font-size:11px;color:var(--text3);font-family:monospace;margin-top:2px">'+r['SKU_ID']+'</div>'+
+          '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+r['商品区分']+'／最低'+r['最低在庫数']+r['単位']+(r['備考']?'／'+r['備考']:'')+'</div>'+
+        '</div>'+
+        (inactive
+          ?'<button onclick="openToggleMasterModal(\''+skuSafe+'\',\''+nameSafe+'\',\''+sizeSafe+'\',true)" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--success);color:var(--success);background:#fff;cursor:pointer;white-space:nowrap">復元</button>'
+          :'<button onclick="openToggleMasterModal(\''+skuSafe+'\',\''+nameSafe+'\',\''+sizeSafe+'\',false)" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;cursor:pointer;white-space:nowrap">廃番</button>'
+        )+
+      '</div>';
+    });
+  });
+  document.getElementById('master-list').innerHTML=html;
+}
+
+function openAddMasterModal(){
+  document.getElementById('addMasterModal').classList.add('show');
+  updateSkuPreview();
+}
+function closeAddMasterModal(){
+  document.getElementById('addMasterModal').classList.remove('show');
+}
+function updateSkuPreview(){
+  var cat=document.getElementById('add-category').value;
+  var name=document.getElementById('add-name').value;
+  var size=document.getElementById('add-size').value;
+  if(cat&&name&&size){
+    document.getElementById('sku-preview').textContent=clientSkuId(cat,name,size);
+  }else{
+    document.getElementById('sku-preview').textContent='（カテゴリ・商品名・サイズを入力）';
+  }
+}
+function clientSkuId(cat,name,size){
+  function f(s){return String(s).toUpperCase().replace(/[・]/g,'-').replace(/[（]/g,'-').replace(/[）]/g,'').replace(/[　 ]/g,'-').replace(/[.]/g,'-').replace(/[,]/g,'').replace(/--+/g,'-').trim();}
+  return f(cat)+'-'+f(name)+'-'+f(size);
+}
+
+async function submitAddMaster(){
+  var cat=document.getElementById('add-category').value;
+  var name=document.getElementById('add-name').value.trim();
+  var size=document.getElementById('add-size').value.trim();
+  var unit=document.getElementById('add-unit').value;
+  var type=document.getElementById('add-type').value;
+  var minstock=document.getElementById('add-minstock').value;
+  var barcode=document.getElementById('add-barcode').value;
+  var note=document.getElementById('add-note').value.trim();
+  if(!cat||!name||!size){showToast('カテゴリ・商品名・サイズは必須です');return;}
+  var btn=document.getElementById('add-master-btn');
+  btn.disabled=true;btn.textContent='登録中...';
+  try{
+    const res=await fetch(API,{method:'POST',body:JSON.stringify({action:'addMaster',カテゴリ:cat,商品名:name,サイズ:size,単位:unit,商品区分:type,最低在庫数:minstock,バーコード種別:barcode,備考:note})});
+    const json=await res.json();
+    if(!json.success)throw new Error(json.message);
+    showToast('✅ 登録しました：'+json.skuId);
+    closeAddMasterModal();
+    ['add-name','add-size','add-note'].forEach(function(id){document.getElementById(id).value='';});
+    document.getElementById('add-category').value='';
+    await loadMasterAll();
+  }catch(e){
+    showToast('❌ 登録失敗：'+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='登録する';
+  }
+}
+
+function openToggleMasterModal(skuId,name,size,restore){
+  toggleTarget={skuId:skuId,restore:restore};
+  document.getElementById('toggle-title').textContent=restore?'復元の確認':'廃番にする確認';
+  document.getElementById('toggle-body').textContent='「'+name+' '+size+'」を'+(restore?'復元（有効に戻す）':'廃番（無効化）')+'しますか？';
+  var btn=document.getElementById('toggle-confirm-btn');
+  btn.textContent=restore?'復元する':'廃番にする';
+  btn.style.background=restore?'var(--success)':'var(--danger)';
+  document.getElementById('toggleMasterModal').classList.add('show');
+}
+function closeToggleMasterModal(){
+  document.getElementById('toggleMasterModal').classList.remove('show');
+  toggleTarget=null;
+}
+async function confirmToggleMaster(){
+  if(!toggleTarget)return;
+  var btn=document.getElementById('toggle-confirm-btn');
+  btn.disabled=true;
+  try{
+    const res=await fetch(API,{method:'POST',body:JSON.stringify({action:'toggleMaster',SKU_ID:toggleTarget.skuId,有効:toggleTarget.restore})});
+    const json=await res.json();
+    if(!json.success)throw new Error(json.message);
+    showToast(toggleTarget.restore?'✅ 復元しました':'✅ 廃番にしました');
+    closeToggleMasterModal();
+    await loadMasterAll();
+  }catch(e){
+    showToast('❌ 失敗：'+e.message);
+  }finally{
+    btn.disabled=false;
+  }
 }
 </script>
 </body>
