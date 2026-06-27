@@ -321,15 +321,9 @@ function goBack(){screenStack.pop();var prev=screenStack.pop()||'home';showScree
 
 function startOperation(mode){
   session.mode=mode;
-  if(!session.warehouse){showModal();return;}
-  if(mode==='出庫'&&!session.reason){showModal();return;}
-  sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
-  var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8'};
-  var sub=document.getElementById('header-sub');
-  sub.textContent=mode;
-  sub.style.background=colors[mode];
-  sub.classList.remove('hidden');
-  showScreen('operation');
+  session.dest='';
+  session.reason='';
+  showModal();
 }
 
 function startScan(){showToast('スキャン機能は実装中です');}
