@@ -500,7 +500,13 @@ function renderSizes(cat,name){
   var items=master.filter(function(p){return p['カテゴリ']===cat&&p['商品名']===name;});
   document.getElementById('size-list').innerHTML=items.map(function(item){
     var done=recordedSizes.indexOf(item['SKU_ID'])!==-1;
-    return '<div class="list-item" onclick="selectSku(\''+item['SKU_ID']+'\',\''+item['商品名'].replace(/'/g,"\\'")+'\',\''+item['サイズ'].replace(/'/g,"\\'")+'\',\''+item['単位']+'\')"><div class="list-item-name">'+item['サイズ']+'</div>'+(done?'<span class="badge badge-done">記録済</span>':'<div class="list-item-arrow">›</div>')+'</div>';
+    var sizeSafe=escAttr(item['サイズ']);
+    var nameSafe=escAttr(item['商品名']);
+    var sizeStr=String(item['サイズ']);
+    return '<div class="list-item" onclick="selectSku(\''+item['SKU_ID']+'\',' +
+      '\''+nameSafe+'\',' +
+      '\''+sizeSafe+'\',' +
+      '\''+item['単位']+'\')"><div class="list-item-name">'+sizeStr+'</div>'+(done?'<span class="badge badge-done">記録済</span>':'<div class="list-item-arrow">›</div>')+'</div>';
   }).join('');
 }
 
