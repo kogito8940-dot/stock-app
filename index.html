@@ -32,25 +32,26 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 .main{flex:1;overflow-y:auto;padding:16px;padding-bottom:80px;}
 .screen{display:none}.screen.active{display:block}
 .bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);position:sticky;bottom:0;z-index:50;}
-.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0 10px;font-size:10px;color:var(--text3);cursor:pointer;gap:2px;transition:color .15s}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0 10px;font-size:10px;color:var(--text3);cursor:pointer;gap:2px;}
 .bnav-item.active{color:var(--primary)}
 .bnav-icon{font-size:24px;line-height:1}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay.show{display:flex;}
 .modal{background:var(--surface);border-radius:24px 24px 0 0;padding:28px 20px;padding-bottom:calc(28px + env(safe-area-inset-bottom));width:100%;max-width:480px;}
 .modal-title{font-size:20px;font-weight:700;margin-bottom:20px;color:var(--text)}
 .form-group{margin-bottom:14px}
 .form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.5px}
 .form-select,.form-input{width:100%;border:1.5px solid var(--border);border-radius:12px;padding:13px 14px;font-size:16px;appearance:none;background:var(--surface);color:var(--text);outline:none;}
 .form-select:focus,.form-input:focus{border-color:var(--primary)}
-.form-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-top:10px;letter-spacing:.3px}
+.form-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-top:10px;}
 .form-btn:active{background:var(--primary-dark)}
 .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 .summary-box{background:var(--surface);border-radius:var(--radius);padding:14px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07)}
 .summary-num{font-size:26px;font-weight:700;color:var(--primary);line-height:1.1}
 .summary-label{font-size:10px;color:var(--text2);margin-top:4px;font-weight:500}
 .tile-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.tile{background:var(--surface);border-radius:var(--radius);padding:20px 12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07);cursor:pointer;transition:transform .1s,box-shadow .1s}
-.tile:active{transform:scale(.96);box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.tile{background:var(--surface);border-radius:var(--radius);padding:20px 12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07);cursor:pointer;transition:transform .1s}
+.tile:active{transform:scale(.96)}
 .tile-icon{font-size:32px;margin-bottom:8px;line-height:1}
 .tile-label{font-size:14px;font-weight:600;color:var(--text)}
 .alert-card{background:#fffbea;border:1.5px solid #f9ab00;border-radius:var(--radius);padding:12px 14px;margin-bottom:14px}
@@ -63,17 +64,16 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 .scan-corner.bl{bottom:16px;left:16px;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 4px}
 .scan-corner.br{bottom:16px;right:16px;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 4px 0}
 .scan-icon{font-size:36px;margin-bottom:6px;opacity:.9}
-.scan-text{font-size:14px;font-weight:600;letter-spacing:.3px}
+.scan-text{font-size:14px;font-weight:600;}
 .scan-sub{font-size:11px;opacity:.6;margin-top:4px}
 .scan-line{position:absolute;width:75%;height:2px;background:linear-gradient(90deg,transparent,#4fc3f7,transparent);animation:scanAnim 2s ease-in-out infinite}
 @keyframes scanAnim{0%{top:20%}50%{top:78%}100%{top:20%}}
 .or-divider{text-align:center;color:var(--text3);font-size:12px;margin:12px 0;display:flex;align-items:center;gap:10px}
 .or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
-.list-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s,transform .1s}
-.list-item:active{background:#f8f9ff;transform:scale(.99)}
+.list-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s}
+.list-item:active{background:#f8f9ff;}
 .list-item-name{font-size:17px;font-weight:700;color:var(--text)}
-.list-item-sub{display:none}
-.list-item-arrow{color:var(--text3);font-size:20px;font-weight:300;flex-shrink:0}
+.list-item-arrow{color:var(--text3);font-size:20px;flex-shrink:0}
 .badge{display:inline-block;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700}
 .badge-ok{background:#e6f4ea;color:#137333}
 .badge-warn{background:#fef7e0;color:#7a4500}
@@ -91,12 +91,11 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 .qty-num{font-size:52px;font-weight:700;color:var(--text);letter-spacing:2px;line-height:1}
 .qty-unit{font-size:16px;color:var(--text2);margin-left:8px;font-weight:500}
 .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.numpad-btn{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px;font-size:24px;font-weight:500;cursor:pointer;text-align:center;user-select:none;color:var(--text);transition:background .08s,transform .08s}
-.numpad-btn:active{background:#e8f0fe;transform:scale(.93);border-color:var(--primary)}
+.numpad-btn{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px;font-size:24px;font-weight:500;cursor:pointer;text-align:center;user-select:none;color:var(--text);}
+.numpad-btn:active{background:#e8f0fe;border-color:var(--primary)}
 .numpad-btn.del{font-size:20px;color:var(--danger)}
 .numpad-btn.zero{grid-column:span 2}
-.record-btn{width:100%;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:8px;letter-spacing:.3px}
-.record-btn:active{opacity:.9}
+.record-btn{width:100%;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:8px;}
 .back-link{width:100%;background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:8px;text-align:center;display:block}
 .card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
 .history-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
@@ -104,14 +103,16 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 .history-badge{padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700;flex-shrink:0}
 .history-badge.in{background:#e6f4ea;color:#137333}
 .history-badge.out{background:#fce8e6;color:#c5221f}
+.history-badge.move{background:#e8f0fe;color:#1a73e8}
 .history-name{flex:1;font-size:12px;color:var(--text);font-weight:500}
 .history-qty{font-size:14px;font-weight:700}
 .history-qty.plus{color:var(--success)}
 .history-qty.minus{color:var(--danger)}
+.history-qty.move{color:var(--primary)}
 .filter-bar{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none}
 .filter-btn{background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:7px 16px;font-size:12px;white-space:nowrap;cursor:pointer;flex-shrink:0;font-weight:500;color:var(--text2)}
 .filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:500;z-index:300;opacity:0;transition:opacity .25s;white-space:nowrap;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:500;z-index:300;opacity:0;transition:opacity .25s;white-space:nowrap;pointer-events:none;}
 .toast.show{opacity:1}
 .hidden{display:none}
 .loading{text-align:center;padding:48px;color:var(--text3);font-size:14px}
@@ -122,18 +123,26 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 
 <div id="modal" class="modal-overlay">
   <div class="modal">
-    <div class="modal-title">作業設定</div>
+    <div class="modal-title" id="modal-title">作業設定</div>
     <div class="form-group">
-      <label class="form-label">倉庫</label>
+      <label class="form-label">担当者名</label>
+      <input id="inp-staff" class="form-input" type="text" placeholder="名前を入力">
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="warehouse-label">倉庫</label>
       <select id="sel-warehouse" class="form-select">
         <option>山科倉庫</option>
         <option>創造社倉庫</option>
         <option>事務所</option>
       </select>
     </div>
-    <div class="form-group">
-      <label class="form-label">担当者名</label>
-      <input id="inp-staff" class="form-input" type="text" placeholder="名前を入力">
+    <div class="form-group hidden" id="dest-group">
+      <label class="form-label">移動先倉庫</label>
+      <select id="sel-dest" class="form-select">
+        <option>山科倉庫</option>
+        <option>創造社倉庫</option>
+        <option>事務所</option>
+      </select>
     </div>
     <div class="form-group hidden" id="reason-group">
       <label class="form-label">出庫理由</label>
@@ -143,7 +152,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
         <option>出庫（廃棄）</option>
       </select>
     </div>
-    <button class="form-btn" onclick="startSession()">作業開始</button>
+    <button class="form-btn" id="modal-start-btn">作業開始</button>
   </div>
 </div>
 
@@ -156,9 +165,10 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 <div class="session-bar hidden" id="session-bar">
   <div class="session-info">
     <span class="session-tag" id="sb-warehouse"></span>
+    <span class="session-tag hidden" id="sb-dest"></span>
     <span class="session-tag" id="sb-staff"></span>
   </div>
-  <span class="session-change" onclick="showModal()">変更</span>
+  <span class="session-change" onclick="openModal()">変更</span>
 </div>
 
 <div class="main">
@@ -266,7 +276,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 </div>
 <script>
 const API='https://script.google.com/macros/s/AKfycbz2K9_frpjl7gXnl4jMcqSNIt4Yupx-SYcVJHiM6Wtb0gFsRlgmNLlBy06Xz7TnOPgx/exec';
-let master=[],summary=[],session={warehouse:'',staff:'',mode:'',reason:''},currentQty='',currentProduct=null,currentCategory='',currentProductName='',sessionHistory=[],recordedSizes=[],screenStack=[];
+let master=[],summary=[],session={warehouse:'',dest:'',staff:'',mode:'',reason:''},currentQty='',currentProduct=null,currentCategory='',currentProductName='',sessionHistory=[],recordedSizes=[],screenStack=[];
 
 async function loadData(){
   try{
@@ -278,45 +288,69 @@ async function loadData(){
   }catch(e){showToast('データ読み込みエラー');}
 }
 
-window.onload=function(){loadData();};
+window.onload=function(){
+  document.getElementById('modal-start-btn').addEventListener('click',startSession);
+  loadData();
+};
 
-function showModal(){
-  document.getElementById('reason-group').classList.toggle('hidden',session.mode!=='出庫');
-  document.getElementById('modal').style.display='flex';
+function openModal(){
+  var mode=session.mode;
+  document.getElementById('modal-title').textContent=mode==='入庫'?'入庫 作業設定':mode==='出庫'?'出庫 作業設定':mode==='移動'?'移動 作業設定':'作業設定';
+  document.getElementById('warehouse-label').textContent=mode==='移動'?'移動元倉庫':'倉庫';
+  var dg=document.getElementById('dest-group');
+  var rg=document.getElementById('reason-group');
+  dg.classList.toggle('hidden',mode!=='移動');
+  rg.classList.toggle('hidden',mode!=='出庫');
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('show');
 }
 
 function startSession(){
   var w=document.getElementById('sel-warehouse').value;
   var s=document.getElementById('inp-staff').value.trim();
   if(!s){alert('担当者名を入力してください');return;}
-  var d=document.getElementById('sel-dest').value;
-  if(session.mode==='移動'&&w===d){alert('移動元と移動先が同じ倉庫です');return;}
-  session.warehouse=w;session.staff=s;
-  if(session.mode==='移動') session.dest=d;
-  if(session.mode==='出庫') session.reason=document.getElementById('sel-reason').value;
-  var modal=document.getElementById('modal');
-modal.style.display='none';
-modal.classList.add('hidden');
+  if(session.mode==='移動'){
+    var d=document.getElementById('sel-dest').value;
+    if(w===d){alert('移動元と移動先が同じ倉庫です');return;}
+    session.dest=d;
+  }
+  if(session.mode==='出庫'){
+    session.reason=document.getElementById('sel-reason').value;
+  }
+  session.warehouse=w;
+  session.staff=s;
+
+  // セッションバー更新
   document.getElementById('session-bar').classList.remove('hidden');
   document.getElementById('sb-warehouse').textContent=w;
   document.getElementById('sb-staff').textContent=s;
   var destTag=document.getElementById('sb-dest');
   if(session.mode==='移動'){
-    destTag.textContent='→ '+d;
-    destTag.style.display='';
+    destTag.textContent='→ '+session.dest;
+    destTag.classList.remove('hidden');
   }else{
-    destTag.style.display='none';
+    destTag.classList.add('hidden');
   }
-  // 作業画面へ遷移
-  if(session.mode){
-    sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
-    var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8'};
-    var sub=document.getElementById('header-sub');
-    sub.textContent=session.mode;
-    sub.style.background=colors[session.mode];
-    sub.classList.remove('hidden');
-    showScreen('operation');
-  }
+
+  // モーダルを閉じる
+  closeModal();
+
+  // 作業画面へ
+  sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
+  var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8'};
+  var sub=document.getElementById('header-sub');
+  sub.textContent=session.mode;
+  sub.style.background=colors[session.mode]||'var(--primary)';
+  sub.classList.remove('hidden');
+  showScreen('operation');
+}
+
+function startOperation(mode){
+  session.mode=mode;
+  openModal();
 }
 
 function showScreen(name){
@@ -340,14 +374,6 @@ function showScreen(name){
 }
 
 function goBack(){screenStack.pop();var prev=screenStack.pop()||'home';showScreen(prev);}
-
-function startOperation(mode){
-  session.mode=mode;
-  session.dest='';
-  session.reason='';
-  showModal();
-}
-
 function startScan(){showToast('スキャン機能は実装中です');}
 
 function renderCategories(){
@@ -395,14 +421,14 @@ function selectSku(skuId,name,size,unit){
   document.getElementById('qty-unit').textContent=unit;
   var modeColor={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8'};
   var modeBg={入庫:'rgba(52,168,83,.1)',出庫:'rgba(234,67,53,.1)',移動:'rgba(26,115,232,.1)'};
+  var metaHtml='<span class="product-meta-item">'+session.warehouse+'</span>';
+  if(session.mode==='移動') metaHtml+='<span class="product-meta-item" style="background:rgba(26,115,232,.1);color:#1a73e8">→ '+session.dest+'</span>';
+  metaHtml+='<span class="product-meta-item">'+session.staff+'</span>';
+  metaHtml+='<span class="product-meta-item" style="background:'+modeBg[session.mode]+';color:'+modeColor[session.mode]+'">'+session.mode+'</span>';
   document.getElementById('product-confirm').innerHTML=
     '<div class="product-name">'+name+' '+size+'</div>'+
     '<div class="product-sku">'+skuId+'</div>'+
-    '<div class="product-meta">'+
-    '<span class="product-meta-item">'+session.warehouse+'</span>'+
-    '<span class="product-meta-item">'+session.staff+'</span>'+
-    '<span class="product-meta-item" style="background:'+modeBg[session.mode]+';color:'+modeColor[session.mode]+'">'+session.mode+'</span>'+
-    '</div>';
+    '<div class="product-meta">'+metaHtml+'</div>';
   var ml={入庫:'✓ 入庫を記録する',出庫:'✓ 出庫を記録する',移動:'✓ 移動を記録する'};
   var btn=document.getElementById('record-btn');
   btn.textContent=ml[session.mode]||'記録する';
@@ -418,12 +444,21 @@ async function recordLog(){
   if(qty===0){showToast('数量を入力してください');return;}
   var opMap={入庫:'入庫',出庫:session.reason||'出庫（使用）',移動:'移動（出）'};
   var sign=session.mode==='入庫'?1:-1;
-  var payload={action:'addLog',操作種別:opMap[session.mode],SKU_ID:currentProduct.skuId,倉庫:session.warehouse,数量変動:qty*sign,単位:currentProduct.unit,担当者:session.staff};
+  var payload={
+    action:'addLog',
+    操作種別:opMap[session.mode],
+    SKU_ID:currentProduct.skuId,
+    倉庫:session.warehouse,
+    移動先倉庫:session.mode==='移動'?session.dest:'',
+    数量変動:qty*sign,
+    単位:currentProduct.unit,
+    担当者:session.staff
+  };
   var btn=document.getElementById('record-btn');
   btn.textContent='記録中...';
   try{
     await fetch(API,{method:'POST',body:JSON.stringify(payload)});
-    sessionHistory.unshift({name:currentProduct.name+' '+currentProduct.size,qty:qty*sign,unit:currentProduct.unit,mode:session.mode});
+    sessionHistory.unshift({name:currentProduct.name+' '+currentProduct.size,qty:qty*sign,unit:currentProduct.unit,mode:session.mode,dest:session.dest});
     recordedSizes.push(currentProduct.skuId);
     showToast('✓ 記録しました');currentQty='';
     renderSizes(currentCategory,currentProductName);showScreen('size');renderHistory();
@@ -438,11 +473,15 @@ function renderHistory(){
   var el=document.getElementById('history-list');
   if(sessionHistory.length===0){el.innerHTML='<div style="font-size:12px;color:var(--text3)">まだ記録がありません</div>';return;}
   el.innerHTML=sessionHistory.slice(0,5).map(function(h){
+    var isMove=h.mode==='移動';
     var isIn=h.qty>0;
+    var badgeClass=isMove?'move':isIn?'in':'out';
+    var badgeText=isMove?'移動':isIn?'入庫':'出庫';
+    var qtyClass=isMove?'move':isIn?'plus':'minus';
     return '<div class="history-item">'+
-      '<span class="history-badge '+(isIn?'in':'out')+'">'+(isIn?'入庫':'出庫')+'</span>'+
-      '<div class="history-name">'+h.name+'</div>'+
-      '<div class="history-qty '+(isIn?'plus':'minus')+'">'+(isIn?'+':'')+h.qty+'</div>'+
+      '<span class="history-badge '+badgeClass+'">'+badgeText+'</span>'+
+      '<div class="history-name">'+h.name+(isMove?' →'+h.dest:'')+'</div>'+
+      '<div class="history-qty '+qtyClass+'">'+(isIn&&!isMove?'+':'')+h.qty+'</div>'+
       '<div style="font-size:11px;color:var(--text3);margin-left:2px">'+h.unit+'</div>'+
       '</div>';
   }).join('');
