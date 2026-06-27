@@ -737,6 +737,7 @@ async function submitAddMaster(){
     ['add-name','add-size','add-note'].forEach(function(id){document.getElementById(id).value='';});
     document.getElementById('add-category').value='';
     await loadMasterAll();
+    await loadData();
   }catch(e){
     showToast('❌ 登録失敗：'+e.message);
   }finally{
