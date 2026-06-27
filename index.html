@@ -69,11 +69,11 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 @keyframes scanAnim{0%{top:20%}50%{top:78%}100%{top:20%}}
 .or-divider{text-align:center;color:var(--text3);font-size:12px;margin:12px 0;display:flex;align-items:center;gap:10px}
 .or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
-.list-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s,transform .1s}
+.list-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s,transform .1s}
 .list-item:active{background:#f8f9ff;transform:scale(.99)}
-.list-item-name{font-size:14px;font-weight:600;color:var(--text)}
-.list-item-sub{font-size:11px;color:var(--text3);margin-top:3px}
-.list-item-arrow{color:var(--text3);font-size:20px;font-weight:300}
+.list-item-name{font-size:17px;font-weight:700;color:var(--text)}
+.list-item-sub{display:none}
+.list-item-arrow{color:var(--text3);font-size:20px;font-weight:300;flex-shrink:0}
 .badge{display:inline-block;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700}
 .badge-ok{background:#e6f4ea;color:#137333}
 .badge-warn{background:#fef7e0;color:#7a4500}
@@ -340,8 +340,7 @@ function renderCategories(){
   master.forEach(function(p){if(cats.indexOf(p['カテゴリ'])===-1)cats.push(p['カテゴリ']);});
   cats.sort();
   document.getElementById('category-list').innerHTML=cats.map(function(c){
-    var n=master.filter(function(p){return p['カテゴリ']===c;}).length;
-    return '<div class="list-item" onclick="selectCategory(\''+c+'\')"><div><div class="list-item-name">'+c+'</div><div class="list-item-sub">'+n+'品目</div></div><div class="list-item-arrow">›</div></div>';
+    return '<div class="list-item" onclick="selectCategory(\''+c+'\')"><div class="list-item-name">'+c+'</div><div class="list-item-arrow">›</div></div>';
   }).join('');
 }
 
@@ -356,8 +355,7 @@ function renderProducts(cat){
   var names=[];
   master.filter(function(p){return p['カテゴリ']===cat;}).forEach(function(p){if(names.indexOf(p['商品名'])===-1)names.push(p['商品名']);});
   document.getElementById('product-list').innerHTML=names.map(function(name){
-    var n=master.filter(function(p){return p['カテゴリ']===cat&&p['商品名']===name;}).length;
-    return '<div class="list-item" onclick="selectProduct(\''+name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')"><div><div class="list-item-name">'+name+'</div><div class="list-item-sub">'+n+'サイズ</div></div><div class="list-item-arrow">›</div></div>';
+    return '<div class="list-item" onclick="selectProduct(\''+name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')"><div class="list-item-name">'+name+'</div><div class="list-item-arrow">›</div></div>';
   }).join('');
 }
 
@@ -371,7 +369,7 @@ function renderSizes(cat,name){
   var items=master.filter(function(p){return p['カテゴリ']===cat&&p['商品名']===name;});
   document.getElementById('size-list').innerHTML=items.map(function(item){
     var done=recordedSizes.indexOf(item['SKU_ID'])!==-1;
-    return '<div class="list-item" onclick="selectSku(\''+item['SKU_ID']+'\',\''+item['商品名'].replace(/'/g,"\\'")+'\',\''+item['サイズ'].replace(/'/g,"\\'")+'\',\''+item['単位']+'\')"><div><div class="list-item-name">'+item['サイズ']+'</div><div class="list-item-sub">'+item['SKU_ID']+'</div></div>'+(done?'<span class="badge badge-done">記録済</span>':'<div class="list-item-arrow">›</div>')+'</div>';
+    return '<div class="list-item" onclick="selectSku(\''+item['SKU_ID']+'\',\''+item['商品名'].replace(/'/g,"\\'")+'\',\''+item['サイズ'].replace(/'/g,"\\'")+'\',\''+item['単位']+'\')"><div class="list-item-name">'+item['サイズ']+'</div>'+(done?'<span class="badge badge-done">記録済</span>':'<div class="list-item-arrow">›</div>')+'</div>';
   }).join('');
 }
 
@@ -461,7 +459,7 @@ function renderStock(){
     var q=currentWarehouseFilter==='all'?y+s+o:currentWarehouseFilter==='山科倉庫'?y:currentWarehouseFilter==='創造社倉庫'?s:o;
     var st=item['ステータス']||'正常';
     var bc=st==='欠品'?'badge-ng':st==='要補充'?'badge-warn':'badge-ok';
-    return '<div class="list-item" style="cursor:default"><div style="flex:1"><div class="list-item-name">'+(item['商品名']||'')+' '+(item['サイズ']||'')+'</div><div class="list-item-sub">'+(item['SKU_ID']||'')+'</div></div><div style="text-align:right"><div style="font-size:20px;font-weight:700">'+q+'</div><span class="badge '+bc+'">'+st+'</span></div></div>';
+    return '<div class="list-item" style="cursor:default"><div style="flex:1"><div class="list-item-name">'+(item['商品名']||'')+' '+(item['サイズ']||'')+'</div></div><div style="text-align:right"><div style="font-size:20px;font-weight:700">'+q+'</div><span class="badge '+bc+'">'+st+'</span></div></div>';
   }).join('');
 }
 
