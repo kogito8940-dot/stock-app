@@ -486,7 +486,7 @@ function renderProducts(cat){
   var names=[];
   master.filter(function(p){return p['カテゴリ']===cat;}).forEach(function(p){if(names.indexOf(p['商品名'])===-1)names.push(p['商品名']);});
   document.getElementById('product-list').innerHTML=names.map(function(name){
-    return '<div class="list-item" onclick="selectProduct(\''+name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')"><div class="list-item-name">'+name+'</div><div class="list-item-arrow">›</div></div>';
+    return '<div class="list-item" onclick="selectProduct(\''+escAttr(name)+'\')"  ><div class="list-item-name">'+name+'</div><div class="list-item-arrow">›</div></div>';
   }).join('');
 }
 
