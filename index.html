@@ -607,11 +607,6 @@ function startSession(){
   document.getElementById('bnav-staff').textContent=s;
   closeModal();
   sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
-  var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8',棚卸し:'#f9ab00'};
-  var sub=document.getElementById('header-sub');
-  sub.textContent=session.mode;
-  sub.style.background=colors[session.mode]||'var(--primary)';
-  sub.classList.remove('hidden');
   if(session.mode==='棚卸し'){
     showScreen('inv-category');
   }else{
