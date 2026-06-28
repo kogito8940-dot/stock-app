@@ -328,6 +328,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
       <div class="tile" onclick="startOperation('出庫')"><div class="tile-icon">🚚</div><div class="tile-label">出庫</div></div>
       <div class="tile" onclick="startOperation('移動')"><div class="tile-icon">🔄</div><div class="tile-label">倉庫間移動</div></div>
       <div class="tile" onclick="showScreen('stock')"><div class="tile-icon">📊</div><div class="tile-label">在庫確認</div></div>
+      <div class="tile" onclick="startOperation('棚卸し')"><div class="tile-icon">📋</div><div class="tile-label">棚卸し</div></div>
     </div>
   </div>
 
@@ -408,6 +409,47 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
     <div id="stock-list"><div class="loading">読み込み中...</div></div>
   </div>
 
+    <div id="screen-inventory" class="screen">
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <select id="invCatFilter" onchange="renderInventoryList()" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--surface)">
+        <option value="">全カテゴリ</option>
+      </select>
+      <input type="text" id="invSearch" placeholder="商品名・SKU検索" oninput="renderInventoryList()" style="flex:2;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;">
+    </div>
+    <div id="inv-count" style="font-size:12px;color:var(--text3);margin-bottom:8px;"></div>
+    <div id="inventory-list"><div class="loading">読み込み中...</div></div>
+  </div>
+
+  <div id="screen-inventoryQty" class="screen">
+    <div id="inv-product-confirm" class="product-confirm" style="border-color:#f9ab00;background:#fffbea;"></div>
+    <div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:10px;border:1.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:13px;color:var(--text2);">システム在庫数</span>
+      <span style="font-size:24px;font-weight:700;color:var(--primary);" id="inv-system-qty">-</span>
+      <span style="font-size:13px;color:var(--text2);" id="inv-system-unit"></span>
+    </div>
+    <div class="qty-display" style="border-color:#f9ab00;">
+      <span style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px;">実際の在庫数</span>
+      <span class="qty-num" id="inv-qty-display">0</span>
+      <span class="qty-unit" id="inv-qty-unit"></span>
+    </div>
+    <div id="inv-diff-display" style="border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:14px;font-weight:600;text-align:center;"></div>
+    <div class="numpad">
+      <div class="numpad-btn" onclick="invNumInput('7')">7</div>
+      <div class="numpad-btn" onclick="invNumInput('8')">8</div>
+      <div class="numpad-btn" onclick="invNumInput('9')">9</div>
+      <div class="numpad-btn" onclick="invNumInput('4')">4</div>
+      <div class="numpad-btn" onclick="invNumInput('5')">5</div>
+      <div class="numpad-btn" onclick="invNumInput('6')">6</div>
+      <div class="numpad-btn" onclick="invNumInput('1')">1</div>
+      <div class="numpad-btn" onclick="invNumInput('2')">2</div>
+      <div class="numpad-btn" onclick="invNumInput('3')">3</div>
+      <div class="numpad-btn zero" onclick="invNumInput('0')">0</div>
+      <div class="numpad-btn del" onclick="invNumDel()">⌫</div>
+    </div>
+    <button class="record-btn" id="inv-record-btn" onclick="recordInventory()" style="background:#f9ab00;">棚卸し修正を記録する</button>
+    <button class="back-link" onclick="goBack()">← 商品一覧に戻る</button>
+  </div>
+
   <div id="screen-master" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div style="font-size:15px;font-weight:700;color:var(--text2)">商品マスタ管理</div>
@@ -465,9 +507,10 @@ function openModal(){
     mode==='入庫'?'入庫 作業設定':
     mode==='出庫'?'出庫 作業設定':
     mode==='移動'?'移動 作業設定':'作業設定';
-  document.getElementById('warehouse-label').textContent=mode==='移動'?'移動元倉庫':'倉庫';
+  document.getElementById('warehouse-label').textContent=mode==='移動'?'移動元倉庫':mode==='棚卸し'?'棚卸し倉庫':'倉庫';
   document.getElementById('dest-group').classList.toggle('hidden',mode!=='移動');
   document.getElementById('reason-group').classList.toggle('hidden',mode!=='出庫');
+  document.getElementById('immediate-move-group').classList.toggle('hidden',mode!=='入庫');
   document.getElementById('immediate-move-group').classList.toggle('hidden',mode!=='入庫');
   // チェックをリセット
   if(mode==='入庫'){
@@ -518,12 +561,16 @@ function startSession(){
   }
   closeModal();
   sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
-  var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8'};
+  var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8',棚卸し:'#f9ab00'};
   var sub=document.getElementById('header-sub');
   sub.textContent=session.mode;
   sub.style.background=colors[session.mode]||'var(--primary)';
   sub.classList.remove('hidden');
-  showScreen('operation');
+  if(session.mode==='棚卸し'){
+    showScreen('inventory');
+  }else{
+    showScreen('operation');
+  }
 }
 
 function startOperation(mode){
@@ -534,7 +581,7 @@ function startOperation(mode){
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   document.getElementById('screen-'+name).classList.add('active');
-  var titles={home:'在庫管理',operation:'入出庫',category:'商品選択',product:'商品選択',size:'サイズ選択',qty:'数量入力',stock:'在庫確認',master:'商品マスタ'};
+  var titles={home:'在庫管理',operation:'入出庫',category:'商品選択',product:'商品選択',size:'サイズ選択',qty:'数量入力',stock:'在庫確認',master:'商品マスタ',inventory:'棚卸し',inventoryQty:'棚卸し 数量入力'};
   document.getElementById('header-title').textContent=titles[name]||'';
   document.querySelectorAll('.bnav-item').forEach(function(i){i.classList.remove('active');});
   if(name==='home'){
@@ -547,6 +594,7 @@ function showScreen(name){
   if(name==='stock') document.getElementById('nav-stock').classList.add('active');
   if(name==='operation') document.getElementById('nav-op').classList.add('active');
   if(name==='master'){document.getElementById('nav-master').classList.add('active');loadMasterAll();}
+  if(name==='inventory') loadInventoryStock();
   if(name==='category') renderCategories();
   if(name==='stock') renderStock();
   screenStack.push(name);
@@ -707,6 +755,189 @@ function renderStock(){
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2000);
+}
+
+// ============================================================
+// 棚卸し機能
+// ============================================================
+let inventoryStock = [], currentInvProduct = null, invQty = '';
+
+async function loadInventoryStock() {
+  try {
+    const res = await fetch(API + '?action=getStockByWarehouse&倉庫=' + encodeURIComponent(session.warehouse));
+    const json = await res.json();
+    inventoryStock = json.data || [];
+    populateInvCategoryFilter();
+    renderInventoryList();
+  } catch(e) {
+    document.getElementById('inventory-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger)">読み込み失敗</div>';
+  }
+}
+
+function populateInvCategoryFilter() {
+  var sel = document.getElementById('invCatFilter');
+  sel.innerHTML = '<option value="">全カテゴリ</option>';
+  var cats = [];
+  master.forEach(function(p) {
+    if (cats.indexOf(p['カテゴリ']) === -1) cats.push(p['カテゴリ']);
+  });
+  cats.sort().forEach(function(c) {
+    var opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+}
+
+function renderInventoryList() {
+  var cat = document.getElementById('invCatFilter').value;
+  var kw = document.getElementById('invSearch').value.trim().toLowerCase();
+
+  var filtered = inventoryStock.filter(function(r) {
+    if (cat) {
+      var m = master.find(function(p) { return p['SKU_ID'] === r.SKU_ID; });
+      if (!m || m['カテゴリ'] !== cat) return false;
+    }
+    if (kw) {
+      var hay = (r['商品名'] + r['サイズ'] + r['SKU_ID']).toLowerCase();
+      if (hay.indexOf(kw) === -1) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('inv-count').textContent = filtered.length + '件';
+
+  if (filtered.length === 0) {
+    document.getElementById('inventory-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">該当なし</div>';
+    return;
+  }
+
+  // カテゴリでグループ化
+  var grouped = {};
+  filtered.forEach(function(r) {
+    var m = master.find(function(p) { return p['SKU_ID'] === r.SKU_ID; });
+    var c = m ? m['カテゴリ'] : '未分類';
+    if (!grouped[c]) grouped[c] = [];
+    grouped[c].push(r);
+  });
+
+  var html = '';
+  Object.keys(grouped).forEach(function(c) {
+    html += '<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;margin:14px 0 6px;text-transform:uppercase">' + c + '</div>';
+    grouped[c].forEach(function(r) {
+      html += '<div class="list-item" onclick="selectInvProduct('' + escAttr(r.SKU_ID) + '')">' +
+        '<div style="flex:1">' +
+          '<div class="list-item-name">' + r['商品名'] + ' ' + r['サイズ'] + '</div>' +
+          '<div style="font-size:11px;color:var(--text3);font-family:monospace">' + r['SKU_ID'] + '</div>' +
+        '</div>' +
+        '<div style="text-align:right">' +
+          '<div style="font-size:20px;font-weight:700;color:var(--primary)">' + r['在庫数'] + '</div>' +
+          '<div style="font-size:11px;color:var(--text3)">' + r['単位'] + '</div>' +
+        '</div>' +
+      '</div>';
+    });
+  });
+  document.getElementById('inventory-list').innerHTML = html;
+}
+
+function selectInvProduct(skuId) {
+  var item = inventoryStock.find(function(r) { return r.SKU_ID === skuId; });
+  if (!item) return;
+  currentInvProduct = item;
+  invQty = '';
+
+  document.getElementById('inv-system-qty').textContent = item['在庫数'];
+  document.getElementById('inv-system-unit').textContent = item['単位'];
+  document.getElementById('inv-qty-display').textContent = '0';
+  document.getElementById('inv-qty-unit').textContent = item['単位'];
+  document.getElementById('inv-diff-display').textContent = '';
+  document.getElementById('inv-diff-display').style.background = '';
+
+  document.getElementById('inv-product-confirm').innerHTML =
+    '<div class="product-name">' + item['商品名'] + ' ' + item['サイズ'] + '</div>' +
+    '<div class="product-sku">' + item['SKU_ID'] + '</div>' +
+    '<div class="product-meta">' +
+      '<span class="product-meta-item" style="background:rgba(249,171,0,.1);color:#b06000">' + session.warehouse + '</span>' +
+      '<span class="product-meta-item" style="background:rgba(249,171,0,.1);color:#b06000">' + session.staff + '</span>' +
+      '<span class="product-meta-item" style="background:rgba(249,171,0,.1);color:#b06000">棚卸し</span>' +
+    '</div>';
+
+  showScreen('inventoryQty');
+}
+
+function invNumInput(n) {
+  if (invQty.length >= 5) return;
+  invQty += n;
+  var num = parseInt(invQty) || 0;
+  document.getElementById('inv-qty-display').textContent = num;
+  updateInvDiff(num);
+}
+
+function invNumDel() {
+  invQty = invQty.slice(0, -1);
+  var num = invQty ? parseInt(invQty) : 0;
+  document.getElementById('inv-qty-display').textContent = num;
+  updateInvDiff(num);
+}
+
+function updateInvDiff(actual) {
+  if (!currentInvProduct) return;
+  var system = parseFloat(currentInvProduct['在庫数']) || 0;
+  var diff = actual - system;
+  var el = document.getElementById('inv-diff-display');
+  var btn = document.getElementById('inv-record-btn');
+  if (diff === 0) {
+    el.textContent = '差分なし（記録不要）';
+    el.style.background = '#e6f4ea';
+    el.style.color = '#137333';
+    btn.style.opacity = '0.4';
+    btn.disabled = true;
+  } else {
+    el.textContent = '差分: ' + (diff > 0 ? '+' : '') + diff + currentInvProduct['単位'] + '（棚卸し修正を記録します）';
+    el.style.background = diff > 0 ? '#e8f0fe' : '#fce8e6';
+    el.style.color = diff > 0 ? '#1a73e8' : '#c5221f';
+    btn.style.opacity = '1';
+    btn.disabled = false;
+  }
+}
+
+async function recordInventory() {
+  if (!currentInvProduct) return;
+  var actual = parseInt(invQty) || 0;
+  var system = parseFloat(currentInvProduct['在庫数']) || 0;
+  var diff = actual - system;
+  if (diff === 0) { showToast('差分がないため記録不要です'); return; }
+
+  var btn = document.getElementById('inv-record-btn');
+  btn.disabled = true; btn.textContent = '記録中...';
+
+  try {
+    await fetch(API, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'addLog',
+        操作種別: '棚卸し修正',
+        SKU_ID: currentInvProduct['SKU_ID'],
+        倉庫: session.warehouse,
+        移動先倉庫: '',
+        数量変動: diff,
+        単位: currentInvProduct['単位'],
+        担当者: session.staff,
+        備考: '棚卸し（実数:' + actual + ' システム:' + system + '）'
+      })
+    });
+    showToast('✅ 棚卸し修正を記録しました');
+    invQty = '';
+    // 在庫数を更新してリストに戻る
+    currentInvProduct['在庫数'] = actual;
+    await loadInventoryStock();
+    showScreen('inventory');
+  } catch(e) {
+    showToast('❌ 記録失敗');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '棚卸し修正を記録する';
+    btn.style.opacity = '1';
+  }
 }
 
 // ============================================================
