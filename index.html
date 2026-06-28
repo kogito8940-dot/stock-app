@@ -152,6 +152,26 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
         <option>出庫（廃棄）</option>
       </select>
     </div>
+    <div class="form-group hidden" id="immediate-move-group">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px;background:#f0f6ff;border-radius:12px;border:1.5px solid var(--border);cursor:pointer;" onclick="toggleImmediateMove()">
+        <div id="immediate-move-check" style="width:20px;height:20px;border:2px solid var(--border);border-radius:4px;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;"></div>
+        <div style="font-size:14px;color:var(--text);">入庫後すぐ別倉庫へ移動する</div>
+      </div>
+      <div id="immediate-dest-group" class="hidden" style="margin-top:10px;">
+        <label class="form-label">移動先倉庫</label>
+        <select id="sel-immediate-dest" class="form-select">
+          <option>山科倉庫</option>
+          <option>創造社倉庫</option>
+          <option>事務所</option>
+        </select>
+        <div style="background:#f0f6ff;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--text2);line-height:1.8;">
+          記録されるログ：<br>
+          <span style="color:var(--success);font-weight:600;">① 入庫</span>　入庫倉庫 +N<br>
+          <span style="color:var(--primary);font-weight:600;">② 移動（出）</span>　入庫倉庫 -N<br>
+          <span style="color:var(--primary);font-weight:600;">③ 移動（入）</span>　移動先倉庫 +N
+        </div>
+      </div>
+    </div>
     <button class="form-btn" id="modal-start-btn">作業開始</button>
   </div>
 </div>
@@ -420,7 +440,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 </div>
 <script>
 const API='https://script.google.com/macros/s/AKfycbz2K9_frpjl7gXnl4jMcqSNIt4Yupx-SYcVJHiM6Wtb0gFsRlgmNLlBy06Xz7TnOPgx/exec';
-let master=[],summary=[],session={warehouse:'',dest:'',staff:'',mode:'',reason:''},currentQty='',currentProduct=null,currentCategory='',currentProductName='',sessionHistory=[],recordedSizes=[],screenStack=[];
+let master=[],summary=[],session={warehouse:'',dest:'',staff:'',mode:'',reason:'',immediateDest:''},currentQty='',currentProduct=null,currentCategory='',currentProductName='',sessionHistory=[],recordedSizes=[],screenStack=[];
 
 async function loadData(){
   try{
@@ -448,6 +468,15 @@ function openModal(){
   document.getElementById('warehouse-label').textContent=mode==='移動'?'移動元倉庫':'倉庫';
   document.getElementById('dest-group').classList.toggle('hidden',mode!=='移動');
   document.getElementById('reason-group').classList.toggle('hidden',mode!=='出庫');
+  document.getElementById('immediate-move-group').classList.toggle('hidden',mode!=='入庫');
+  // チェックをリセット
+  if(mode==='入庫'){
+    document.getElementById('immediate-move-check').innerHTML='';
+    document.getElementById('immediate-move-check').style.borderColor='var(--border)';
+    document.getElementById('immediate-move-check').style.background='#fff';
+    document.getElementById('immediate-dest-group').classList.add('hidden');
+    session.immediateDest='';
+  }
   var savedStaff=localStorage.getItem('staff_name');
   if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
   document.getElementById('modal').classList.add('show');
@@ -468,6 +497,11 @@ function startSession(){
   }
   if(session.mode==='出庫'){
     session.reason=document.getElementById('sel-reason').value;
+  }
+  if(session.mode==='入庫'){
+    var immDest=document.getElementById('immediate-dest-group').classList.contains('hidden')?'':document.getElementById('sel-immediate-dest').value;
+    if(immDest&&immDest===w){showToast('入庫倉庫と移動先倉庫が同じです');return;}
+    session.immediateDest=immDest;
   }
   session.warehouse=w;
   session.staff=s;
@@ -601,6 +635,7 @@ async function recordLog(){
     SKU_ID:currentProduct.skuId,
     倉庫:session.warehouse,
     移動先倉庫:session.mode==='移動'?session.dest:'',
+    即移動先倉庫:session.mode==='入庫'&&session.immediateDest?session.immediateDest:'',
     数量変動:qty*sign,
     単位:currentProduct.unit,
     担当者:session.staff
@@ -672,6 +707,27 @@ function renderStock(){
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2000);
+}
+
+// ============================================================
+// 即移動チェックボックス
+// ============================================================
+function toggleImmediateMove(){
+  var check=document.getElementById('immediate-move-check');
+  var destGroup=document.getElementById('immediate-dest-group');
+  var isChecked=check.innerHTML!=='';
+  if(isChecked){
+    check.innerHTML='';
+    check.style.borderColor='var(--border)';
+    check.style.background='#fff';
+    destGroup.classList.add('hidden');
+    session.immediateDest='';
+  }else{
+    check.innerHTML='<span style="color:#fff;font-size:13px;">✓</span>';
+    check.style.borderColor='var(--primary)';
+    check.style.background='var(--primary)';
+    destGroup.classList.remove('hidden');
+  }
 }
 
 // ============================================================
