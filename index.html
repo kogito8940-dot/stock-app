@@ -811,7 +811,6 @@ function renderInventoryList() {
     return;
   }
 
-  // カテゴリでグループ化
   var grouped = {};
   filtered.forEach(function(r) {
     var m = master.find(function(p) { return p['SKU_ID'] === r.SKU_ID; });
@@ -824,16 +823,16 @@ function renderInventoryList() {
   Object.keys(grouped).forEach(function(c) {
     html += '<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;margin:14px 0 6px;text-transform:uppercase">' + c + '</div>';
     grouped[c].forEach(function(r) {
-      html += '<div class="list-item" onclick="selectInvProduct('' + escAttr(r.SKU_ID) + '')">' +
-        '<div style="flex:1">' +
-          '<div class="list-item-name">' + r['商品名'] + ' ' + r['サイズ'] + '</div>' +
-          '<div style="font-size:11px;color:var(--text3);font-family:monospace">' + r['SKU_ID'] + '</div>' +
-        '</div>' +
-        '<div style="text-align:right">' +
-          '<div style="font-size:20px;font-weight:700;color:var(--primary)">' + r['在庫数'] + '</div>' +
-          '<div style="font-size:11px;color:var(--text3)">' + r['単位'] + '</div>' +
-        '</div>' +
-      '</div>';
+      var skuSafe = escAttr(r['SKU_ID']);
+      html += '<div class="list-item" onclick="selectInvProduct(' + "'" + skuSafe + "'" + ')">';
+      html += '<div style="flex:1">';
+      html += '<div class="list-item-name">' + r['商品名'] + ' ' + r['サイズ'] + '</div>';
+      html += '<div style="font-size:11px;color:var(--text3);font-family:monospace">' + r['SKU_ID'] + '</div>';
+      html += '</div>';
+      html += '<div style="text-align:right">';
+      html += '<div style="font-size:20px;font-weight:700;color:var(--primary)">' + r['在庫数'] + '</div>';
+      html += '<div style="font-size:11px;color:var(--text3)">' + r['単位'] + '</div>';
+      html += '</div></div>';
     });
   });
   document.getElementById('inventory-list').innerHTML = html;
