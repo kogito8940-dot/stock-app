@@ -4,24 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>在庫管理</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#f0f2f5;--surface:#fff;--surface2:#f0f0f0;
-  --primary:#1a73e8;--primary-dark:#1557b0;
-  --success:#34a853;--warning:#f9ab00;--danger:#ea4335;
-  --text:#202124;--text2:#5f6368;--text3:#9aa0a6;
-  --border:#dadce0;--radius:14px;
+  --bg:#f2f2f7;--surface:#fff;--surface2:#f2f2f7;
+  --primary:#4f46e5;--primary-dark:#4338ca;
+  --success:#16a34a;--warning:#ea580c;--danger:#dc2626;
+  --text:#111827;--text2:#6b7280;--text3:#9ca3af;
+  --border:#e5e7eb;--radius:18px;
 }
 html,body{height:100%;margin:0;padding:0;}
-body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);background:var(--bg);display:flex;flex-direction:column;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);background:var(--bg);display:flex;flex-direction:column;}
 @media(min-width:600px){
   body{background:#444;align-items:center;justify-content:flex-start;padding:20px 0;}
   .app-shell{width:390px;height:844px;border-radius:44px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6);}
 }
 @media(max-width:599px){.app-shell{flex:1;width:100%;}}
 .app-shell{background:var(--bg);display:flex;flex-direction:column;position:relative;}
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;backdrop-filter:blur(10px);}
 .header-title{font-size:17px;font-weight:700;flex:1;color:var(--text)}
 .header-badge{font-size:11px;color:#fff;padding:4px 10px;border-radius:20px;font-weight:600}
 .back-btn{background:none;border:none;font-size:26px;cursor:pointer;color:var(--primary);padding:2px 6px 2px 0;line-height:1;font-weight:300}
@@ -34,7 +35,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 .bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);position:sticky;bottom:0;z-index:100;}
 .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0 10px;font-size:10px;color:var(--text3);cursor:pointer;gap:2px;}
 .bnav-item.active{color:var(--primary)}
-.bnav-icon{font-size:24px;line-height:1}
+.bnav-icon{font-size:24px;line-height:1;display:block;}
 .modal-overlay{position:fixed;inset:0 0 60px 0;background:rgba(0,0,0,.55);z-index:40;display:none;align-items:flex-end;justify-content:center;}
 .modal-overlay.show{display:flex;}
 .modal{background:var(--surface);border-radius:24px 24px 0 0;padding:28px 20px;padding-bottom:calc(28px + env(safe-area-inset-bottom));width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
@@ -43,17 +44,18 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 .form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.5px}
 .form-select,.form-input{width:100%;border:1.5px solid var(--border);border-radius:12px;padding:13px 14px;font-size:16px;appearance:none;background:var(--surface);color:var(--text);outline:none;}
 .form-select:focus,.form-input:focus{border-color:var(--primary)}
-.form-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-top:10px;}
+.form-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:600;cursor:pointer;margin-top:10px;letter-spacing:-.01em;}
 .form-btn:active{background:var(--primary-dark)}
 .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 .summary-box{background:var(--surface);border-radius:var(--radius);padding:14px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.summary-num{font-size:26px;font-weight:700;color:var(--primary);line-height:1.1}
+.summary-num{font-size:26px;font-weight:700;color:var(--primary);line-height:1.1;letter-spacing:-.02em;}
 .summary-label{font-size:10px;color:var(--text2);margin-top:4px;font-weight:500}
 .tile-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.tile{background:var(--surface);border-radius:var(--radius);padding:20px 12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07);cursor:pointer;transition:transform .1s}
+.tile{background:var(--surface);border-radius:var(--radius);padding:18px 8px 14px;text-align:center;border:1px solid var(--border);cursor:pointer;transition:transform .1s}
 .tile:active{transform:scale(.96)}
-.tile-icon{font-size:32px;margin-bottom:8px;line-height:1}
-.tile-label{font-size:14px;font-weight:600;color:var(--text)}
+.tile-icon{width:48px;height:48px;background:var(--primary);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
+.tile-icon i{font-size:24px;color:#fff;}
+.tile-label{font-size:12px;font-weight:500;color:var(--text)}
 .alert-card{background:#fffbea;border:1.5px solid #f9ab00;border-radius:var(--radius);padding:12px 14px;margin-bottom:14px}
 .alert-title{font-size:13px;font-weight:700;color:#b06000;margin-bottom:4px}
 .alert-item{font-size:12px;color:#7a4500;padding:2px 0}
@@ -70,11 +72,11 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 @keyframes scanAnim{0%{top:20%}50%{top:78%}100%{top:20%}}
 .or-divider{text-align:center;color:var(--text3);font-size:12px;margin:12px 0;display:flex;align-items:center;gap:10px}
 .or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
-.list-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s}
+.list-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s}
 .list-item:active{background:#f8f9ff;}
 .list-item-name{font-size:17px;font-weight:700;color:var(--text)}
 .list-item-arrow{color:var(--text3);font-size:20px;flex-shrink:0}
-.badge{display:inline-block;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.01em;}
 .badge-ok{background:#e6f4ea;color:#137333}
 .badge-warn{background:#fef7e0;color:#7a4500}
 .badge-ng{background:#fce8e6;color:#c5221f}
@@ -95,7 +97,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 .numpad-btn:active{background:#e8f0fe;border-color:var(--primary)}
 .numpad-btn.del{font-size:20px;color:var(--danger)}
 .numpad-btn.zero{grid-column:span 2}
-.record-btn{width:100%;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:8px;}
+.record-btn{width:100%;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:8px;letter-spacing:-.01em;}
 .back-link{width:100%;background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:8px;text-align:center;display:block}
 .card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
 .history-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
@@ -320,12 +322,12 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 <div class="main">
   <div id="screen-home" class="screen active">
     <div class="tile-grid">
-      <div class="tile" onclick="startOperation('入庫')"><div class="tile-icon">📦</div><div class="tile-label">入庫</div></div>
-      <div class="tile" onclick="startOperation('出庫')"><div class="tile-icon">🚚</div><div class="tile-label">出庫</div></div>
-      <div class="tile" onclick="startOperation('移動')"><div class="tile-icon">🔄</div><div class="tile-label">倉庫間移動</div></div>
-      <div class="tile" onclick="showScreen('stock')"><div class="tile-icon">📊</div><div class="tile-label">在庫確認</div></div>
-      <div class="tile" onclick="startOperation('棚卸し')"><div class="tile-icon">📋</div><div class="tile-label">棚卸し</div></div>
-      <div class="tile" onclick="showScreen('replenish')" style="border:1.5px solid var(--warning);"><div class="tile-icon">🔔</div><div class="tile-label" style="color:var(--warning)">補充確認</div></div>
+      <div class="tile" onclick="startOperation('入庫')"><div class="tile-icon" style="background:#16a34a;"><i class="ti ti-package" aria-hidden="true"></i></div><div class="tile-label">入庫</div></div>
+      <div class="tile" onclick="startOperation('出庫')"><div class="tile-icon" style="background:#ea580c;"><i class="ti ti-truck" aria-hidden="true"></i></div><div class="tile-label">出庫</div></div>
+      <div class="tile" onclick="startOperation('移動')"><div class="tile-icon" style="background:#4f46e5;"><i class="ti ti-arrows-exchange" aria-hidden="true"></i></div><div class="tile-label">倉庫間移動</div></div>
+      <div class="tile" onclick="showScreen('stock')"><div class="tile-icon" style="background:#0891b2;"><i class="ti ti-chart-bar" aria-hidden="true"></i></div><div class="tile-label">在庫確認</div></div>
+      <div class="tile" onclick="startOperation('棚卸し')"><div class="tile-icon" style="background:#6b7280;"><i class="ti ti-clipboard-list" aria-hidden="true"></i></div><div class="tile-label">棚卸し</div></div>
+      <div class="tile" onclick="showScreen('replenish')" style="border:1.5px solid #fca5a5;"><div class="tile-icon" style="background:#dc2626;"><i class="ti ti-bell" aria-hidden="true"></i></div><div class="tile-label" style="color:#dc2626;">補充確認</div></div>
     </div>
   </div>
 
@@ -501,11 +503,11 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 <div class="toast" id="toast"></div>
 
 <div class="bnav">
-  <div class="bnav-item active" onclick="showScreen('home')" id="nav-home" style="min-width:60px;"><div class="bnav-icon">🏠</div>ホーム</div>
+  <div class="bnav-item active" onclick="showScreen('home')" id="nav-home" style="min-width:60px;"><i class="ti ti-home bnav-icon" aria-hidden="true"></i>ホーム</div>
   <div id="nav-session" style="flex:1;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:6px 10px 10px;display:none;flex-direction:column;align-items:center;justify-content:center;">
     <div style="font-size:14px;font-weight:600;color:var(--text);" id="bnav-staff"></div>
   </div>
-  <div class="bnav-item" onclick="showScreen('master')" id="nav-master" style="min-width:60px;"><div class="bnav-icon">🗂️</div>マスタ</div>
+  <div class="bnav-item" onclick="showScreen('master')" id="nav-master" style="min-width:60px;"><i class="ti ti-layout-grid bnav-icon" aria-hidden="true"></i>マスタ</div>
 </div>
 
 </div>
