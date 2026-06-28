@@ -31,11 +31,11 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 .session-change{font-size:11px;text-decoration:underline;cursor:pointer;opacity:.85;white-space:nowrap}
 .main{flex:1;overflow-y:auto;padding:16px;padding-bottom:80px;}
 .screen{display:none}.screen.active{display:block}
-.bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);position:sticky;bottom:0;z-index:50;}
+.bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);position:sticky;bottom:0;z-index:100;}
 .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0 10px;font-size:10px;color:var(--text3);cursor:pointer;gap:2px;}
 .bnav-item.active{color:var(--primary)}
 .bnav-icon{font-size:24px;line-height:1}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay{position:fixed;inset:0 0 60px 0;background:rgba(0,0,0,.55);z-index:40;display:none;align-items:flex-end;justify-content:center;}
 .modal-overlay.show{display:flex;}
 .modal{background:var(--surface);border-radius:24px 24px 0 0;padding:28px 20px;padding-bottom:calc(28px + env(safe-area-inset-bottom));width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
 .modal-title{font-size:20px;font-weight:700;margin-bottom:20px;color:var(--text)}
@@ -123,7 +123,10 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 
 <div id="modal" class="modal-overlay">
   <div class="modal">
-    <div class="modal-title" id="modal-title">作業設定</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div class="modal-title" style="margin-bottom:0;" id="modal-title">作業設定</div>
+      <button onclick="closeModal()" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--text3);line-height:1;padding:0 0 0 8px;">✕</button>
+    </div>
     <div class="form-group">
       <label class="form-label">担当者名</label>
       <input id="inp-staff" class="form-input" type="text" placeholder="名前を入力">
@@ -308,7 +311,8 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 <div class="header">
   <button class="back-btn hidden" id="back-btn" onclick="goBack()">‹</button>
   <div class="header-title" id="header-title">在庫管理</div>
-  <span class="header-badge hidden" id="header-sub"></span>
+  <span class="header-badge hidden" id="header-sub" style="font-size:13px;padding:5px 12px;"></span>
+  <span class="hidden" id="header-change" onclick="openModal()" style="font-size:12px;color:var(--primary);text-decoration:underline;cursor:pointer;white-space:nowrap;margin-left:4px;">変更</span>
 </div>
 
 
@@ -498,14 +502,8 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 
 <div class="bnav">
   <div class="bnav-item active" onclick="showScreen('home')" id="nav-home" style="min-width:60px;"><div class="bnav-icon">🏠</div>ホーム</div>
-  <div id="nav-session" style="flex:1;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:6px 10px 10px;display:none;flex-direction:column;justify-content:center;">
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <div>
-        <div style="font-size:13px;font-weight:600;color:var(--text);" id="bnav-warehouse"></div>
-        <div style="font-size:11px;color:var(--text2);" id="bnav-staff"></div>
-      </div>
-      <span onclick="openModal()" style="font-size:11px;color:var(--primary);text-decoration:underline;cursor:pointer;white-space:nowrap;">変更</span>
-    </div>
+  <div id="nav-session" style="flex:1;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:6px 10px 10px;display:none;flex-direction:column;align-items:center;justify-content:center;">
+    <div style="font-size:14px;font-weight:600;color:var(--text);" id="bnav-staff"></div>
   </div>
   <div class="bnav-item" onclick="showScreen('master')" id="nav-master" style="min-width:60px;"><div class="bnav-icon">🗂️</div>マスタ</div>
 </div>
@@ -594,12 +592,18 @@ function startSession(){
   session.warehouse=w;
   session.staff=s;
   localStorage.setItem('staff_name',s);
+  // ヘッダーバッジ更新
+  var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8',棚卸し:'#f9ab00'};
+  var sub=document.getElementById('header-sub');
+  var warehouseLabel=session.mode==='移動'?w+'→'+session.dest:w;
+  sub.textContent=session.mode+'-'+warehouseLabel;
+  sub.style.background=colors[session.mode]||'var(--primary)';
+  sub.classList.remove('hidden');
+  document.getElementById('header-change').classList.remove('hidden');
+
   // ボトムナビのセッション情報を更新
   var navSession=document.getElementById('nav-session');
   navSession.style.display='flex';
-  var warehouseLabel=w;
-  if(session.mode==='移動') warehouseLabel=w+' → '+session.dest;
-  document.getElementById('bnav-warehouse').textContent=warehouseLabel;
   document.getElementById('bnav-staff').textContent=s;
   closeModal();
   sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
@@ -629,7 +633,11 @@ function showScreen(name){
   if(name==='home'){
     document.getElementById('nav-home').classList.add('active');
     document.getElementById('header-sub').classList.add('hidden');
+    document.getElementById('header-change').classList.add('hidden');
     document.getElementById('back-btn').classList.add('hidden');
+    // セッション情報をリセット
+    document.getElementById('nav-session').style.display='none';
+    session.mode='';
   }else{
     document.getElementById('back-btn').classList.remove('hidden');
   }
