@@ -400,6 +400,16 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
   </div>
 
   <div id="screen-stock" class="screen">
+    <div class="breadcrumb"><span style="color:var(--text);font-weight:700;font-size:16px">カテゴリ</span></div>
+    <div id="stock-category-list"><div class="loading">読み込み中...</div></div>
+  </div>
+
+  <div id="screen-stock-items" class="screen">
+    <div class="breadcrumb">
+      <span class="breadcrumb-item" onclick="showScreen('stock')">カテゴリ</span>
+      <span class="breadcrumb-sep">›</span>
+      <span id="stock-bc-category" style="color:var(--text);font-weight:700;font-size:16px"></span>
+    </div>
     <div class="filter-bar">
       <div class="filter-btn active" onclick="filterWarehouse('all',this)">すべて</div>
       <div class="filter-btn" onclick="filterWarehouse('山科倉庫',this)">山科倉庫</div>
@@ -595,7 +605,7 @@ function startOperation(mode){
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   document.getElementById('screen-'+name).classList.add('active');
-  var titles={home:'在庫管理',operation:'入出庫',category:'商品選択',product:'商品選択',size:'サイズ選択',qty:'数量入力',stock:'在庫確認',master:'商品マスタ','inv-category':'棚卸し','inv-product':'棚卸し','inv-size':'棚卸し',inventoryQty:'棚卸し 数量入力'};
+  var titles={home:'在庫管理',operation:'入出庫',category:'商品選択',product:'商品選択',size:'サイズ選択',qty:'数量入力',stock:'在庫確認',master:'商品マスタ','stock-items':'在庫確認','inv-category':'棚卸し','inv-product':'棚卸し','inv-size':'棚卸し',inventoryQty:'棚卸し 数量入力'};
   document.getElementById('header-title').textContent=titles[name]||'';
   document.querySelectorAll('.bnav-item').forEach(function(i){i.classList.remove('active');});
   if(name==='home'){
@@ -605,12 +615,13 @@ function showScreen(name){
   }else{
     document.getElementById('back-btn').classList.remove('hidden');
   }
-  if(name==='stock') document.getElementById('nav-stock').classList.add('active');
+  if(name==='stock'||name==='stock-items') document.getElementById('nav-stock').classList.add('active');
   if(name==='operation') document.getElementById('nav-op').classList.add('active');
   if(name==='master'){document.getElementById('nav-master').classList.add('active');loadMasterAll();}
   if(name==='inv-category') loadInventoryStock();
   if(name==='category') renderCategories();
-  if(name==='stock') renderStock();
+  if(name==='stock') renderStockCategories();
+  if(name==='stock-items') renderStock();
   screenStack.push(name);
 }
 
@@ -748,22 +759,63 @@ function updateHome(){
 }
 
 var currentWarehouseFilter='all';
+var currentStockCategory='';
 function filterWarehouse(w,btn){
   currentWarehouseFilter=w;
   document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
   btn.classList.add('active');renderStock();
 }
 
+function renderStockCategories(){
+  if(summary.length===0){document.getElementById('stock-category-list').innerHTML='<div class="loading">読み込み中...</div>';return;}
+  var cats=[];
+  summary.forEach(function(item){
+    var m=master.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+    var cat=m?m['カテゴリ']:'未分類';
+    if(cats.indexOf(cat)===-1)cats.push(cat);
+  });
+  cats.sort();
+  var html='';
+  cats.forEach(function(c){
+    var count=summary.filter(function(item){
+      var m=master.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+      return (m?m['カテゴリ']:'未分類')===c;
+    }).length;
+    var oc="selectStockCategory('"+escAttr(c)+"')";
+    html+='<div class="list-item" onclick="'+oc+'">';
+    html+='<div class="list-item-name">'+c+'</div>';
+    html+='<div style="display:flex;align-items:center;gap:8px;">';
+    html+='<span style="font-size:12px;color:var(--text3);">'+count+'品</span>';
+    html+='<div class="list-item-arrow">›</div>';
+    html+='</div></div>';
+  });
+  document.getElementById('stock-category-list').innerHTML=html;
+}
+
+function selectStockCategory(cat){
+  currentStockCategory=cat;
+  document.getElementById('stock-bc-category').textContent=cat;
+  showScreen('stock-items');
+}
+
 function renderStock(){
   var el=document.getElementById('stock-list');
   if(summary.length===0){el.innerHTML='<div class="loading">読み込み中...</div>';return;}
-  el.innerHTML=summary.map(function(item){
+  var filtered=summary.filter(function(item){
+    if(!currentStockCategory) return true;
+    var m=master.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+    return (m?m['カテゴリ']:'未分類')===currentStockCategory;
+  });
+  if(filtered.length===0){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">該当なし</div>';return;}
+  var html='';
+  filtered.forEach(function(item){
     var y=parseFloat(item['山科倉庫_在庫'])||0,s=parseFloat(item['創造社倉庫_在庫'])||0,o=parseFloat(item['事務所_在庫'])||0;
     var q=currentWarehouseFilter==='all'?y+s+o:currentWarehouseFilter==='山科倉庫'?y:currentWarehouseFilter==='創造社倉庫'?s:o;
     var st=item['ステータス']||'正常';
     var bc=st==='欠品'?'badge-ng':st==='要補充'?'badge-warn':'badge-ok';
-    return '<div class="list-item" style="cursor:default"><div style="flex:1"><div class="list-item-name">'+(item['商品名']||'')+' '+(item['サイズ']||'')+'</div></div><div style="text-align:right"><div style="font-size:20px;font-weight:700">'+q+'</div><span class="badge '+bc+'">'+st+'</span></div></div>';
-  }).join('');
+    html+='<div class="list-item" style="cursor:default"><div style="flex:1"><div class="list-item-name">'+(item['商品名']||'')+' '+(item['サイズ']||'')+'</div></div><div style="text-align:right"><div style="font-size:20px;font-weight:700">'+q+'</div><span class="badge '+bc+'">'+st+'</span></div></div>';
+  });
+  el.innerHTML=html;
 }
 
 function showToast(msg){
