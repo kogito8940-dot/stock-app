@@ -793,11 +793,14 @@ function renderInvCategories() {
     if (cats.indexOf(p['カテゴリ']) === -1) cats.push(p['カテゴリ']);
   });
   cats.sort();
-  document.getElementById('inv-category-list').innerHTML = cats.map(function(c) {
-    return '<div class="list-item" onclick="invSelectCategory('' + escAttr(c) + '')">' +
-      '<div class="list-item-name">' + c + '</div>' +
-      '<div class="list-item-arrow">›</div></div>';
-  }).join('');
+  var html = '';
+  cats.forEach(function(c) {
+    var oc = "invSelectCategory('" + escAttr(c) + "')";
+    html += '<div class="list-item" onclick="' + oc + '">';
+    html += '<div class="list-item-name">' + c + '</div>';
+    html += '<div class="list-item-arrow">›</div></div>';
+  });
+  document.getElementById('inv-category-list').innerHTML = html;
 }
 
 function invSelectCategory(cat) {
@@ -812,11 +815,14 @@ function renderInvProducts(cat) {
   var names = [];
   master.filter(function(p) { return p['カテゴリ'] === cat; })
     .forEach(function(p) { if (names.indexOf(p['商品名']) === -1) names.push(p['商品名']); });
-  document.getElementById('inv-product-list').innerHTML = names.map(function(name) {
-    return '<div class="list-item" onclick="invSelectProduct('' + escAttr(name) + '')">' +
-      '<div class="list-item-name">' + name + '</div>' +
-      '<div class="list-item-arrow">›</div></div>';
-  }).join('');
+  var html = '';
+  names.forEach(function(name) {
+    var oc = "invSelectProduct('" + escAttr(name) + "')";
+    html += '<div class="list-item" onclick="' + oc + '">';
+    html += '<div class="list-item-name">' + name + '</div>';
+    html += '<div class="list-item-arrow">›</div></div>';
+  });
+  document.getElementById('inv-product-list').innerHTML = html;
 }
 
 function invSelectProduct(name) {
@@ -829,18 +835,21 @@ function invSelectProduct(name) {
 
 function renderInvSizes(cat, name) {
   var items = master.filter(function(p) { return p['カテゴリ'] === cat && p['商品名'] === name; });
-  document.getElementById('inv-size-list').innerHTML = items.map(function(item) {
+  var html = '';
+  items.forEach(function(item) {
     var stock = inventoryStock.find(function(s) { return s.SKU_ID === item['SKU_ID']; });
     var sysQty = stock ? stock['在庫数'] : 0;
     var done = invRecordedSizes.indexOf(item['SKU_ID']) !== -1;
-    return '<div class="list-item" onclick="selectInvProduct('' + escAttr(item['SKU_ID']) + '')">' +
-      '<div style="flex:1">' +
-        '<div class="list-item-name">' + String(item['サイズ']) + '</div>' +
-        '<div style="font-size:12px;color:var(--text2);">システム在庫: ' + sysQty + item['単位'] + '</div>' +
-      '</div>' +
-      (done ? '<span class="badge badge-done">記録済</span>' : '<div class="list-item-arrow">›</div>') +
-    '</div>';
-  }).join('');
+    var onclick = "selectInvProduct('" + escAttr(item['SKU_ID']) + "')";
+    html += '<div class="list-item" onclick="' + onclick + '">' ;
+    html += '<div style="flex:1">';
+    html += '<div class="list-item-name">' + String(item['サイズ']) + '</div>';
+    html += '<div style="font-size:12px;color:var(--text2);">システム在庫: ' + sysQty + item['単位'] + '</div>';
+    html += '</div>';
+    html += done ? '<span class="badge badge-done">記録済</span>' : '<div class="list-item-arrow">›</div>';
+    html += '</div>';
+  });
+  document.getElementById('inv-size-list').innerHTML = html;
 }
 
 function selectInvProduct(skuId) {
