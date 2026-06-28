@@ -746,16 +746,15 @@ async function onScanSuccess(code){
       return;
     }
     var item=json.data;
-    // 商品が見つかったらSKU選択へ
+    // SKU_IDが確定しているので直接数量入力へ
     currentCategory=item['カテゴリ'];
     currentProductName=item['商品名'];
     recordedSizes=[];
     document.getElementById('bc-category').textContent=item['カテゴリ'];
     document.getElementById('bc-category2').textContent=item['カテゴリ'];
     document.getElementById('bc-product').textContent=item['商品名'];
-    renderSizes(item['カテゴリ'],item['商品名']);
-    showScreen('size');
-    showToast('✅ '+item['商品名']+' '+item['サイズ']);
+    showToast('✅ '+item['商品名']+' '+String(item['サイズ']));
+    selectSku(item['SKU_ID'], item['商品名'], String(item['サイズ']), item['単位']);
   }catch(e){
     showToast('❌ 検索エラー');
   }
