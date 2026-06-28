@@ -1090,7 +1090,7 @@ function renderHistoryList(){
         '<span style="margin-left:auto;font-size:16px;font-weight:700;color:'+qtyColor+';">'+qtyStr+' '+r['単位']+'</span>'+
       '</div>'+
       (canCancel?
-        '<button onclick="openCancelLogModal(\"'+logIdSafe+'\",\"'+skuSafe+'\",\"'+typeSafe+'\",\"'+warehouseSafe+'\",\"'+destSafe+'\",\"'+staffSafe+'\",'+qtyVal+')" '+
+        '<button data-log-id="'+logIdSafe+'" data-sku-id="'+skuSafe+'" data-type="'+typeSafe+'" data-warehouse="'+warehouseSafe+'" data-dest="'+destSafe+'" data-staff="'+staffSafe+'" data-qty="'+qtyVal+'" onclick="handleCancelBtn(this)" '+
         'style="width:100%;margin-top:10px;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;">'+
         '取消する</button>':
         '')+
@@ -1098,6 +1098,17 @@ function renderHistoryList(){
   });
 
   document.getElementById('history-log-list').innerHTML=html;
+}
+
+function handleCancelBtn(btn){
+  var logId=btn.dataset.logId;
+  var skuId=btn.dataset.skuId;
+  var type=btn.dataset.type;
+  var warehouse=btn.dataset.warehouse;
+  var dest=btn.dataset.dest;
+  var staff=btn.dataset.staff;
+  var qty=Number(btn.dataset.qty);
+  openCancelLogModal(logId,skuId,type,warehouse,dest,staff,qty);
 }
 
 function openCancelLogModal(logId,skuId,type,warehouse,dest,staff,qty){
