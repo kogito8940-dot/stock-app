@@ -164,6 +164,7 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
           <option>創造社倉庫</option>
           <option>事務所</option>
         </select>
+        <!-- 倉庫リストは buildWarehouseSelects で動的更新 -->
         <div style="background:#f0f6ff;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--text2);line-height:1.8;">
           記録されるログ：<br>
           <span style="color:var(--success);font-weight:600;">① 入庫</span>　入庫倉庫 +N<br>
@@ -284,6 +285,10 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
     <div class="form-group">
       <label class="form-label">備考</label>
       <input id="edit-note" class="form-input" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">倉庫別 最低在庫数</label>
+      <div id="edit-minstock-warehouses" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"></div>
     </div>
     <button class="form-btn" id="edit-master-btn" onclick="submitEditMaster()">更新する</button>
   </div>
@@ -506,16 +511,30 @@ body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);backgr
 </div>
 <script>
 const API='https://script.google.com/macros/s/AKfycbz2K9_frpjl7gXnl4jMcqSNIt4Yupx-SYcVJHiM6Wtb0gFsRlgmNLlBy06Xz7TnOPgx/exec';
-let master=[],summary=[],session={warehouse:'',dest:'',staff:'',mode:'',reason:'',immediateDest:''},currentQty='',currentProduct=null,currentCategory='',currentProductName='',sessionHistory=[],recordedSizes=[],screenStack=[];
+let master=[],summary=[],warehouses=[],minStockData=[],session={warehouse:'',dest:'',staff:'',mode:'',reason:'',immediateDest:''},currentQty='',currentProduct=null,currentCategory='',currentProductName='',sessionHistory=[],recordedSizes=[],screenStack=[];
 
 async function loadData(){
   try{
-    const [m,s]=await Promise.all([
+    const [m,s,w,ms]=await Promise.all([
       fetch(API+'?action=getMaster').then(r=>r.json()),
-      fetch(API+'?action=getSummary').then(r=>r.json())
+      fetch(API+'?action=getSummary').then(r=>r.json()),
+      fetch(API+'?action=getWarehouseMaster').then(r=>r.json()),
+      fetch(API+'?action=getMinStockMaster').then(r=>r.json()),
     ]);
-    master=m;summary=s;updateHome();
+    master=m;summary=s;
+    warehouses=w.data||[];
+    minStockData=ms.data||[];
+    buildWarehouseSelects();
+    updateHome();
   }catch(e){showToast('データ読み込みエラー');}
+}
+
+function buildWarehouseSelects(){
+  var opts=warehouses.map(function(w){return '<option>'+w['倉庫名']+'</option>';}).join('');
+  ['sel-warehouse','sel-dest','sel-immediate-dest'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.innerHTML=opts;
+  });
 }
 
 window.onload=function(){
@@ -1159,6 +1178,20 @@ function openEditMasterModal(skuId){
   document.getElementById('edit-barcode').value=item['バーコード種別']||'QR';
   document.getElementById('edit-note').value=item['備考']||'';
 
+  // 倉庫別最低在庫数を表示
+  var minStockDiv=document.getElementById('edit-minstock-warehouses');
+  minStockDiv.innerHTML='';
+  warehouses.forEach(function(w){
+    var ms=minStockData.find(function(r){return r['SKU_ID']===skuId&&r['倉庫ID']===w['倉庫ID'];});
+    var val=ms?ms['最低在庫数']:0;
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;';
+    row.innerHTML='<span style="flex:1;font-size:13px;color:var(--text2)">'+w['倉庫名']+'</span>'+
+      '<input type="number" min="0" value="'+val+'" data-warehouse-id="'+w['倉庫ID']+'" data-sku-id="'+skuId+'" '+
+      'style="width:80px;padding:8px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;text-align:right;">';
+    minStockDiv.appendChild(row);
+  });
+
   document.getElementById('editMasterModal').classList.add('show');
 }
 
@@ -1194,6 +1227,21 @@ async function submitEditMaster(){
     const json=await res.json();
     if(!json.success)throw new Error(json.message);
     showToast('✅ 更新しました');
+    // 倉庫別最低在庫数を保存
+    var inputs=document.querySelectorAll('#edit-minstock-warehouses input');
+    for(var i=0;i<inputs.length;i++){
+      var inp=inputs[i];
+      await fetch(API,{method:'POST',body:JSON.stringify({
+        action:'updateMinStock',
+        SKU_ID:inp.dataset.skuId,
+        倉庫ID:inp.dataset.warehouseId,
+        最低在庫数:Number(inp.value)||0
+      })});
+    }
+    // minStockDataを再取得
+    var msRes=await fetch(API+'?action=getMinStockMaster');
+    var msJson=await msRes.json();
+    minStockData=msJson.data||[];
     closeEditMasterModal();
     await loadMasterAll();
     await loadData();
