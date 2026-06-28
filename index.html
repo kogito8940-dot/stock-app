@@ -1593,9 +1593,10 @@ async function submitEditMaster(){
   var size=document.getElementById('edit-size').value.trim();
   var unit=document.getElementById('edit-unit').value;
   var type=document.getElementById('edit-type').value;
-  var minstock=document.getElementById('edit-minstock').value;
-  var barcode=document.getElementById('edit-barcode').value;
-  var note=document.getElementById('edit-note').value.trim();
+  var barcode=document.getElementById('edit-barcode')?document.getElementById('edit-barcode').value:'QR';
+  var note=document.getElementById('edit-note')?document.getElementById('edit-note').value.trim():'';
+  var barcodeNumEl=document.getElementById('edit-barcode-number');
+  var barcodeNum=barcodeNumEl?barcodeNumEl.value.trim():'';
 
   if(!cat||!name||!size){showToast('カテゴリ・商品名・サイズは必須です');return;}
 
