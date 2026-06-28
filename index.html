@@ -211,21 +211,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       <div class="form-group" style="flex:1">
         <label class="form-label">商品区分 *</label>
         <select id="add-type" class="form-select">
-          <option>輸入品</option><option>小分け品</option><option>副資材</option><option>仕入品</option>
+          <option>輸入品</option><option>小分け品</option><option>仕入品</option>
         </select>
       </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <div class="form-group" style="flex:1">
-        <label class="form-label">最低在庫数</label>
-        <input id="add-minstock" class="form-input" type="number" value="0" min="0">
-      </div>
-      <div class="form-group" style="flex:1">
-        <label class="form-label">バーコード</label>
-        <select id="add-barcode" class="form-select">
-          <option>QR</option><option>JAN</option><option>なし</option>
-        </select>
-      </div>
+    <div class="form-group">
+      <label class="form-label">バーコード</label>
+      <select id="add-barcode" class="form-select">
+        <option>QR</option><option>JAN</option><option>なし</option>
+      </select>
     </div>
     <div class="form-group">
       <label class="form-label">備考</label>
@@ -279,17 +273,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
         </select>
       </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <div class="form-group" style="flex:1">
-        <label class="form-label">最低在庫数</label>
-        <input id="edit-minstock" class="form-input" type="number" min="0">
-      </div>
-      <div class="form-group" style="flex:1">
-        <label class="form-label">バーコード</label>
-        <select id="edit-barcode" class="form-select">
-          <option>QR</option><option>JAN</option><option>なし</option>
-        </select>
-      </div>
+    <div class="form-group">
+      <label class="form-label">バーコード</label>
+      <select id="edit-barcode" class="form-select">
+        <option>QR</option><option>JAN</option><option>なし</option>
+      </select>
     </div>
     <div class="form-group">
       <label class="form-label">備考</label>
@@ -1571,7 +1559,7 @@ function openEditMasterModal(skuId){
   document.getElementById('edit-size').value=String(item['サイズ']||'');
   document.getElementById('edit-unit').value=item['単位']||'袋';
   document.getElementById('edit-type').value=item['商品区分']||'仕入品';
-  document.getElementById('edit-minstock').value=item['最低在庫数']||0;
+
   document.getElementById('edit-barcode').value=item['バーコード種別']||'QR';
   document.getElementById('edit-note').value=item['備考']||'';
   document.getElementById('edit-barcode-number').value=item['バーコード番号']||'';
@@ -1619,7 +1607,7 @@ async function submitEditMaster(){
       action:'updateMaster',
       SKU_ID:editTarget,
       カテゴリ:cat,商品名:name,サイズ:size,単位:unit,
-      商品区分:type,最低在庫数:minstock,
+      商品区分:type,
       バーコード種別:barcode,備考:note,バーコード番号:barcodeNum
     })});
     const json=await res.json();
@@ -1671,7 +1659,7 @@ async function submitAddMaster(){
   var btn=document.getElementById('add-master-btn');
   btn.disabled=true;btn.textContent='登録中...';
   try{
-    const res=await fetch(API,{method:'POST',body:JSON.stringify({action:'addMaster',カテゴリ:cat,商品名:name,サイズ:size,単位:unit,商品区分:type,最低在庫数:minstock,バーコード種別:barcode,備考:note,バーコード番号:barcodeNum})});
+    const res=await fetch(API,{method:'POST',body:JSON.stringify({action:'addMaster',カテゴリ:cat,商品名:name,サイズ:size,単位:unit,商品区分:type,バーコード種別:barcode,備考:note,バーコード番号:barcodeNum})});
     const json=await res.json();
     if(!json.success)throw new Error(json.message);
     showToast('✅ 登録しました：'+json.skuId);
