@@ -1357,12 +1357,12 @@ function printInventoryList(){
     'h1{font-size:16px;margin-bottom:4px;}'+
     '.meta{font-size:11px;color:#666;margin-bottom:16px;}'+
     '.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}'+
-    'table{width:100%;border-collapse:collapse;margin-bottom:4px;}'+
-    'th{background:#f3f4f6;padding:6px 8px;text-align:left;border:1px solid #d1d5db;font-weight:600;font-size:11px;}'+
-    'td{padding:6px 8px;border:1px solid #d1d5db;}'+
+    'table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}'+
+    'th{background:#f3f4f6;padding:7px 10px;text-align:left;border-bottom:2px solid #d1d5db;font-weight:600;font-size:11px;color:#6b7280;}'+
+    'td{padding:7px 10px;border-bottom:1px solid #e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'+
     'tr:nth-child(even){background:#f9fafb;}'+
-    '.check-col{width:80px;text-align:center;}'+
-    '.qty-col{width:60px;text-align:right;}'+
+    '.check-col{text-align:center;border:1px solid #d1d5db;}'+
+    '.qty-col{text-align:right;}'+
     '@media print{body{padding:8px;}@page{margin:10mm;size:A4;}'+
     '.category{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'+
     '</style></head><body>'+
@@ -1372,16 +1372,21 @@ function printInventoryList(){
   Object.keys(grouped).sort().forEach(function(cat){
     var items=grouped[cat];
     html+='<div class="category">'+cat+'</div>';
-    html+='<table><tr>'+
-      '<th>商品名</th><th>サイズ</th><th>単位</th>'+
-      '<th class="qty-col">システム在庫</th>'+
-      '<th class="check-col">実数</th>'+
-    '</tr>';
+    html+='<table>'+
+      '<colgroup>'+
+        '<col style="width:35%"><col style="width:20%"><col style="width:10%">'+
+        '<col style="width:15%"><col style="width:20%">'+
+      '</colgroup>'+
+      '<tr>'+
+        '<th>商品名</th><th>サイズ</th><th style="text-align:center;">単位</th>'+
+        '<th class="qty-col">システム在庫</th>'+
+        '<th class="check-col">実数記入</th>'+
+      '</tr>';
     items.forEach(function(item){
       html+='<tr>'+
-        '<td>'+item['商品名']+'</td>'+
+        '<td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+item['商品名']+'</td>'+
         '<td>'+item['サイズ']+'</td>'+
-        '<td>'+item['単位']+'</td>'+
+        '<td style="text-align:center;">'+item['単位']+'</td>'+
         '<td class="qty-col">'+item['在庫数']+'</td>'+
         '<td class="check-col"></td>'+
       '</tr>';
