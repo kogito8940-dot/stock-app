@@ -1618,7 +1618,13 @@ async function loadMasterAll(){
     const res=await fetch(API+'?action=getMasterAll');
     const json=await res.json();
     masterAll=json.data||json;
+    // カテゴリフィルターの現在値を保持
+    var savedFilter=document.getElementById('masterCatFilter')?document.getElementById('masterCatFilter').value:'';
     populateCategorySelects();
+    // フィルター値を復元
+    if(savedFilter&&document.getElementById('masterCatFilter')){
+      document.getElementById('masterCatFilter').value=savedFilter;
+    }
     renderMasterList();
   }catch(e){
     document.getElementById('master-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--danger)">読み込み失敗</div>';
@@ -1896,11 +1902,6 @@ async function submitAddMaster(){
     closeAddMasterModal();
     ['add-name','add-size','add-note'].forEach(function(id){document.getElementById(id).value='';});
     document.getElementById('add-category').value='';
-    // カテゴリフィルターを先にセット（loadMasterAll内のrenderMasterListに反映させる）
-    if(savedCat){
-      var catSel=document.getElementById('masterCatFilter');
-      if(catSel) catSel.value=savedCat;
-    }
     await loadMasterAll();
     await loadData();
   }catch(e){
