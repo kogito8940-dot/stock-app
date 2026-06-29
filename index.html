@@ -448,7 +448,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 
     <div id="screen-inv-category" class="screen">
-    <div class="breadcrumb"><span style="color:var(--text);font-weight:700;font-size:16px">カテゴリ</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div class="breadcrumb" style="margin-bottom:0;"><span style="color:var(--text);font-weight:700;font-size:16px">カテゴリ</span></div>
+      <button onclick="printInventoryList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+        <i class="ti ti-printer" style="margin-right:4px;" aria-hidden="true"></i>PDF出力
+      </button>
+    </div>
     <div id="inv-category-list"><div class="loading">読み込み中...</div></div>
   </div>
 
@@ -1318,6 +1323,78 @@ async function loadInventoryStock() {
   } catch(e) {
     document.getElementById('inv-category-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger)">読み込み失敗</div>';
   }
+}
+
+function printInventoryList(){
+  var wName=session.warehouse;
+  var colMap={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'};
+  var stockKey=colMap[wName]||(wName+'_在庫');
+
+  var now=new Date();
+  var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+
+  // カテゴリ別にグループ化
+  var grouped={};
+  master.forEach(function(p){
+    var cat=p['カテゴリ']||'未分類';
+    if(!grouped[cat]) grouped[cat]=[];
+    // 在庫数を取得
+    var stockItem=inventoryStock.find(function(s){return s.SKU_ID===p['SKU_ID'];});
+    var sysQty=stockItem?stockItem['在庫数']:0;
+    grouped[cat].push({
+      商品名:p['商品名'],
+      サイズ:String(p['サイズ']),
+      単位:p['単位'],
+      SKU_ID:p['SKU_ID'],
+      在庫数:sysQty
+    });
+  });
+
+  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">'+
+    '<title>棚卸しリスト - '+wName+'</title>'+
+    '<style>'+
+    'body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;padding:20px;color:#111;font-size:12px;}'+
+    'h1{font-size:16px;margin-bottom:4px;}'+
+    '.meta{font-size:11px;color:#666;margin-bottom:16px;}'+
+    '.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}'+
+    'table{width:100%;border-collapse:collapse;margin-bottom:4px;}'+
+    'th{background:#f3f4f6;padding:6px 8px;text-align:left;border:1px solid #d1d5db;font-weight:600;font-size:11px;}'+
+    'td{padding:6px 8px;border:1px solid #d1d5db;}'+
+    'tr:nth-child(even){background:#f9fafb;}'+
+    '.check-col{width:80px;text-align:center;}'+
+    '.qty-col{width:60px;text-align:right;}'+
+    '@media print{body{padding:8px;}@page{margin:10mm;size:A4;}'+
+    '.category{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'+
+    '</style></head><body>'+
+    '<h1>棚卸しリスト</h1>'+
+    '<div class="meta">倉庫：'+wName+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>';
+
+  Object.keys(grouped).sort().forEach(function(cat){
+    var items=grouped[cat];
+    html+='<div class="category">'+cat+'</div>';
+    html+='<table><tr>'+
+      '<th>商品名</th><th>サイズ</th><th>単位</th>'+
+      '<th class="qty-col">システム在庫</th>'+
+      '<th class="check-col">実数</th>'+
+    '</tr>';
+    items.forEach(function(item){
+      html+='<tr>'+
+        '<td>'+item['商品名']+'</td>'+
+        '<td>'+item['サイズ']+'</td>'+
+        '<td>'+item['単位']+'</td>'+
+        '<td class="qty-col">'+item['在庫数']+'</td>'+
+        '<td class="check-col"></td>'+
+      '</tr>';
+    });
+    html+='</table>';
+  });
+
+  html+='</body></html>';
+
+  var win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  win.print();
 }
 
 function renderInvCategories() {
