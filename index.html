@@ -1371,6 +1371,11 @@ function printInventoryList(){
     });
   });
 
+  // カテゴリ内をアルファベット→日本語（五十音順）にソート
+  Object.keys(grouped).forEach(function(cat){
+    grouped[cat].sort(function(a,b){return jaSort(a['商品名'],b['商品名']);});
+  });
+
   var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">'+
     '<title>棚卸しリスト - '+wName+'</title>'+
     '<style>'+
