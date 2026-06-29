@@ -1900,7 +1900,7 @@ async function submitAddMaster(){
     await loadData();
     // カテゴリフィルターを復元
     if(savedCat){
-      var catSel=document.getElementById('master-category-filter');
+      var catSel=document.getElementById('masterCatFilter');
       if(catSel) catSel.value=savedCat;
       renderMasterList();
     }
