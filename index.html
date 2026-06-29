@@ -451,7 +451,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div class="breadcrumb" style="margin-bottom:0;"><span style="color:var(--text);font-weight:700;font-size:16px">カテゴリ</span></div>
       <button onclick="printInventoryList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
-        <i class="ti ti-printer" style="margin-right:4px;" aria-hidden="true"></i>PDF出力
+        <i class="ti ti-printer" style="margin-right:4px;" aria-hidden="true"></i>棚卸表PDF出力
       </button>
     </div>
     <div id="inv-category-list"><div class="loading">読み込み中...</div></div>
@@ -1341,7 +1341,8 @@ function printInventoryList(){
       return r['SKU_ID']===p['SKU_ID']&&r['倉庫名']===wName;
     });
     var minStock=ms?parseFloat(ms['最低在庫数'])||0:0;
-    if(minStock===0) return; // 最低在庫数0は除外
+    // 小分け品は最低在庫数0なら除外、それ以外の商品区分は常に含める
+    if(minStock===0&&p['商品区分']==='小分け品') return;
 
     var cat=p['カテゴリ']||'未分類';
     if(!grouped[cat]) grouped[cat]=[];
