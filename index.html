@@ -1196,24 +1196,8 @@ function printReplenishList(){
     html+='</table>';
   }
 
-  if(shortage.length>0){
-    html+='<h2 class="shortage-title">🚨 欠品（'+shortage.length+'件）</h2>'+
-      '<table><tr><th>商品名</th><th>サイズ</th><th>現在庫</th><th>最低在庫</th><th>不足数</th><th>確認</th></tr>';
-    shortage.forEach(function(d){
-      html+='<tr>'+
-        '<td>'+(d.item['商品名']||'')+'</td>'+
-        '<td>'+(d.item['サイズ']||'')+'</td>'+
-        '<td class="shortage-num">0 '+(d.item['単位']||'')+'</td>'+
-        '<td>'+d.minStock+' '+(d.item['単位']||'')+'</td>'+
-        '<td class="shortage-num">'+d.shortage+' '+(d.item['単位']||'')+'</td>'+
-        '<td style="width:60px;"></td>'+
-      '</tr>';
-    });
-    html+='</table>';
-  }
-
-  if(reorder.length===0&&shortage.length===0){
-    html+='<div class="empty">補充が必要な商品はありません</div>';
+  if(reorder.length===0){
+    html+='<div class="empty">要補充の商品はありません</div>';
   }
 
   html+='</body></html>';
