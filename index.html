@@ -1902,7 +1902,7 @@ async function submitAddMaster(){
     if(savedCat){
       var catSel=document.getElementById('master-category-filter');
       if(catSel) catSel.value=savedCat;
-      filterMasterList();
+      renderMasterList();
     }
   }catch(e){
     showToast('❌ 登録失敗：'+e.message);
