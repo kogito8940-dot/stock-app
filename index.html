@@ -820,9 +820,18 @@ function selectCategory(cat){
   renderProducts(cat);showScreen('product');
 }
 
+function jaSort(a,b){
+  var aL=/^[A-Za-z0-9]/.test(a);
+  var bL=/^[A-Za-z0-9]/.test(b);
+  if(aL&&!bL) return -1;
+  if(!aL&&bL) return 1;
+  return a.localeCompare(b,'ja');
+}
+
 function renderProducts(cat){
   var names=[];
   master.filter(function(p){return p['カテゴリ']===cat;}).forEach(function(p){if(names.indexOf(p['商品名'])===-1)names.push(p['商品名']);});
+  names.sort(jaSort);
   document.getElementById('product-list').innerHTML=names.map(function(name){
     return '<div class="list-item" onclick="selectProduct(\''+escAttr(name)+'\')"  ><div class="list-item-name">'+name+'</div><div class="list-item-arrow">›</div></div>';
   }).join('');
@@ -1656,6 +1665,7 @@ function renderMasterList(){
     }
     return true;
   });
+  filtered.sort(function(a,b){return jaSort(a['商品名'],b['商品名']);});
   document.getElementById('masterCount').textContent=filtered.length+'件';
   if(filtered.length===0){
     document.getElementById('master-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">該当なし</div>';
