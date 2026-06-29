@@ -1896,14 +1896,13 @@ async function submitAddMaster(){
     closeAddMasterModal();
     ['add-name','add-size','add-note'].forEach(function(id){document.getElementById(id).value='';});
     document.getElementById('add-category').value='';
-    await loadMasterAll();
-    await loadData();
-    // カテゴリフィルターを復元
+    // カテゴリフィルターを先にセット（loadMasterAll内のrenderMasterListに反映させる）
     if(savedCat){
       var catSel=document.getElementById('masterCatFilter');
       if(catSel) catSel.value=savedCat;
-      renderMasterList();
     }
+    await loadMasterAll();
+    await loadData();
   }catch(e){
     showToast('❌ 登録失敗：'+e.message);
   }finally{
