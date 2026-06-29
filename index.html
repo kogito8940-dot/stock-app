@@ -1891,11 +1891,19 @@ async function submitAddMaster(){
     var msRes=await fetch(API+'?action=getMinStockMaster');
     var msJson=await msRes.json();
     minStockData=msJson.data||[];
+    // 登録前のカテゴリを保持
+    var savedCat=document.getElementById('add-category').value;
     closeAddMasterModal();
     ['add-name','add-size','add-note'].forEach(function(id){document.getElementById(id).value='';});
     document.getElementById('add-category').value='';
     await loadMasterAll();
     await loadData();
+    // カテゴリフィルターを復元
+    if(savedCat){
+      var catSel=document.getElementById('master-category-filter');
+      if(catSel) catSel.value=savedCat;
+      filterMasterList();
+    }
   }catch(e){
     showToast('❌ 登録失敗：'+e.message);
   }finally{
