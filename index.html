@@ -1359,9 +1359,9 @@ function printInventoryList(){
 
     var cat=p['カテゴリ']||'未分類';
     if(!grouped[cat]) grouped[cat]=[];
-    // 在庫数を取得
-    var stockItem=inventoryStock.find(function(s){return s.SKU_ID===p['SKU_ID'];});
-    var sysQty=stockItem?stockItem['在庫数']:0;
+    // 倉庫別在庫数を取得
+    var summaryItem=summary.find(function(s){return s['SKU_ID']===p['SKU_ID'];});
+    var sysQty=summaryItem?parseFloat(summaryItem[stockKey])||0:0;
     grouped[cat].push({
       商品名:p['商品名'],
       サイズ:String(p['サイズ']),
