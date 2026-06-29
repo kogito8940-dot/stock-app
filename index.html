@@ -1506,7 +1506,7 @@ function renderMasterList(){
             (inactive?'<span class="badge" style="background:#fef3c7;color:#92400e">廃番</span>':'')+
           '</div>'+
           '<div style="font-size:11px;color:var(--text3);font-family:monospace;margin-top:2px">'+r['SKU_ID']+'</div>'+
-          '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+r['商品区分']+'／最低'+r['最低在庫数']+r['単位']+(r['備考']?'／'+r['備考']:'')+'</div>'+
+          '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+r['商品区分']+(r['備考']?'／'+r['備考']:'')+  '</div>'+
         '</div>'+
         '<button onclick="openEditMasterModal(\''+skuSafe+'\')" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--primary);color:var(--primary);background:#fff;cursor:pointer;white-space:nowrap;margin-right:4px">編集</button>'+
         '<button onclick="openDupeMasterModal(\''+skuSafe+'\')" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid #6b7280;color:#6b7280;background:#fff;cursor:pointer;white-space:nowrap;margin-right:4px">複製</button>'+
