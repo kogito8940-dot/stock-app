@@ -1509,6 +1509,7 @@ function renderMasterList(){
           '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+r['商品区分']+'／最低'+r['最低在庫数']+r['単位']+(r['備考']?'／'+r['備考']:'')+'</div>'+
         '</div>'+
         '<button onclick="openEditMasterModal(\''+skuSafe+'\')" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--primary);color:var(--primary);background:#fff;cursor:pointer;white-space:nowrap;margin-right:4px">編集</button>'+
+        '<button onclick="openDupeMasterModal(\''+skuSafe+'\')" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid #6b7280;color:#6b7280;background:#fff;cursor:pointer;white-space:nowrap;margin-right:4px">複製</button>'+
         (inactive
           ?'<button onclick="openToggleMasterModal(\''+skuSafe+'\',\''+nameSafe+'\',\''+sizeSafe+'\',true)" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--success);color:var(--success);background:#fff;cursor:pointer;white-space:nowrap">復元</button>'
           :'<button onclick="openToggleMasterModal(\''+skuSafe+'\',\''+nameSafe+'\',\''+sizeSafe+'\',false)" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;cursor:pointer;white-space:nowrap">廃番</button>'
@@ -1519,6 +1520,37 @@ function renderMasterList(){
   document.getElementById('master-list').innerHTML=html;
 }
 
+function openDupeMasterModal(skuId){
+  var item=masterAll.find(function(r){return r['SKU_ID']===skuId;});
+  if(!item) return;
+
+  // 新規登録モーダルを開いて元商品の値を流し込む
+  openAddMasterModal();
+
+  // カテゴリをセット
+  var catSel=document.getElementById('add-category');
+  for(var i=0;i<catSel.options.length;i++){
+    if(catSel.options[i].value===item['カテゴリ']){catSel.selectedIndex=i;break;}
+  }
+  document.getElementById('add-name').value=item['商品名']||'';
+  document.getElementById('add-size').value=''; // サイズは空欄（変更前提）
+
+  // 単位をセット
+  var unitSel=document.getElementById('add-unit');
+  for(var i=0;i<unitSel.options.length;i++){
+    if(unitSel.options[i].value===item['単位']){unitSel.selectedIndex=i;break;}
+  }
+
+  // 商品区分をセット
+  var typeSel=document.getElementById('add-type');
+  for(var i=0;i<typeSel.options.length;i++){
+    if(typeSel.options[i].value===item['商品区分']){typeSel.selectedIndex=i;break;}
+  }
+
+  document.getElementById('add-note').value=item['備考']||'';
+  showToast('サイズを変更して登録してください');
+}
+
 function openAddMasterModal(){
   document.getElementById('addMasterModal').classList.add('show');
   updateSkuPreview();
@@ -1527,14 +1559,7 @@ function closeAddMasterModal(){
   document.getElementById('addMasterModal').classList.remove('show');
 }
 function updateSkuPreview(){
-  var cat=document.getElementById('add-category').value;
-  var name=document.getElementById('add-name').value;
-  var size=document.getElementById('add-size').value;
-  if(cat&&name&&size){
-    document.getElementById('sku-preview').textContent=clientSkuId(cat,name,size);
-  }else{
-    document.getElementById('sku-preview').textContent='（カテゴリ・商品名・サイズを入力）';
-  }
+  document.getElementById('sku-preview').textContent='自動採番（SKU-XXXXX）';
 }
 // ---- 商品編集 ----
 let editTarget=null;
@@ -1653,9 +1678,10 @@ async function submitAddMaster(){
   var size=document.getElementById('add-size').value.trim();
   var unit=document.getElementById('add-unit').value;
   var type=document.getElementById('add-type').value;
-  var minstock=document.getElementById('add-minstock').value;
-  var barcode=document.getElementById('add-barcode').value;
-  var note=document.getElementById('add-note').value.trim();
+  var barcode=document.getElementById('add-barcode')?document.getElementById('add-barcode').value:'QR';
+  var note=document.getElementById('add-note')?document.getElementById('add-note').value.trim():'';
+  var barcodeNumEl=document.getElementById('add-barcode-number');
+  var barcodeNum=barcodeNumEl?barcodeNumEl.value.trim():'';
   if(!cat||!name||!size){showToast('カテゴリ・商品名・サイズは必須です');return;}
   var btn=document.getElementById('add-master-btn');
   btn.disabled=true;btn.textContent='登録中...';
