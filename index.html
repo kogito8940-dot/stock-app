@@ -1333,9 +1333,16 @@ function printInventoryList(){
   var now=new Date();
   var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
 
-  // カテゴリ別にグループ化
+  // カテゴリ別にグループ化（最低在庫数が0の商品は除外）
   var grouped={};
   master.forEach(function(p){
+    // この倉庫の最低在庫数を確認
+    var ms=minStockData.find(function(r){
+      return r['SKU_ID']===p['SKU_ID']&&r['倉庫名']===wName;
+    });
+    var minStock=ms?parseFloat(ms['最低在庫数'])||0:0;
+    if(minStock===0) return; // 最低在庫数0は除外
+
     var cat=p['カテゴリ']||'未分類';
     if(!grouped[cat]) grouped[cat]=[];
     // 在庫数を取得
