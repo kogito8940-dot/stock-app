@@ -585,19 +585,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 </div>
 <script>
 const API='https://script.google.com/macros/s/AKfycbz2K9_frpjl7gXnl4jMcqSNIt4Yupx-SYcVJHiM6Wtb0gFsRlgmNLlBy06Xz7TnOPgx/exec';
-let master=[],summary=[],warehouses=[],minStockData=[],session={warehouse:'',dest:'',staff:'',mode:'',reason:'',immediateDest:''},currentQty='',currentProduct=null,currentCategory='',currentProductName='',sessionHistory=[],recordedSizes=[],screenStack=[];
+let master=[],summary=[],warehouses=[],minStockData=[],masterAll=[],session={warehouse:'',dest:'',staff:'',mode:'',reason:'',immediateDest:''},currentQty='',currentProduct=null,currentCategory='',currentProductName='',sessionHistory=[],recordedSizes=[],screenStack=[];
 
 async function loadData(){
   try{
-    const [m,s,w,ms]=await Promise.all([
+    const [m,s,w,ms,ma]=await Promise.all([
       fetch(API+'?action=getMaster').then(r=>r.json()),
       fetch(API+'?action=getSummary').then(r=>r.json()),
       fetch(API+'?action=getWarehouseMaster').then(r=>r.json()),
       fetch(API+'?action=getMinStockMaster').then(r=>r.json()),
+      fetch(API+'?action=getMasterAll').then(r=>r.json()),
     ]);
     master=m;summary=s;
     warehouses=w.data||[];
     minStockData=ms.data||[];
+    masterAll=ma.data||ma;
     buildWarehouseSelects();
     updateHome();
   }catch(e){showToast('データ読み込みエラー');}
@@ -942,17 +944,22 @@ function filterWarehouse(w,btn){
 
 function renderStockCategories(){
   if(summary.length===0){document.getElementById('stock-category-list').innerHTML='<div class="loading">読み込み中...</div>';return;}
+  // 廃番商品を除外した有効な在庫サマリ項目のみを対象にする
+  var validSummary=summary.filter(function(item){
+    var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+    return m&&(m['有効']===true||m['有効']==='TRUE');
+  });
   var cats=[];
-  summary.forEach(function(item){
-    var m=master.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+  validSummary.forEach(function(item){
+    var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     var cat=m?m['カテゴリ']:'未分類';
     if(cats.indexOf(cat)===-1)cats.push(cat);
   });
-  cats.sort();
+  cats.sort(jaSort);
   var html='';
   cats.forEach(function(c){
-    var count=summary.filter(function(item){
-      var m=master.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+    var count=validSummary.filter(function(item){
+      var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
       return (m?m['カテゴリ']:'未分類')===c;
     }).length;
     var oc="selectStockCategory('"+escAttr(c)+"')";
@@ -976,9 +983,10 @@ function renderStock(){
   var el=document.getElementById('stock-list');
   if(summary.length===0){el.innerHTML='<div class="loading">読み込み中...</div>';return;}
   var filtered=summary.filter(function(item){
+    var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+    if(!m||!(m['有効']===true||m['有効']==='TRUE'))return false; // 廃番商品を除外
     if(!currentStockCategory) return true;
-    var m=master.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
-    return (m?m['カテゴリ']:'未分類')===currentStockCategory;
+    return (m['カテゴリ']||'未分類')===currentStockCategory;
   });
   if(filtered.length===0){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">該当なし</div>';return;}
   var html='';
@@ -1628,7 +1636,7 @@ function toggleImmediateMove(){
 // 商品マスタ管理
 // ============================================================
 const CATEGORIES=['AC100','ADDITIVE','PIGMENT','蛍光PIGMENT','AC200','AC730 BASE','AC730 Liquid','Flex Metal Base','Flex Metal Liquid','ガラス繊維','ガラスチョップ','離型剤','コーティング剤','フィラー','意匠フィラー','カヤメック','シリコン','その他造形資材','洗浄剤','ツール','容器','段ボール','ビニール袋','備品','エポキシ','IBC'];
-let masterAll=[],toggleTarget=null;
+let toggleTarget=null;
 
 async function loadMasterAll(){
   try{
