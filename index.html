@@ -968,10 +968,12 @@ function switchStockWarehouse(warehouseName){
 function renderStockCategories(){
   if(summary.length===0){document.getElementById('stock-category-list').innerHTML='<div class="loading">読み込み中...</div>';return;}
   renderStockWarehouseTabs();
-  // 廃番商品を除外した有効な在庫サマリ項目のみを対象にする
+  // 廃番商品を除外した有効な在庫サマリ項目のみを対象にする（創造社倉庫選択時は小分け品も除外）
   var validSummary=summary.filter(function(item){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
-    return m&&(m['有効']===true||m['有効']==='TRUE');
+    if(!m||!(m['有効']===true||m['有効']==='TRUE'))return false;
+    if(currentWarehouseFilter==='創造社倉庫'&&m['商品区分']==='小分け品')return false;
+    return true;
   });
   var cats=[];
   validSummary.forEach(function(item){
@@ -1009,6 +1011,7 @@ function renderStock(){
   var filtered=summary.filter(function(item){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!m||!(m['有効']===true||m['有効']==='TRUE'))return false; // 廃番商品を除外
+    if(currentWarehouseFilter==='創造社倉庫'&&m['商品区分']==='小分け品')return false; // 創造社倉庫は小分け品を取り扱わない
     if(!currentStockCategory) return true;
     return (m['カテゴリ']||'未分類')===currentStockCategory;
   });
@@ -1024,6 +1027,7 @@ function renderStock(){
   el.innerHTML=html;
 }
 
+
 function printStockList(){
   var wFilter=currentWarehouseFilter; // 'all' | '山科倉庫' | '創造社倉庫' | '事務所'
   var colMap={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'};
@@ -1037,6 +1041,7 @@ function printStockList(){
   summary.forEach(function(item){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!m||!(m['有効']===true||m['有効']==='TRUE')) return; // 廃番除外
+    if(wFilter==='創造社倉庫'&&m['商品区分']==='小分け品') return; // 創造社倉庫は小分け品を取り扱わない
     if(currentStockCategory&&(m['カテゴリ']||'未分類')!==currentStockCategory) return;
 
     var cat=m['カテゴリ']||'未分類';
@@ -1073,6 +1078,7 @@ function printStockList(){
     'h1{font-size:16px;margin-bottom:4px;}'+
     '.meta{font-size:11px;color:#666;margin-bottom:16px;}'+
     '.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}'+
+    '.notice{font-size:11px;color:#92400e;background:#fef3c7;padding:6px 10px;border-radius:4px;margin-bottom:12px;}'+
     'table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}'+
     'th{background:#f3f4f6;padding:7px 8px;text-align:left;border-bottom:2px solid #d1d5db;font-weight:600;font-size:11px;color:#6b7280;}'+
     'td{padding:7px 8px;border-bottom:1px solid #e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'+
@@ -1082,10 +1088,12 @@ function printStockList(){
     '.status-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-weight:700;font-size:10px;}'+
     '@media print{body{padding:8px;}@page{margin:10mm;size:A4;}'+
     '.category{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
+    '.notice{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
     '.status-badge{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'+
     '</style></head><body>'+
     '<h1>在庫確認リスト</h1>'+
-    '<div class="meta">倉庫：'+wLabel+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>';
+    '<div class="meta">倉庫：'+wLabel+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>'+
+    (wFilter==='創造社倉庫'?'<div class="notice">※小分け品はリストから除外されています</div>':'');
 
   var catKeys=Object.keys(grouped).sort(jaSort);
 
@@ -1484,6 +1492,9 @@ function printInventoryList(){
   // カテゴリ別にグループ化（最低在庫数が0の商品は除外）
   var grouped={};
   master.forEach(function(p){
+    // 創造社倉庫は小分け品を取り扱わない
+    if(wName==='創造社倉庫'&&p['商品区分']==='小分け品') return;
+
     // この倉庫の最低在庫数を確認
     var ms=minStockData.find(function(r){
       return r['SKU_ID']===p['SKU_ID']&&r['倉庫名']===wName;
@@ -1518,6 +1529,7 @@ function printInventoryList(){
     'h1{font-size:16px;margin-bottom:4px;}'+
     '.meta{font-size:11px;color:#666;margin-bottom:16px;}'+
     '.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}'+
+    '.notice{font-size:11px;color:#92400e;background:#fef3c7;padding:6px 10px;border-radius:4px;margin-bottom:12px;}'+
     'table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}'+
     'th{background:#f3f4f6;padding:7px 8px;text-align:left;border-bottom:2px solid #d1d5db;font-weight:600;font-size:11px;color:#6b7280;}'+
     'td{padding:7px 8px;border-bottom:1px solid #e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'+
@@ -1526,10 +1538,12 @@ function printInventoryList(){
     '.total-col{text-align:center;border-left:2px solid #9ca3af;background:#fefce8;width:10%;}'+
     '.qty-col{text-align:right;width:11%;}'+
     '@media print{body{padding:8px;}@page{margin:10mm;size:A4;}'+
-    '.category{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'+
+    '.category{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
+    '.notice{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'+
     '</style></head><body>'+
     '<h1>棚卸しリスト</h1>'+
-    '<div class="meta">倉庫：'+wName+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>';
+    '<div class="meta">倉庫：'+wName+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>'+
+    (wName==='創造社倉庫'?'<div class="notice">※小分け品はリストから除外されています</div>':'');
 
   Object.keys(grouped).sort().forEach(function(cat){
     var items=grouped[cat];
@@ -1569,6 +1583,7 @@ function printInventoryList(){
 function renderInvCategories() {
   var cats = [];
   master.forEach(function(p) {
+    if (session.warehouse === '創造社倉庫' && p['商品区分'] === '小分け品') return; // 創造社倉庫は小分け品を取り扱わない
     if (cats.indexOf(p['カテゴリ']) === -1) cats.push(p['カテゴリ']);
   });
   cats.sort();
@@ -1592,7 +1607,7 @@ function invSelectCategory(cat) {
 
 function renderInvProducts(cat) {
   var names = [];
-  master.filter(function(p) { return p['カテゴリ'] === cat; })
+  master.filter(function(p) { return p['カテゴリ'] === cat && !(session.warehouse === '創造社倉庫' && p['商品区分'] === '小分け品'); })
     .forEach(function(p) { if (names.indexOf(p['商品名']) === -1) names.push(p['商品名']); });
   var html = '';
   names.forEach(function(name) {
@@ -1613,7 +1628,7 @@ function invSelectProduct(name) {
 }
 
 function renderInvSizes(cat, name) {
-  var items = master.filter(function(p) { return p['カテゴリ'] === cat && p['商品名'] === name; });
+  var items = master.filter(function(p) { return p['カテゴリ'] === cat && p['商品名'] === name && !(session.warehouse === '創造社倉庫' && p['商品区分'] === '小分け品'); });
   var html = '';
   items.forEach(function(item) {
     var stock = inventoryStock.find(function(s) { return s.SKU_ID === item['SKU_ID']; });
