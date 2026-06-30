@@ -343,6 +343,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
+<div id="categoryManageModal" class="modal-overlay">
+  <div class="modal" style="border-radius:24px;max-width:380px;margin:auto;padding:24px 20px;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" style="margin-bottom:0;">カテゴリ管理</div>
+      <button onclick="closeCategoryManageModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3);">✕</button>
+    </div>
+    <div id="category-manage-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px;">新しいカテゴリを作成</div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="new-category-name" placeholder="カテゴリ名を入力" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;">
+        <button onclick="createNewCategory()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">追加</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5;">※新規カテゴリは商品登録画面のカテゴリ選択肢に追加されます。実際に商品が登録されるまで一覧画面には表示されません。</div>
+    </div>
+  </div>
+</div>
+
+<div id="categoryRenameModal" class="modal-overlay">
+  <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px;">
+    <div class="modal-title" style="font-size:17px;">カテゴリ名を変更</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">変更前：<span id="rename-old-name" style="font-weight:700;color:var(--text);"></span></p>
+    <input type="text" id="rename-new-name" style="width:100%;padding:11px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;margin-bottom:8px;">
+    <p style="font-size:11px;color:var(--text3);margin-bottom:18px;line-height:1.5;">該当する全商品（<span id="rename-count"></span>件）のカテゴリが一括で変更されます。</p>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeCategoryRenameModal()" style="flex:1;padding:13px;border:1.5px solid var(--border);background:#fff;border-radius:12px;font-size:14px;cursor:pointer;">キャンセル</button>
+      <button id="rename-confirm-btn" onclick="confirmRenameCategory()" style="flex:1;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;color:#fff;background:var(--primary);">変更する</button>
+    </div>
+  </div>
+</div>
+
 <div class="header">
   <button class="back-btn hidden" id="back-btn" onclick="goBack()">‹</button>
   <div class="header-title" id="header-title">在庫管理</div>
@@ -561,9 +592,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 
   <div id="screen-master" class="screen">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;">
       <div style="font-size:15px;font-weight:700;color:var(--text2)">商品マスタ管理</div>
-      <button onclick="openAddMasterModal()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">＋ 新規登録</button>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button onclick="openCategoryManageModal()" style="background:#fff;color:var(--primary);border:1.5px solid var(--primary);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">カテゴリ管理</button>
+        <button onclick="openAddMasterModal()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">＋ 新規登録</button>
+      </div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:8px">
       <select id="masterCatFilter" onchange="renderMasterList()" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--surface)">
@@ -1777,8 +1811,23 @@ function toggleImmediateMove(){
 // ============================================================
 // 商品マスタ管理
 // ============================================================
-const CATEGORIES=['AC100','ADDITIVE','PIGMENT','蛍光PIGMENT','AC200','AC730 BASE','AC730 Liquid','Flex Metal Base','Flex Metal Liquid','ガラス繊維','ガラスチョップ','離型剤','コーティング剤','フィラー','意匠フィラー','カヤメック','シリコン','その他造形資材','洗浄剤','ツール','容器','段ボール','ビニール袋','備品','エポキシ','IBC'];
 let toggleTarget=null;
+// 商品がまだ紐づいていない新規作成カテゴリ（セッション中のみ保持）
+let pendingCategories=[];
+
+// 商品マスタの実データから使用中の全カテゴリをユニーク抽出（廃番含む）＋保留カテゴリをマージ
+function getAllCategories(){
+  var cats=[];
+  masterAll.forEach(function(p){
+    var c=p['カテゴリ'];
+    if(c&&cats.indexOf(c)===-1)cats.push(c);
+  });
+  pendingCategories.forEach(function(c){
+    if(cats.indexOf(c)===-1)cats.push(c);
+  });
+  cats.sort(jaSort);
+  return cats;
+}
 
 async function loadMasterAll(){
   try{
@@ -1799,15 +1848,111 @@ async function loadMasterAll(){
 }
 
 function populateCategorySelects(){
+  var cats=getAllCategories();
   ['masterCatFilter','add-category'].forEach(function(id){
     var sel=document.getElementById(id);
     var isFilter=id==='masterCatFilter';
     sel.innerHTML=isFilter?'<option value="">全カテゴリ</option>':'<option value="">選択してください</option>';
-    CATEGORIES.forEach(function(c){
+    cats.forEach(function(c){
       var opt=document.createElement('option');
       opt.value=c;opt.textContent=c;sel.appendChild(opt);
     });
   });
+}
+
+// ---- カテゴリ管理 ----
+function openCategoryManageModal(){
+  renderCategoryManageList();
+  document.getElementById('new-category-name').value='';
+  document.getElementById('categoryManageModal').classList.add('show');
+}
+
+function closeCategoryManageModal(){
+  document.getElementById('categoryManageModal').classList.remove('show');
+}
+
+function renderCategoryManageList(){
+  var cats=getAllCategories();
+  var html='';
+  cats.forEach(function(c){
+    var count=masterAll.filter(function(p){return p['カテゴリ']===c;}).length;
+    var isPending=count===0&&pendingCategories.indexOf(c)!==-1;
+    var oc="openCategoryRenameModal('"+escAttr(c)+"')";
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;">'+
+      '<div>'+
+        '<div style="font-size:14px;font-weight:600;color:var(--text);">'+c+'</div>'+
+        '<div style="font-size:11px;color:var(--text3);">'+(isPending?'商品未登録（新規作成）':count+'品')+'</div>'+
+      '</div>'+
+      '<button onclick="'+oc+'" style="background:#fff;color:var(--primary);border:1.5px solid var(--primary);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">名前を変更</button>'+
+    '</div>';
+  });
+  if(cats.length===0){
+    html='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">カテゴリがまだありません</div>';
+  }
+  document.getElementById('category-manage-list').innerHTML=html;
+}
+
+function createNewCategory(){
+  var name=document.getElementById('new-category-name').value.trim();
+  if(!name){showToast('カテゴリ名を入力してください');return;}
+  var existing=getAllCategories();
+  if(existing.indexOf(name)!==-1){showToast('そのカテゴリ名はすでに存在します');return;}
+  pendingCategories.push(name);
+  document.getElementById('new-category-name').value='';
+  populateCategorySelects();
+  renderCategoryManageList();
+  showToast('✅ カテゴリ「'+name+'」を作成しました');
+}
+
+var renameTargetCategory=null;
+
+function openCategoryRenameModal(oldName){
+  renameTargetCategory=oldName;
+  var count=masterAll.filter(function(p){return p['カテゴリ']===oldName;}).length;
+  document.getElementById('rename-old-name').textContent=oldName;
+  document.getElementById('rename-count').textContent=count;
+  document.getElementById('rename-new-name').value=oldName;
+  document.getElementById('categoryRenameModal').classList.add('show');
+}
+
+function closeCategoryRenameModal(){
+  document.getElementById('categoryRenameModal').classList.remove('show');
+  renameTargetCategory=null;
+}
+
+async function confirmRenameCategory(){
+  if(!renameTargetCategory)return;
+  var newName=document.getElementById('rename-new-name').value.trim();
+  if(!newName){showToast('新しいカテゴリ名を入力してください');return;}
+  if(newName===renameTargetCategory){closeCategoryRenameModal();return;}
+
+  var btn=document.getElementById('rename-confirm-btn');
+  btn.disabled=true;btn.textContent='変更中...';
+  try{
+    var count=masterAll.filter(function(p){return p['カテゴリ']===renameTargetCategory;}).length;
+    if(count>0){
+      // 商品が紐づいている場合はGAS側で一括リネーム
+      const res=await fetch(API,{method:'POST',body:JSON.stringify({
+        action:'renameCategory',oldName:renameTargetCategory,newName:newName
+      })});
+      const json=await res.json();
+      if(!json.success)throw new Error(json.message||'変更に失敗しました');
+    }
+    // 保留カテゴリ（商品未登録）の場合はローカルのリストだけ更新
+    var pIdx=pendingCategories.indexOf(renameTargetCategory);
+    if(pIdx!==-1){
+      pendingCategories[pIdx]=newName;
+    }
+    showToast('✅ カテゴリ名を変更しました');
+    closeCategoryRenameModal();
+    await loadMasterAll();
+    await loadData();
+    renderCategoryManageList();
+  }catch(e){
+    showToast('❌ 変更失敗：'+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='変更する';
+  }
 }
 
 function renderMasterList(){
@@ -1931,7 +2076,7 @@ function openEditMasterModal(skuId){
   // カテゴリセレクト初期化
   var sel=document.getElementById('edit-category');
   sel.innerHTML='';
-  CATEGORIES.forEach(function(c){
+  getAllCategories().forEach(function(c){
     var opt=document.createElement('option');
     opt.value=c;opt.textContent=c;
     if(c===item['カテゴリ'])opt.selected=true;
