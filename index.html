@@ -84,6 +84,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 .breadcrumb{display:flex;align-items:center;gap:8px;font-size:16px;color:var(--text2);margin-bottom:14px;flex-wrap:wrap}
 .breadcrumb-item{cursor:pointer;color:var(--primary);font-weight:700}
 .breadcrumb-sep{color:var(--text3);font-weight:400}
+.section-title{font-size:17px;font-weight:700;color:var(--text);margin:0 0 14px 16px;}
 .product-confirm{background:#f0f6ff;border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;border:2px solid var(--primary)}
 .product-name{font-size:16px;font-weight:700;color:var(--text)}
 .product-sku{font-size:11px;color:var(--text2);margin-top:3px;font-family:monospace}
@@ -417,7 +418,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 
   <div id="screen-category" class="screen">
-    <div class="breadcrumb"><span style="color:var(--text);font-weight:700;font-size:16px">カテゴリ</span></div>
+    <div class="section-title">カテゴリ</div>
     <div id="category-list"><div class="loading">読み込み中...</div></div>
   </div>
 
@@ -473,7 +474,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
         </button>
       </div>
     </div>
-    <div class="breadcrumb"><span style="color:var(--text);font-weight:700;font-size:16px">カテゴリ</span></div>
+    <div class="section-title">カテゴリ</div>
     <div id="stock-category-list"><div class="loading">読み込み中...</div></div>
   </div>
 
@@ -493,7 +494,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 
     <div id="screen-inv-category" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <div class="breadcrumb" style="margin-bottom:0;"><span style="color:var(--text);font-weight:700;font-size:16px">カテゴリ</span></div>
+      <div class="section-title" style="margin:0 0 0 16px;">カテゴリ</div>
       <button onclick="printInventoryList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
         <i class="ti ti-printer" style="margin-right:4px;" aria-hidden="true"></i>棚卸表PDF出力
       </button>
