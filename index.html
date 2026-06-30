@@ -722,7 +722,12 @@ function startSession(){
   // ヘッダーバッジ更新
   var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8',棚卸し:'#f9ab00'};
   var sub=document.getElementById('header-sub');
-  var warehouseLabel=session.mode==='移動'?w+'→'+session.dest:w;
+  var warehouseLabel=w;
+  if(session.mode==='移動'){
+    warehouseLabel=w+'→'+session.dest;
+  }else if(session.mode==='入庫'&&session.immediateDest){
+    warehouseLabel=w+'→'+session.immediateDest;
+  }
   sub.textContent=session.mode+'-'+warehouseLabel;
   sub.style.background=colors[session.mode]||'var(--primary)';
   sub.classList.remove('hidden');
