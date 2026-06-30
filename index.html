@@ -989,6 +989,8 @@ function renderStockWarehouseTabs(){
     var oc="switchStockWarehouse('"+escAttr(w['倉庫名'])+"')";
     tabHtml+='<div class="filter-btn'+(active?' active':'')+'" onclick="'+oc+'" style="white-space:nowrap;">'+w['倉庫名']+'</div>';
   });
+  var importActive=currentWarehouseFilter==='import';
+  tabHtml+='<div class="filter-btn'+(importActive?' active':'')+'" onclick="switchStockWarehouse(\'import\')" style="white-space:nowrap;">輸入管理用</div>';
   var tabsEl=document.getElementById('stock-warehouse-tabs');
   if(tabsEl) tabsEl.innerHTML=tabHtml;
 }
@@ -1002,11 +1004,12 @@ function switchStockWarehouse(warehouseName){
 function renderStockCategories(){
   if(summary.length===0){document.getElementById('stock-category-list').innerHTML='<div class="loading">読み込み中...</div>';return;}
   renderStockWarehouseTabs();
-  // 廃番商品を除外した有効な在庫サマリ項目のみを対象にする（創造社倉庫選択時は小分け品も除外）
+  // 廃番商品を除外した有効な在庫サマリ項目のみを対象にする（創造社倉庫選択時は小分け品も除外、輸入管理用は輸入品のみ）
   var validSummary=summary.filter(function(item){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!m||!(m['有効']===true||m['有効']==='TRUE'))return false;
     if(currentWarehouseFilter==='創造社倉庫'&&m['商品区分']==='小分け品')return false;
+    if(currentWarehouseFilter==='import'&&m['商品区分']!=='輸入品')return false;
     return true;
   });
   var cats=[];
@@ -1046,6 +1049,7 @@ function renderStock(){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!m||!(m['有効']===true||m['有効']==='TRUE'))return false; // 廃番商品を除外
     if(currentWarehouseFilter==='創造社倉庫'&&m['商品区分']==='小分け品')return false; // 創造社倉庫は小分け品を取り扱わない
+    if(currentWarehouseFilter==='import'&&m['商品区分']!=='輸入品')return false; // 輸入管理用は輸入品のみ
     if(!currentStockCategory) return true;
     return (m['カテゴリ']||'未分類')===currentStockCategory;
   });
@@ -1053,7 +1057,7 @@ function renderStock(){
   var html='';
   filtered.forEach(function(item){
     var y=parseFloat(item['山科倉庫_在庫'])||0,s=parseFloat(item['創造社倉庫_在庫'])||0,o=parseFloat(item['事務所_在庫'])||0;
-    var q=currentWarehouseFilter==='all'?y+s+o:currentWarehouseFilter==='山科倉庫'?y:currentWarehouseFilter==='創造社倉庫'?s:o;
+    var q=(currentWarehouseFilter==='all'||currentWarehouseFilter==='import')?y+s+o:currentWarehouseFilter==='山科倉庫'?y:currentWarehouseFilter==='創造社倉庫'?s:o;
     var st=item['ステータス']||'正常';
     var bc=st==='欠品'?'badge-ng':st==='要補充'?'badge-warn':'badge-ok';
     html+='<div class="list-item" style="cursor:default"><div style="flex:1"><div class="list-item-name">'+(item['商品名']||'')+' '+(item['サイズ']||'')+'</div></div><div style="text-align:right"><div style="font-size:20px;font-weight:700">'+q+'</div><span class="badge '+bc+'">'+st+'</span></div></div>';
@@ -1063,9 +1067,9 @@ function renderStock(){
 
 
 function printStockList(){
-  var wFilter=currentWarehouseFilter; // 'all' | '山科倉庫' | '創造社倉庫' | '事務所'
+  var wFilter=currentWarehouseFilter; // 'all' | '山科倉庫' | '創造社倉庫' | '事務所' | 'import'
   var colMap={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'};
-  var wLabel=wFilter==='all'?'すべて':wFilter;
+  var wLabel=wFilter==='all'?'すべて':wFilter==='import'?'輸入管理用（全倉庫合計・輸入品のみ）':wFilter;
 
   var now=new Date();
   var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
@@ -1076,13 +1080,14 @@ function printStockList(){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!m||!(m['有効']===true||m['有効']==='TRUE')) return; // 廃番除外
     if(wFilter==='創造社倉庫'&&m['商品区分']==='小分け品') return; // 創造社倉庫は小分け品を取り扱わない
+    if(wFilter==='import'&&m['商品区分']!=='輸入品') return; // 輸入管理用は輸入品のみ
     if(currentStockCategory&&(m['カテゴリ']||'未分類')!==currentStockCategory) return;
 
     var cat=m['カテゴリ']||'未分類';
     if(!grouped[cat]) grouped[cat]=[];
 
     var y=parseFloat(item['山科倉庫_在庫'])||0,s=parseFloat(item['創造社倉庫_在庫'])||0,o=parseFloat(item['事務所_在庫'])||0;
-    var q=wFilter==='all'?y+s+o:wFilter==='山科倉庫'?y:wFilter==='創造社倉庫'?s:o;
+    var q=(wFilter==='all'||wFilter==='import')?y+s+o:wFilter==='山科倉庫'?y:wFilter==='創造社倉庫'?s:o;
     var st=item['ステータス']||'正常';
 
     grouped[cat].push({
@@ -1127,7 +1132,8 @@ function printStockList(){
     '</style></head><body>'+
     '<h1>在庫確認リスト</h1>'+
     '<div class="meta">倉庫：'+wLabel+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>'+
-    (wFilter==='創造社倉庫'?'<div class="notice">※小分け品はリストから除外されています</div>':'');
+    (wFilter==='創造社倉庫'?'<div class="notice">※小分け品はリストから除外されています</div>':'')+
+    (wFilter==='import'?'<div class="notice">※商品区分「輸入品」のみを表示しています（全倉庫合計）</div>':'');
 
   var catKeys=Object.keys(grouped).sort(jaSort);
 
