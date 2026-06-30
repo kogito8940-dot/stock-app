@@ -1345,16 +1345,27 @@ function printReplenishList(){
   var colMap={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'};
   var stockKey=colMap[wName]||(wName+'_在庫');
 
-  var reorder=[], shortage=[];
+  // 小分け品：最低在庫数1以上で不足（0含む）→要補充
+  // 仕入品：最低在庫数1以上で欠品（0）→要仕入品
+  var reorder=[], needPurchase=[];
   summary.forEach(function(item){
+    var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+    if(!m||!(m['有効']===true||m['有効']==='TRUE'))return; // 廃番除外
+
     var stock=parseFloat(item[stockKey])||0;
     var ms=minStockData.find(function(r){return r['SKU_ID']===item['SKU_ID']&&r['倉庫名']===wName;});
     var minStock=ms?parseFloat(ms['最低在庫数'])||0:0;
     if(minStock===0) return;
-    if(stock===0){
-      shortage.push({item:item,stock:stock,minStock:minStock,shortage:minStock});
-    }else if(stock<minStock){
-      reorder.push({item:item,stock:stock,minStock:minStock,shortage:minStock-stock});
+
+    var type=m['商品区分'];
+    if(type==='小分け品'){
+      if(stock<minStock){
+        reorder.push({item:item,stock:stock,minStock:minStock,shortage:minStock-stock});
+      }
+    }else if(type==='仕入品'){
+      if(stock===0){
+        needPurchase.push({item:item,stock:stock,minStock:minStock,shortage:minStock});
+      }
     }
   });
 
@@ -1397,8 +1408,24 @@ function printReplenishList(){
     html+='</table>';
   }
 
-  if(reorder.length===0){
-    html+='<div class="empty">要補充の商品はありません</div>';
+  if(needPurchase.length>0){
+    html+='<h2 class="shortage-title">🚨 要仕入品（'+needPurchase.length+'件）</h2>'+
+      '<table><tr><th>商品名</th><th>サイズ</th><th>現在庫</th><th>最低在庫</th><th>不足数</th><th>確認</th></tr>';
+    needPurchase.forEach(function(d){
+      html+='<tr>'+
+        '<td>'+(d.item['商品名']||'')+'</td>'+
+        '<td>'+(d.item['サイズ']||'')+'</td>'+
+        '<td>'+d.stock+' '+(d.item['単位']||'')+'</td>'+
+        '<td>'+d.minStock+' '+(d.item['単位']||'')+'</td>'+
+        '<td class="shortage-num">'+d.shortage+' '+(d.item['単位']||'')+'</td>'+
+        '<td style="width:60px;"></td>'+
+      '</tr>';
+    });
+    html+='</table>';
+  }
+
+  if(reorder.length===0&&needPurchase.length===0){
+    html+='<div class="empty">補充が必要な商品はありません</div>';
   }
 
   html+='</body></html>';
@@ -1415,7 +1442,7 @@ function printReplenishList(){
 var currentReplenishWarehouse='';
 
 function renderReplenish(){
-  if(warehouses.length===0||minStockData.length===0||summary.length===0){
+  if(warehouses.length===0||minStockData.length===0||summary.length===0||masterAll.length===0){
     document.getElementById('replenish-list').innerHTML='<div class="loading">読み込み中...</div>';
     return;
   }
@@ -1449,22 +1476,34 @@ function renderReplenishList(){
   var colMap={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'};
   var stockKey=colMap[wName]||warehouseKey;
 
-  // 欠品・要補充を抽出
-  var shortage=[], reorder=[];
+  // 小分け品：最低在庫数1以上で不足（0含む）→要補充
+  // 仕入品：最低在庫数1以上で欠品（0）→要仕入品
+  // それ以外の商品区分（輸入品など）は対象外
+  var reorder=[], needPurchase=[];
   summary.forEach(function(item){
+    var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+    if(!m||!(m['有効']===true||m['有効']==='TRUE'))return; // 廃番除外
+
     var stock=parseFloat(item[stockKey])||0;
     var ms=minStockData.find(function(r){return r['SKU_ID']===item['SKU_ID']&&r['倉庫名']===wName;});
     var minStock=ms?parseFloat(ms['最低在庫数'])||0:0;
     if(minStock===0) return; // 最低在庫数0は対象外
-    if(stock===0){
-      shortage.push({item:item,stock:stock,minStock:minStock});
-    }else if(stock<minStock){
-      reorder.push({item:item,stock:stock,minStock:minStock});
+
+    var type=m['商品区分'];
+    if(type==='小分け品'){
+      if(stock<minStock){
+        reorder.push({item:item,stock:stock,minStock:minStock});
+      }
+    }else if(type==='仕入品'){
+      if(stock===0){
+        needPurchase.push({item:item,stock:stock,minStock:minStock});
+      }
     }
+    // それ以外の商品区分（輸入品など）は対象外
   });
 
   var html='';
-  if(shortage.length===0&&reorder.length===0){
+  if(reorder.length===0&&needPurchase.length===0){
     html='<div style="text-align:center;padding:40px;color:var(--text3);">✅ 補充が必要な商品はありません</div>';
     document.getElementById('replenish-list').innerHTML=html;
     return;
@@ -1486,9 +1525,9 @@ function renderReplenishList(){
     });
   }
 
-  if(shortage.length>0){
-    html+='<div style="font-size:12px;font-weight:700;color:var(--danger);margin:14px 0 6px;">欠品 '+shortage.length+'件</div>';
-    shortage.forEach(function(d){
+  if(needPurchase.length>0){
+    html+='<div style="font-size:12px;font-weight:700;color:var(--danger);margin:14px 0 6px;">要仕入品 '+needPurchase.length+'件</div>';
+    needPurchase.forEach(function(d){
       html+='<div class="list-item" style="cursor:default;border-color:#fce8e6;">'+
         '<div style="flex:1">'+
           '<div class="list-item-name">'+(d.item['商品名']||'')+' '+(d.item['サイズ']||'')+'</div>'+
@@ -1496,7 +1535,7 @@ function renderReplenishList(){
         '</div>'+
         '<div style="text-align:right;">'+
           '<div style="font-size:20px;font-weight:700;color:var(--danger);">'+d.stock+'</div>'+
-          '<span class="badge badge-ng">欠品</span>'+
+          '<div style="font-size:11px;color:var(--text3);">最低'+d.minStock+'必要</div>'+
         '</div>'+
       '</div>';
     });
