@@ -469,8 +469,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       <div class="breadcrumb" style="margin-bottom:0;"><span style="color:var(--text);font-weight:700;font-size:16px">カテゴリ</span></div>
     </div>
     <div style="padding-bottom:6px;display:flex;flex-direction:column;gap:8px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div id="stock-warehouse-tabs" style="display:flex;gap:6px;overflow-x:auto;flex:1;"></div>
+      <div id="stock-warehouse-tabs" style="display:flex;gap:6px;overflow-x:auto;"></div>
+      <div style="display:flex;justify-content:flex-end;">
         <button onclick="printStockList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
           <i class="ti ti-printer" style="margin-right:4px;" aria-hidden="true"></i>PDF出力
         </button>
@@ -583,8 +583,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 
   <div id="screen-replenish" class="screen">
     <div style="padding:10px 12px 6px;display:flex;flex-direction:column;gap:8px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div id="replenish-warehouse-tabs" style="display:flex;gap:6px;overflow-x:auto;flex:1;"></div>
+      <div id="replenish-warehouse-tabs" style="display:flex;gap:6px;overflow-x:auto;"></div>
+      <div style="display:flex;justify-content:flex-end;">
         <button onclick="printReplenishList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
           <i class="ti ti-printer" style="margin-right:4px;" aria-hidden="true"></i>PDF出力
         </button>
@@ -648,6 +648,12 @@ async function loadData(){
     masterAll=ma.data||ma;
     buildWarehouseSelects();
     updateHome();
+    // データ読み込み完了時に、その時点で表示中の画面がデータ依存の画面なら再描画する
+    // （タイルを開いた直後に読み込みが終わっていないと「読み込み中…」のまま固まって見えるため）
+    var curScreen=screenStack.length?screenStack[screenStack.length-1]:'';
+    if(curScreen==='stock') renderStockCategories();
+    if(curScreen==='stock-items') renderStock();
+    if(curScreen==='replenish') renderReplenish();
   }catch(e){showToast('データ読み込みエラー');}
 }
 
