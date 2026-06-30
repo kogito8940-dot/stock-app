@@ -1086,7 +1086,7 @@ function printStockList(){
     '.qty-col{text-align:right;width:13%;}'+
     '.status-col{text-align:center;width:16%;}'+
     '.status-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-weight:700;font-size:10px;}'+
-    '@media print{body{padding:8px;}@page{margin:10mm;margin-top:4cm;size:A4;}'+
+    '@media print{body{padding:8px;}@page{margin:10mm;margin-top:3cm;size:A4;}'+
     '.category{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
     '.notice{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
     '.status-badge{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'+
@@ -1336,7 +1336,7 @@ function printReplenishList(){
     'tr:nth-child(even){background:#f0f4ff;}'+
     '.shortage-num{color:#dc2626;font-weight:700;}'+
     '.empty{text-align:center;padding:20px;color:#9ca3af;font-size:13px;}'+
-    '@media print{body{padding:10px;}@page{margin:15mm;margin-top:4cm;}}'+
+    '@media print{body{padding:10px;}@page{margin:15mm;margin-top:3cm;}}'+
     '</style></head><body>'+
     '<h1>補充確認リスト</h1>'+
     '<div class="meta">倉庫：'+wName+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>';
@@ -1537,7 +1537,7 @@ function printInventoryList(){
     '.check-col{text-align:center;border-left:1px solid #d1d5db;width:28%;}'+
     '.total-col{text-align:center;border-left:2px solid #9ca3af;background:#fefce8;width:10%;}'+
     '.qty-col{text-align:right;width:11%;}'+
-    '@media print{body{padding:8px;}@page{margin:10mm;margin-top:4cm;size:A4;}'+
+    '@media print{body{padding:8px;}@page{margin:10mm;margin-top:3cm;size:A4;}'+
     '.category{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
     '.notice{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'+
     '</style></head><body>'+
