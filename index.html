@@ -116,6 +116,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 .filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:500;z-index:300;opacity:0;transition:opacity .25s;white-space:nowrap;pointer-events:none;}
 .toast.show{opacity:1}
+.toast-mascot{position:fixed;bottom:148px;left:50%;transform:translateX(-50%) scale(.85);width:96px;height:96px;object-fit:contain;z-index:300;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;}
+.toast-mascot.show{opacity:1;transform:translateX(-50%) scale(1);}
 .hidden{display:none}
 .loading{text-align:center;padding:48px;color:var(--text3);font-size:14px}
 </style>
@@ -615,6 +617,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 </div>
 
 <div class="toast" id="toast"></div>
+<img class="toast-mascot" id="toast-mascot" src="https://drive.google.com/thumbnail?id=1l3PSfJe2tavSqCfiS5U9gif0N1UTBf5j&sz=w400" alt="">
 
 <div class="bnav">
   <div class="bnav-item active" onclick="showScreen('home')" id="nav-home" style="min-width:60px;"><i class="ti ti-home bnav-icon" aria-hidden="true"></i>ホーム</div>
@@ -1177,7 +1180,11 @@ function printStockList(){
 
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');},2000);
+  var m=document.getElementById('toast-mascot');if(m)m.classList.add('show');
+  setTimeout(function(){
+    t.classList.remove('show');
+    if(m)m.classList.remove('show');
+  },2000);
 }
 
 // ============================================================
