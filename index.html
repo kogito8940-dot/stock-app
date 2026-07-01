@@ -449,6 +449,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
         </select>
       </div>
     </div>
+    <div style="padding:0 14px 6px;display:flex;align-items:center;gap:6px;">
+  <input type="checkbox" id="hist-show-cancel" onchange="renderHistoryList()">
+  <label for="hist-show-cancel" style="font-size:12px;color:var(--text2);">取消ログも表示する</label>
+</div>
     <div id="hist-count" style="padding:4px 14px 6px;font-size:12px;color:var(--text3);"></div>
     <div id="history-log-list" style="padding:0 12px 80px;"><div class="loading">読み込み中...</div></div>
   </div>
@@ -885,7 +889,9 @@ function renderHistoryList(){
   var warehouseFilter=document.getElementById('hist-warehouse-filter').value;
   var now=new Date();
 
-  var filtered=historyLogs.filter(function(r){
+  var showCancel=document.getElementById('hist-show-cancel').checked;
+var filtered=historyLogs.filter(function(r){
+    if(!showCancel && r['操作種別'] && r['操作種別'].indexOf('取消')===0) return false;
     var d=new Date(r['日時']);
     if(histDateFilter==='today'){if(d.toDateString()!==now.toDateString()) return false;}
     else if(histDateFilter==='week'){var wa=new Date(now);wa.setDate(wa.getDate()-7);if(d<wa) return false;}
