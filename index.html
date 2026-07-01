@@ -111,8 +111,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 .toast-mascot.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
 .hidden{display:none}
 .loading{text-align:center;padding:48px;color:var(--text3);font-size:14px}
-
-/* ラベル印刷モーダル */
 #labelPrintModal .modal{border-radius:24px 24px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom));}
 .label-preview-box{width:113px;height:113px;border:2px solid var(--border);border-radius:8px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;margin:0 auto 16px;position:relative;overflow:hidden;}
 .label-preview-box canvas{max-width:100%;max-height:100%;}
@@ -121,7 +119,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 <body>
 <div class="app-shell">
 
-<!-- 作業設定モーダル -->
 <div id="modal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
@@ -166,19 +163,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
-<!-- ラベル印刷モーダル -->
 <div id="labelPrintModal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div class="modal-title" style="margin-bottom:0;">ラベル印刷</div>
       <button onclick="closeLabelPrintModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3);">✕</button>
     </div>
-    <!-- ラベルプレビュー -->
     <div id="label-preview-area" class="label-preview-box">
       <canvas id="label-code-canvas"></canvas>
     </div>
     <div id="label-preview-text" style="text-align:center;font-size:11px;color:var(--text2);margin-bottom:16px;line-height:1.4;"></div>
-    <!-- 枚数指定 -->
     <div class="form-group">
       <label class="form-label">印刷枚数</label>
       <div style="display:flex;align-items:center;gap:12px;">
@@ -193,7 +187,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
-<!-- ラベル一括印刷モーダル -->
 <div id="labelBulkModal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -229,7 +222,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
-<!-- 新規商品登録モーダル -->
 <div id="addMasterModal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -252,7 +244,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
-<!-- 商品編集モーダル -->
 <div id="editMasterModal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -275,7 +266,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
-<!-- 取消確認モーダル -->
 <div id="cancelLogModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px;">
     <div class="modal-title" style="font-size:17px;">取消の確認</div>
@@ -287,7 +277,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
-<!-- スキャンモーダル -->
 <div id="scanModal" style="display:none;position:fixed;inset:0;background:#000;z-index:300;flex-direction:column;">
   <div style="background:#000;padding:14px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
     <button onclick="stopScan()" style="background:none;border:none;color:#fff;font-size:28px;cursor:pointer;line-height:1;padding:0;">‹</button>
@@ -310,7 +299,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
-<!-- 廃番/復元確認モーダル -->
 <div id="toggleMasterModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px">
     <div class="modal-title" id="toggle-title"></div>
@@ -322,7 +310,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
-<!-- カテゴリ管理モーダル -->
 <div id="categoryManageModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:380px;margin:auto;padding:24px 20px;max-height:80vh;overflow-y:auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -341,7 +328,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
-<!-- カテゴリ名変更モーダル -->
 <div id="categoryRenameModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px;">
     <div class="modal-title" style="font-size:17px;">カテゴリ名を変更</div>
@@ -373,7 +359,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       <div class="tile" onclick="showScreen('replenish')" style="border:1.5px solid #fca5a5;"><i class="ti ti-bell tile-icon" style="color:#ea580c;"></i><div class="tile-label" style="color:#ea580c;">補充確認</div></div>
     </div>
   </div>
-
   <div id="screen-operation" class="screen">
     <div class="scan-area" onclick="startScan()">
       <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
@@ -390,12 +375,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       <div id="history-list"><div style="font-size:12px;color:var(--text3)">まだ記録がありません</div></div>
     </div>
   </div>
-
   <div id="screen-category" class="screen">
     <div class="section-title">カテゴリ</div>
     <div id="category-list"><div class="loading">読み込み中...</div></div>
   </div>
-
   <div id="screen-product" class="screen">
     <div class="breadcrumb">
       <span class="breadcrumb-item" onclick="showScreen('category')">カテゴリ</span>
@@ -404,7 +387,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     </div>
     <div id="product-list"></div>
   </div>
-
   <div id="screen-size" class="screen">
     <div class="breadcrumb">
       <span class="breadcrumb-item" onclick="showScreen('category')">カテゴリ</span>
@@ -415,7 +397,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     </div>
     <div id="size-list"></div>
   </div>
-
   <div id="screen-qty" class="screen">
     <div id="product-confirm" class="product-confirm"></div>
     <div class="qty-display">
@@ -431,7 +412,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     <button class="record-btn" id="record-btn" onclick="recordLog()">記録する</button>
     <button class="back-link" onclick="goBack()">← 商品選択に戻る</button>
   </div>
-
   <div id="screen-stock" class="screen">
     <div style="padding-bottom:10px;display:flex;flex-direction:column;gap:8px;">
       <div id="stock-warehouse-tabs" style="display:flex;gap:6px;overflow-x:auto;"></div>
@@ -442,7 +422,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     <div class="section-title">カテゴリ</div>
     <div id="stock-category-list"><div class="loading">読み込み中...</div></div>
   </div>
-
   <div id="screen-stock-items" class="screen">
     <div class="breadcrumb">
       <span class="breadcrumb-item" onclick="showScreen('stock')">カテゴリ</span>
@@ -454,7 +433,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     </div>
     <div id="stock-list"><div class="loading">読み込み中...</div></div>
   </div>
-
   <div id="screen-inv-category" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div class="section-title" style="margin:0 0 0 16px;">カテゴリ</div>
@@ -462,7 +440,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     </div>
     <div id="inv-category-list"><div class="loading">読み込み中...</div></div>
   </div>
-
   <div id="screen-inv-product" class="screen">
     <div class="breadcrumb">
       <span class="breadcrumb-item" onclick="showScreen('inv-category')">カテゴリ</span>
@@ -471,7 +448,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     </div>
     <div id="inv-product-list"></div>
   </div>
-
   <div id="screen-inv-size" class="screen">
     <div class="breadcrumb">
       <span class="breadcrumb-item" onclick="showScreen('inv-category')">カテゴリ</span>
@@ -482,7 +458,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     </div>
     <div id="inv-size-list"></div>
   </div>
-
   <div id="screen-inventoryQty" class="screen">
     <div id="inv-product-confirm" class="product-confirm" style="border-color:#f9ab00;background:#fffbea;"></div>
     <div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:10px;border:1.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
@@ -505,7 +480,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     <button class="record-btn" id="inv-record-btn" onclick="recordInventory()" style="background:#f9ab00;">棚卸し修正を記録する</button>
     <button class="back-link" onclick="goBack()">← 商品一覧に戻る</button>
   </div>
-
   <div id="screen-history" class="screen">
     <div style="padding:10px 12px 6px;display:flex;flex-direction:column;gap:8px;">
       <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;">
@@ -532,7 +506,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     <div id="hist-count" style="padding:4px 14px 6px;font-size:12px;color:var(--text3);"></div>
     <div id="history-log-list" style="padding:0 12px 80px;"><div class="loading">読み込み中...</div></div>
   </div>
-
   <div id="screen-replenish" class="screen">
     <div style="padding:10px 12px 6px;display:flex;flex-direction:column;gap:8px;">
       <div id="replenish-warehouse-tabs" style="display:flex;gap:6px;overflow-x:auto;"></div>
@@ -542,7 +515,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     </div>
     <div id="replenish-list"><div class="loading">読み込み中...</div></div>
   </div>
-
   <div id="screen-master" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;">
       <div style="font-size:15px;font-weight:700;color:var(--text2)">商品マスタ管理</div>
@@ -841,18 +813,22 @@ function renderHistory(){
   }).join('');
 }
 function updateHome(){}
+function showToast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  var m=document.getElementById('toast-mascot');if(m)m.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');if(m)m.classList.remove('show');},2000);
+}
+function escAttr(str){return String(str||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\r?\n/g,' ');}
 
 // ============================================================
 // ラベル印刷機能
 // ============================================================
 var labelTarget=null,labelQty=1,labelBulkQty=1,labelBulkSelected={};
 
-// 商品1枚ラベル印刷モーダルを開く
 function openLabelPrintModal(item){
   labelTarget=item;
   labelQty=1;
   document.getElementById('label-qty-display').textContent='1';
-  // プレビュー描画
   renderLabelPreview(item);
   document.getElementById('labelPrintModal').classList.add('show');
 }
@@ -864,69 +840,74 @@ function labelQtyChange(d){
   labelQty=Math.max(1,Math.min(99,labelQty+d));
   document.getElementById('label-qty-display').textContent=labelQty;
 }
-
-// ラベルプレビューを生成（canvasにQRまたはバーコードを描画）
 function renderLabelPreview(item){
   var canvas=document.getElementById('label-code-canvas');
   var codeType=item['バーコード種別']||'QR';
   var codeVal=(codeType==='JAN'&&item['バーコード番号'])?item['バーコード番号']:item['SKU_ID'];
-  // プレビューサイズ：113px = 30mm相当
   canvas.width=90;canvas.height=90;
   if(codeType==='JAN'&&item['バーコード番号']){
-    try{
-      JsBarcode(canvas,codeVal,{format:'EAN13',width:1.5,height:60,displayValue:false,margin:2});
-    }catch(e){
-      // JAN13が無効な場合はCode128にフォールバック
-      JsBarcode(canvas,codeVal,{format:'CODE128',width:1.5,height:60,displayValue:false,margin:2});
-    }
+    try{JsBarcode(canvas,codeVal,{format:'EAN13',width:1.5,height:60,displayValue:false,margin:2});}
+    catch(e){JsBarcode(canvas,codeVal,{format:'CODE128',width:1.5,height:60,displayValue:false,margin:2});}
   }else{
     QRCode.toCanvas(canvas,codeVal,{width:90,margin:1,color:{dark:'#000',light:'#fff'}},function(){});
   }
-  // テキスト情報
-  var name=item['商品名']||'';
-  var size=String(item['サイズ']||'');
-  var skuId=item['SKU_ID']||'';
-  document.getElementById('label-preview-text').innerHTML=
-    '<strong>'+name+'</strong><br>'+size+'<br><span style="font-family:monospace;font-size:10px;">'+skuId+'</span>';
+  var name=item['商品名']||'',size=String(item['サイズ']||''),skuId=item['SKU_ID']||'';
+  document.getElementById('label-preview-text').innerHTML='<strong>'+name+'</strong><br>'+size+'<br><span style="font-family:monospace;font-size:10px;">'+skuId+'</span>';
 }
-
-// ブラウザ印刷ウィンドウを開いてラベルを印刷
 function executeLabelPrint(){
   if(!labelTarget) return;
   printLabels([labelTarget],labelQty);
   closeLabelPrintModal();
 }
 
-// ラベルHTML生成・印刷（複数商品対応）
-// qty: 各商品何枚ずつ, items: 商品オブジェクト配列
-function printLabels(items,qty){
+// QR生成をPromise化（qrcode@1.5.3のブラウザビルド対応）
+function qrToDataURL(val){
+  return new Promise(function(resolve){
+    // コールバック形式を試みる
+    try{
+      QRCode.toDataURL(val,{width:90,margin:1},function(err,url){
+        if(url) resolve(url);
+        else resolve('');
+      });
+    }catch(e){
+      // Promiseを返すバージョンの場合
+      try{
+        var p=QRCode.toDataURL(val,{width:90,margin:1});
+        if(p&&typeof p.then==='function'){
+          p.then(function(url){resolve(url||'');}).catch(function(){resolve('');});
+        }else{
+          resolve('');
+        }
+      }catch(e2){resolve('');}
+    }
+  });
+}
+
+// printLabelsをasync/awaitで順次処理（コールバック競合問題を回避）
+async function printLabels(items,qty){
+  showToast('ラベルデータ生成中...');
   var labelsData=[];
-  items.forEach(function(item){
+  for(var i=0;i<items.length;i++){
+    var item=items[i];
     var codeType=item['バーコード種別']||'QR';
     var codeVal=(codeType==='JAN'&&item['バーコード番号'])?item['バーコード番号']:item['SKU_ID'];
     var name=item['商品名']||'';
     var size=String(item['サイズ']||'');
     var skuId=item['SKU_ID']||'';
+    var dataUrl='';
     if(codeType==='JAN'&&item['バーコード番号']){
       var tmpCanvas=document.createElement('canvas');
       try{JsBarcode(tmpCanvas,codeVal,{format:'EAN13',width:2,height:40,displayValue:false,margin:1});}
       catch(e){JsBarcode(tmpCanvas,codeVal,{format:'CODE128',width:2,height:40,displayValue:false,margin:1});}
-      var dataUrl=tmpCanvas.toDataURL('image/png');
-      for(var i=0;i<qty;i++) labelsData.push({dataUrl:dataUrl,name:name,size:size,skuId:skuId,isBarcode:true});
+      dataUrl=tmpCanvas.toDataURL('image/png');
     }else{
-      for(var i=0;i<qty;i++) labelsData.push({codeVal:codeVal,name:name,size:size,skuId:skuId,isBarcode:false,dataUrl:''});
+      dataUrl=await qrToDataURL(codeVal);
     }
-  });
-  var qrItems=labelsData.filter(function(l){return !l.isBarcode;});
-  var done=0;
-  if(qrItems.length===0){_doOpenPrint(labelsData);return;}
-  qrItems.forEach(function(l){
-    QRCode.toDataURL(l.codeVal,{width:90,margin:1},function(err,url){
-      l.dataUrl=url||'';
-      done++;
-      if(done===qrItems.length) _doOpenPrint(labelsData);
-    });
-  });
+    for(var j=0;j<qty;j++){
+      labelsData.push({dataUrl:dataUrl,name:name,size:size,skuId:skuId,isBarcode:(codeType==='JAN'&&!!item['バーコード番号'])});
+    }
+  }
+  _doOpenPrint(labelsData);
 }
 
 function _doOpenPrint(labelsData){
@@ -939,27 +920,31 @@ function _doOpenPrint(labelsData){
       '<div class="label-size">'+l.size.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>'+
       '<div class="label-sku">'+l.skuId+'</div></div>';
   });
-  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>ラベル印刷</title>'+
-    '<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,sans-serif;background:#fff;}'+
+  var css='*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,sans-serif;background:#fff;}'+
     '@page{size:30mm 30mm;margin:0;}@media print{body{margin:0;padding:0;}}'+
     '.label{width:30mm;height:30mm;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1mm;page-break-after:always;overflow:hidden;}'+
     '.code-img{max-width:24mm;max-height:20mm;object-fit:contain;}.barcode-img{max-width:28mm;max-height:16mm;}'+
     '.label-name{font-size:6pt;font-weight:700;text-align:center;margin-top:1mm;line-height:1.2;max-width:28mm;overflow:hidden;word-break:break-all;}'+
-    '.label-size{font-size:5.5pt;color:#444;text-align:center;}.label-sku{font-size:4.5pt;color:#888;font-family:monospace;text-align:center;margin-top:0.5mm;}'+
-    '</style></head><body>'+labelsHtml+
-    '<script>window.onload=function(){window.print();};<\/script></body></html>';
+    '.label-size{font-size:5.5pt;color:#444;text-align:center;}.label-sku{font-size:4.5pt;color:#888;font-family:monospace;text-align:center;margin-top:0.5mm;}';
+  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>ラベル印刷</title><style>'+css+'</style></head><body>'+labelsHtml+'<script>window.onload=function(){window.print();};<\/script></body></html>';
   var win=window.open('','_blank');
-  if(!win){showToast('ポップアップがブロックされました');return;}
+  if(!win){showToast('ポップアップをブラウザで許可してください');return;}
   win.document.write(html);
   win.document.close();
 }
 
-// ラベル一括印刷モーダル
+// SKU_IDでマスタから商品を取得してラベル印刷モーダルを開く
+function openLabelPrintModalBySku(skuId){
+  var item=masterAll.find(function(r){return r['SKU_ID']===skuId;});
+  if(!item){showToast('商品が見つかりません');return;}
+  openLabelPrintModal(item);
+}
+
+// 一括ラベル印刷モーダル
 function openLabelBulkModal(){
   labelBulkQty=1;
   labelBulkSelected={};
   document.getElementById('label-bulk-qty-display').textContent='1';
-  // カテゴリセレクト更新
   var sel=document.getElementById('label-bulk-cat');
   sel.innerHTML='<option value="">全カテゴリ</option>';
   getAllCategories().forEach(function(c){
@@ -968,9 +953,7 @@ function openLabelBulkModal(){
   renderLabelBulkList();
   document.getElementById('labelBulkModal').classList.add('show');
 }
-function closeLabelBulkModal(){
-  document.getElementById('labelBulkModal').classList.remove('show');
-}
+function closeLabelBulkModal(){document.getElementById('labelBulkModal').classList.remove('show');}
 function labelBulkQtyChange(d){
   labelBulkQty=Math.max(1,Math.min(99,labelBulkQty+d));
   document.getElementById('label-bulk-qty-display').textContent=labelBulkQty;
@@ -1013,13 +996,9 @@ function labelBulkSelectAll(){
   }).forEach(function(r){labelBulkSelected[r['SKU_ID']]=true;});
   renderLabelBulkList();
 }
-function labelBulkClearAll(){
-  labelBulkSelected={};
-  renderLabelBulkList();
-}
+function labelBulkClearAll(){labelBulkSelected={};renderLabelBulkList();}
 function updateLabelBulkCount(){
-  var cnt=Object.keys(labelBulkSelected).length;
-  document.getElementById('label-bulk-count').textContent=cnt+'件選択';
+  document.getElementById('label-bulk-count').textContent=Object.keys(labelBulkSelected).length+'件選択';
 }
 function executeBulkLabelPrint(){
   var skuIds=Object.keys(labelBulkSelected);
@@ -1086,7 +1065,6 @@ function renderStock(){
   });
   el.innerHTML=html;
 }
-
 function printStockList(){
   var wFilter=currentWarehouseFilter;
   var wLabel=wFilter==='all'?'すべて':wFilter==='import'?'輸入管理用（全倉庫合計・輸入品のみ）':wFilter;
@@ -1118,17 +1096,10 @@ function printStockList(){
   var win=window.open('','_blank');win.document.write(html);win.document.close();win.print();
 }
 
-function showToast(msg){
-  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
-  var m=document.getElementById('toast-mascot');if(m)m.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');if(m)m.classList.remove('show');},2000);
-}
-
 // ============================================================
 // 履歴画面
 // ============================================================
 var historyLogs=[],histDateFilter='today',cancelTarget=null,cancelGroupTarget=null;
-
 async function loadHistoryLogs(){
   document.getElementById('history-log-list').innerHTML='<div class="loading">読み込み中...</div>';
   try{
@@ -1139,24 +1110,19 @@ async function loadHistoryLogs(){
     sel.innerHTML='<option value="">全倉庫</option>';
     warehouses.forEach(function(w){var opt=document.createElement('option');opt.value=w['倉庫名'];opt.textContent=w['倉庫名'];sel.appendChild(opt);});
     renderHistoryList();
-  }catch(e){
-    document.getElementById('history-log-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--danger)">読み込み失敗</div>';
-  }
+  }catch(e){document.getElementById('history-log-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--danger)">読み込み失敗</div>';}
 }
-
 function setHistDateFilter(filter,btn){
   histDateFilter=filter;
   document.querySelectorAll('#screen-history .filter-btn').forEach(function(b){b.classList.remove('active');});
   btn.classList.add('active');
   renderHistoryList();
 }
-
 function renderHistoryList(){
   var typeFilter=document.getElementById('hist-type-filter').value;
   var warehouseFilter=document.getElementById('hist-warehouse-filter').value;
   var showCancel=document.getElementById('hist-show-cancel').checked;
   var now=new Date();
-
   var filtered=historyLogs.filter(function(r){
     if(!showCancel&&r['操作種別']&&r['操作種別'].indexOf('取消')===0) return false;
     var d=new Date(r['日時']);
@@ -1167,19 +1133,13 @@ function renderHistoryList(){
     if(warehouseFilter&&r['倉庫']!==warehouseFilter) return false;
     return true;
   });
-
   document.getElementById('hist-count').textContent=filtered.length+'件';
-  if(filtered.length===0){
-    document.getElementById('history-log-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);">該当する履歴がありません</div>';
-    return;
-  }
-
+  if(filtered.length===0){document.getElementById('history-log-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);">該当する履歴がありません</div>';return;}
   var cancelledIds={};
   historyLogs.forEach(function(r){
     var m=(r['備考']||'').match(/取消（元LOG_ID:\s*([^）]+)）/);
     if(m) cancelledIds[m[1].trim()]=true;
   });
-
   var groups=[],groupIndexMap={};
   filtered.forEach(function(r){
     var isCancelRow=r['操作種別']&&r['操作種別'].indexOf('取消')===0;
@@ -1189,10 +1149,8 @@ function renderHistoryList(){
       else{groups[groupIndexMap[gid]].items.push(r);}
     }else{groups.push({groupId:null,items:[r]});}
   });
-
   var typeColors={'入庫':'#dcfce7','出庫（販売）':'#fee2e2','出庫（使用）':'#fee2e2','出庫（廃棄）':'#fee2e2','移動（出）':'#ede9fe','移動（入）':'#ede9fe','棚卸し修正':'#fef9c3'};
   var typeTextColors={'入庫':'#166534','出庫（販売）':'#991b1b','出庫（使用）':'#991b1b','出庫（廃棄）':'#991b1b','移動（出）':'#4c1d95','移動（入）':'#4c1d95','棚卸し修正':'#713f12'};
-
   var html='';
   groups.forEach(function(g){
     if(g.groupId) html+=renderGroupCard(g,cancelledIds);
@@ -1200,7 +1158,6 @@ function renderHistoryList(){
   });
   document.getElementById('history-log-list').innerHTML=html;
 }
-
 function renderSingleCard(r,cancelledIds,typeColors,typeTextColors){
   var isCancelled=r['操作種別']&&r['操作種別'].indexOf('取消')===0;
   var alreadyCancelled=cancelledIds[r['LOG_ID']]===true;
@@ -1228,7 +1185,6 @@ function renderSingleCard(r,cancelledIds,typeColors,typeTextColors){
       (alreadyCancelled?'<div style="width:100%;margin-top:10px;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">取消済み</div>':''))+
   '</div>';
 }
-
 function renderGroupCard(g,cancelledIds){
   var items=g.items;
   var hasIn=items.some(function(r){return r['操作種別']==='入庫';});
@@ -1264,10 +1220,7 @@ function renderGroupCard(g,cancelledIds){
       '<button data-group-id="'+escAttr(g.groupId)+'" onclick="handleCancelGroupBtn(this)" style="width:100%;margin-top:10px;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;">取消する</button>')+
   '</div>';
 }
-
-function handleCancelBtn(btn){
-  openCancelLogModal(btn.dataset.logId,btn.dataset.skuId,btn.dataset.type,btn.dataset.warehouse,btn.dataset.dest,btn.dataset.staff,Number(btn.dataset.qty));
-}
+function handleCancelBtn(btn){openCancelLogModal(btn.dataset.logId,btn.dataset.skuId,btn.dataset.type,btn.dataset.warehouse,btn.dataset.dest,btn.dataset.staff,Number(btn.dataset.qty));}
 function handleCancelGroupBtn(btn){openCancelLogGroupModal(btn.dataset.groupId);}
 function openCancelLogModal(logId,skuId,type,warehouse,dest,staff,qty){
   cancelGroupTarget=null;
@@ -1302,11 +1255,8 @@ async function confirmCancelLog(){
     }
     closeCancelLogModal();
     await loadHistoryLogs();
-  }catch(e){
-    showToast('❌ 取消失敗: '+e.message);
-  }finally{
-    btn.disabled=false;btn.textContent='取消する';
-  }
+  }catch(e){showToast('❌ 取消失敗: '+e.message);}
+  finally{btn.disabled=false;btn.textContent='取消する';}
 }
 
 // ============================================================
@@ -1336,7 +1286,6 @@ function printReplenishList(){
   html+='</body></html>';
   var win=window.open('','_blank');win.document.write(html);win.document.close();win.print();
 }
-
 var currentReplenishWarehouse='';
 function renderReplenish(){
   if(warehouses.length===0||minStockData.length===0||summary.length===0||masterAll.length===0){document.getElementById('replenish-list').innerHTML='<div class="loading">読み込み中...</div>';return;}
@@ -1481,7 +1430,6 @@ async function recordInventory(){
   }catch(e){showToast('❌ 記録失敗');}
   finally{btn.disabled=false;btn.textContent='棚卸し修正を記録する';btn.style.opacity='1';}
 }
-
 function toggleImmediateMove(){
   var check=document.getElementById('immediate-move-check');
   var destGroup=document.getElementById('immediate-dest-group');
@@ -1587,8 +1535,8 @@ function renderMasterList(){
     html+='<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;margin:14px 0 6px;text-transform:uppercase">'+cat+'</div>';
     grouped[cat].forEach(function(r){
       var inactive=!r['有効'];
-      var ss=r['SKU_ID'],ns=escAttr(r['商品名']),sz=escAttr(r['サイズ']);
-      // ラベル印刷ボタン用データ
+      var ss=r['SKU_ID'];
+      var ns=escAttr(r['商品名']),sz=escAttr(r['サイズ']);
       html+='<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid '+(inactive?'#fde68a':'var(--border)')+';opacity:'+(inactive?'.65':'1')+';display:flex;align-items:center;gap:6px">'+
         '<div style="flex:1;min-width:0">'+
           '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+
@@ -1600,8 +1548,7 @@ function renderMasterList(){
           '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+r['商品区分']+(r['備考']?'／'+r['備考']:'')+
           '　<span style="color:var(--text3);">'+(r['バーコード種別']||'QR')+'</span></div>'+
         '</div>'+
-        // ラベル印刷ボタン
-        '<button onclick="openLabelPrintModalBySku(\'' +ss+ '\')" style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid #16a34a;color:#16a34a;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="ラベル印刷"><i class="ti ti-tag"></i></button>'+
+        '<button onclick="openLabelPrintModalBySku(\''+ss+'\')" style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid #16a34a;color:#16a34a;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="ラベル印刷"><i class="ti ti-tag"></i></button>'+
         '<button onclick="openEditMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--primary);color:var(--primary);background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">編集</button>'+
         '<button onclick="openDupeMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #6b7280;color:#6b7280;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">複製</button>'+
         (inactive?
@@ -1611,13 +1558,6 @@ function renderMasterList(){
     });
   });
   document.getElementById('master-list').innerHTML=html;
-}
-
-// JSONエンコードされた商品情報からラベル印刷モーダルを開く
-function openLabelPrintModalBySku(skuId){
-  var item=masterAll.find(function(r){return r['SKU_ID']===skuId;});
-  if(!item){showToast('商品が見つかりません');return;}
-  openLabelPrintModal(item);
 }
 function openDupeMasterModal(skuId){
   var item=masterAll.find(function(r){return r['SKU_ID']===skuId;});if(!item) return;
@@ -1688,7 +1628,6 @@ async function submitEditMaster(){
   }catch(e){showToast('❌ 更新失敗：'+e.message);}
   finally{btn.disabled=false;btn.textContent='更新する';}
 }
-function escAttr(str){return String(str||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\r?\n/g,' ');}
 async function submitAddMaster(){
   var cat=document.getElementById('add-category').value,name=document.getElementById('add-name').value.trim(),size=document.getElementById('add-size').value.trim();
   if(!cat||!name||!size){showToast('カテゴリ・商品名・サイズは必須です');return;}
