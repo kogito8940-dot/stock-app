@@ -6,6 +6,8 @@
 <title>在庫管理</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -109,11 +111,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 .toast-mascot.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
 .hidden{display:none}
 .loading{text-align:center;padding:48px;color:var(--text3);font-size:14px}
+
+/* ラベル印刷モーダル */
+#labelPrintModal .modal{border-radius:24px 24px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom));}
+.label-preview-box{width:113px;height:113px;border:2px solid var(--border);border-radius:8px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;margin:0 auto 16px;position:relative;overflow:hidden;}
+.label-preview-box canvas{max-width:100%;max-height:100%;}
 </style>
 </head>
 <body>
 <div class="app-shell">
 
+<!-- 作業設定モーダル -->
 <div id="modal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
@@ -135,9 +143,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     <div class="form-group hidden" id="reason-group">
       <label class="form-label">出庫理由</label>
       <select id="sel-reason" class="form-select">
-        <option>出庫（販売）</option>
-        <option>出庫（使用）</option>
-        <option>出庫（廃棄）</option>
+        <option>出庫（販売）</option><option>出庫（使用）</option><option>出庫（廃棄）</option>
       </select>
     </div>
     <div class="form-group hidden" id="immediate-move-group">
@@ -160,6 +166,70 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
+<!-- ラベル印刷モーダル -->
+<div id="labelPrintModal" class="modal-overlay">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" style="margin-bottom:0;">ラベル印刷</div>
+      <button onclick="closeLabelPrintModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3);">✕</button>
+    </div>
+    <!-- ラベルプレビュー -->
+    <div id="label-preview-area" class="label-preview-box">
+      <canvas id="label-code-canvas"></canvas>
+    </div>
+    <div id="label-preview-text" style="text-align:center;font-size:11px;color:var(--text2);margin-bottom:16px;line-height:1.4;"></div>
+    <!-- 枚数指定 -->
+    <div class="form-group">
+      <label class="form-label">印刷枚数</label>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button onclick="labelQtyChange(-1)" style="width:44px;height:44px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
+        <div id="label-qty-display" style="flex:1;text-align:center;font-size:28px;font-weight:700;color:var(--text);">1</div>
+        <button onclick="labelQtyChange(1)" style="width:44px;height:44px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;">＋</button>
+      </div>
+    </div>
+    <button class="form-btn" onclick="executeLabelPrint()" style="background:#16a34a;">
+      <i class="ti ti-printer" style="margin-right:6px;"></i>印刷する
+    </button>
+  </div>
+</div>
+
+<!-- ラベル一括印刷モーダル -->
+<div id="labelBulkModal" class="modal-overlay">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" style="margin-bottom:0;">ラベル一括印刷</div>
+      <button onclick="closeLabelBulkModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3);">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">カテゴリで絞り込み</label>
+      <select id="label-bulk-cat" class="form-select" onchange="renderLabelBulkList()">
+        <option value="">全カテゴリ</option>
+      </select>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">印刷する商品を選択してください</div>
+    <div id="label-bulk-list" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;margin-bottom:14px;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span id="label-bulk-count" style="font-size:12px;color:var(--text3);">0件選択</span>
+      <div style="display:flex;gap:6px;">
+        <button onclick="labelBulkSelectAll()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;">全選択</button>
+        <button onclick="labelBulkClearAll()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;">全解除</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">各商品の印刷枚数</label>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button onclick="labelBulkQtyChange(-1)" style="width:44px;height:44px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
+        <div id="label-bulk-qty-display" style="flex:1;text-align:center;font-size:28px;font-weight:700;color:var(--text);">1</div>
+        <button onclick="labelBulkQtyChange(1)" style="width:44px;height:44px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;">＋</button>
+      </div>
+    </div>
+    <button class="form-btn" onclick="executeBulkLabelPrint()" style="background:#16a34a;">
+      <i class="ti ti-printer" style="margin-right:6px;"></i>選択した商品を印刷
+    </button>
+  </div>
+</div>
+
+<!-- 新規商品登録モーダル -->
 <div id="addMasterModal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -182,6 +252,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
+<!-- 商品編集モーダル -->
 <div id="editMasterModal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -204,6 +275,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
+<!-- 取消確認モーダル -->
 <div id="cancelLogModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px;">
     <div class="modal-title" style="font-size:17px;">取消の確認</div>
@@ -215,6 +287,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
+<!-- スキャンモーダル -->
 <div id="scanModal" style="display:none;position:fixed;inset:0;background:#000;z-index:300;flex-direction:column;">
   <div style="background:#000;padding:14px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
     <button onclick="stopScan()" style="background:none;border:none;color:#fff;font-size:28px;cursor:pointer;line-height:1;padding:0;">‹</button>
@@ -237,6 +310,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
+<!-- 廃番/復元確認モーダル -->
 <div id="toggleMasterModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px">
     <div class="modal-title" id="toggle-title"></div>
@@ -248,6 +322,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
+<!-- カテゴリ管理モーダル -->
 <div id="categoryManageModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:380px;margin:auto;padding:24px 20px;max-height:80vh;overflow-y:auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -266,6 +341,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
+<!-- カテゴリ名変更モーダル -->
 <div id="categoryRenameModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px;">
     <div class="modal-title" style="font-size:17px;">カテゴリ名を変更</div>
@@ -450,9 +526,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       </div>
     </div>
     <div style="padding:0 14px 6px;display:flex;align-items:center;gap:6px;">
-  <input type="checkbox" id="hist-show-cancel" onchange="renderHistoryList()">
-  <label for="hist-show-cancel" style="font-size:12px;color:var(--text2);">取消ログも表示する</label>
-</div>
+      <input type="checkbox" id="hist-show-cancel" onchange="renderHistoryList()">
+      <label for="hist-show-cancel" style="font-size:12px;color:var(--text2);">取消ログも表示する</label>
+    </div>
     <div id="hist-count" style="padding:4px 14px 6px;font-size:12px;color:var(--text3);"></div>
     <div id="history-log-list" style="padding:0 12px 80px;"><div class="loading">読み込み中...</div></div>
   </div>
@@ -471,8 +547,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;">
       <div style="font-size:15px;font-weight:700;color:var(--text2)">商品マスタ管理</div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
-        <button onclick="openCategoryManageModal()" style="background:#fff;color:var(--primary);border:1.5px solid var(--primary);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">カテゴリ管理</button>
-        <button onclick="openAddMasterModal()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">＋ 新規登録</button>
+        <button onclick="openLabelBulkModal()" style="background:#fff;color:#16a34a;border:1.5px solid #16a34a;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-tag" style="margin-right:2px;"></i>一括ラベル</button>
+        <button onclick="openCategoryManageModal()" style="background:#fff;color:var(--primary);border:1.5px solid var(--primary);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">カテゴリ</button>
+        <button onclick="openAddMasterModal()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">＋ 新規</button>
       </div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:8px">
@@ -765,6 +842,211 @@ function renderHistory(){
 }
 function updateHome(){}
 
+// ============================================================
+// ラベル印刷機能
+// ============================================================
+var labelTarget=null,labelQty=1,labelBulkQty=1,labelBulkSelected={};
+
+// 商品1枚ラベル印刷モーダルを開く
+function openLabelPrintModal(item){
+  labelTarget=item;
+  labelQty=1;
+  document.getElementById('label-qty-display').textContent='1';
+  // プレビュー描画
+  renderLabelPreview(item);
+  document.getElementById('labelPrintModal').classList.add('show');
+}
+function closeLabelPrintModal(){
+  document.getElementById('labelPrintModal').classList.remove('show');
+  labelTarget=null;
+}
+function labelQtyChange(d){
+  labelQty=Math.max(1,Math.min(99,labelQty+d));
+  document.getElementById('label-qty-display').textContent=labelQty;
+}
+
+// ラベルプレビューを生成（canvasにQRまたはバーコードを描画）
+function renderLabelPreview(item){
+  var canvas=document.getElementById('label-code-canvas');
+  var codeType=item['バーコード種別']||'QR';
+  var codeVal=(codeType==='JAN'&&item['バーコード番号'])?item['バーコード番号']:item['SKU_ID'];
+  // プレビューサイズ：113px = 30mm相当
+  canvas.width=90;canvas.height=90;
+  if(codeType==='JAN'&&item['バーコード番号']){
+    try{
+      JsBarcode(canvas,codeVal,{format:'EAN13',width:1.5,height:60,displayValue:false,margin:2});
+    }catch(e){
+      // JAN13が無効な場合はCode128にフォールバック
+      JsBarcode(canvas,codeVal,{format:'CODE128',width:1.5,height:60,displayValue:false,margin:2});
+    }
+  }else{
+    QRCode.toCanvas(canvas,codeVal,{width:90,margin:1,color:{dark:'#000',light:'#fff'}},function(){});
+  }
+  // テキスト情報
+  var name=item['商品名']||'';
+  var size=String(item['サイズ']||'');
+  var skuId=item['SKU_ID']||'';
+  document.getElementById('label-preview-text').innerHTML=
+    '<strong>'+name+'</strong><br>'+size+'<br><span style="font-family:monospace;font-size:10px;">'+skuId+'</span>';
+}
+
+// ブラウザ印刷ウィンドウを開いてラベルを印刷
+function executeLabelPrint(){
+  if(!labelTarget) return;
+  printLabels([labelTarget],labelQty);
+  closeLabelPrintModal();
+}
+
+// ラベルHTML生成・印刷（複数商品対応）
+// qty: 各商品何枚ずつ, items: 商品オブジェクト配列
+function printLabels(items,qty){
+  // 30mm×30mm = 113.4px@96dpi → printでは正確にmmを使う
+  var labelsHtml='';
+  items.forEach(function(item){
+    var codeType=item['バーコード種別']||'QR';
+    var codeVal=(codeType==='JAN'&&item['バーコード番号'])?item['バーコード番号']:item['SKU_ID'];
+    var name=item['商品名']||'';
+    var size=String(item['サイズ']||'');
+    var skuId=item['SKU_ID']||'';
+    for(var i=0;i<qty;i++){
+      // QRはqrcode.jsのdataURL、JANはJsBarcode
+      if(codeType==='JAN'&&item['バーコード番号']){
+        var tmpCanvas=document.createElement('canvas');
+        try{
+          JsBarcode(tmpCanvas,codeVal,{format:'EAN13',width:2,height:40,displayValue:false,margin:1});
+        }catch(e){
+          JsBarcode(tmpCanvas,codeVal,{format:'CODE128',width:2,height:40,displayValue:false,margin:1});
+        }
+        var dataUrl=tmpCanvas.toDataURL('image/png');
+        labelsHtml+='<div class="label"><img src="'+dataUrl+'" class="code-img barcode-img"><div class="label-name">'+name+'</div><div class="label-size">'+size+'</div><div class="label-sku">'+skuId+'</div></div>';
+      }else{
+        // QRはBase64でインライン埋め込み
+        labelsHtml+='<div class="label" data-qr="'+escAttr(codeVal)+'" data-name="'+escAttr(name)+'" data-size="'+escAttr(size)+'" data-sku="'+escAttr(skuId)+'"></div>';
+      }
+    }
+  });
+
+  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>ラベル印刷</title>'+
+    '<style>'+
+    '*{box-sizing:border-box;margin:0;padding:0;}'+
+    'body{font-family:-apple-system,"Hiragino Sans",sans-serif;background:#fff;}'+
+    '@page{size:30mm 30mm;margin:0;}'+
+    '@media print{body{margin:0;padding:0;}}'+
+    '.label{width:30mm;height:30mm;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1mm;page-break-after:always;overflow:hidden;}'+
+    '.code-img{max-width:24mm;max-height:20mm;object-fit:contain;}'+
+    '.barcode-img{max-width:28mm;max-height:16mm;}'+
+    '.label-name{font-size:6pt;font-weight:700;text-align:center;margin-top:1mm;line-height:1.2;max-width:28mm;overflow:hidden;word-break:break-all;}'+
+    '.label-size{font-size:5.5pt;color:#444;text-align:center;line-height:1.2;}'+
+    '.label-sku{font-size:4.5pt;color:#888;font-family:monospace;text-align:center;margin-top:0.5mm;}'+
+    '</style>'+
+    '<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"><\/script>'+
+    '</head><body>'+labelsHtml+
+    '<script>'+
+    // QRプレースホルダーをcanvasで埋める
+    'window.onload=function(){'+
+    '  var labels=document.querySelectorAll(".label[data-qr]");'+
+    '  var promises=[];'+
+    '  labels.forEach(function(el){'+
+    '    var qrVal=el.dataset.qr;'+
+    '    var name=el.dataset.name;'+
+    '    var size=el.dataset.size;'+
+    '    var sku=el.dataset.sku;'+
+    '    var p=new Promise(function(resolve){'+
+    '      QRCode.toDataURL(qrVal,{width:90,margin:1},function(err,url){'+
+    '        el.innerHTML=\'<img src="\'+url+\'" class="code-img"><div class="label-name">\'+name+\'</div><div class="label-size">\'+size+\'</div><div class="label-sku">\'+sku+\'</div>\';'+
+    '        resolve();'+
+    '      });'+
+    '    });'+
+    '    promises.push(p);'+
+    '  });'+
+    '  Promise.all(promises).then(function(){setTimeout(function(){window.print();},300);});'+
+    '};'+
+    '<\/script>'+
+    '</body></html>';
+
+  var win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+}
+
+// ラベル一括印刷モーダル
+function openLabelBulkModal(){
+  labelBulkQty=1;
+  labelBulkSelected={};
+  document.getElementById('label-bulk-qty-display').textContent='1';
+  // カテゴリセレクト更新
+  var sel=document.getElementById('label-bulk-cat');
+  sel.innerHTML='<option value="">全カテゴリ</option>';
+  getAllCategories().forEach(function(c){
+    var opt=document.createElement('option');opt.value=c;opt.textContent=c;sel.appendChild(opt);
+  });
+  renderLabelBulkList();
+  document.getElementById('labelBulkModal').classList.add('show');
+}
+function closeLabelBulkModal(){
+  document.getElementById('labelBulkModal').classList.remove('show');
+}
+function labelBulkQtyChange(d){
+  labelBulkQty=Math.max(1,Math.min(99,labelBulkQty+d));
+  document.getElementById('label-bulk-qty-display').textContent=labelBulkQty;
+}
+function renderLabelBulkList(){
+  var cat=document.getElementById('label-bulk-cat').value;
+  var filtered=masterAll.filter(function(r){
+    if(!(r['有効']===true||r['有効']==='TRUE')) return false;
+    if(cat&&r['カテゴリ']!==cat) return false;
+    return true;
+  });
+  filtered.sort(function(a,b){return jaSort((a['カテゴリ']||'')+(a['商品名']||''),(b['カテゴリ']||'')+(b['商品名']||''));});
+  var html='';
+  filtered.forEach(function(r){
+    var checked=labelBulkSelected[r['SKU_ID']]?'checked':'';
+    html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;">'+
+      '<input type="checkbox" '+checked+' onchange="labelBulkToggle(\''+escAttr(r['SKU_ID'])+'\')" style="width:18px;height:18px;cursor:pointer;">'+
+      '<div style="flex:1;min-width:0;">'+
+        '<div style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r['商品名']+' '+r['サイズ']+'</div>'+
+        '<div style="font-size:11px;color:var(--text3);font-family:monospace;">'+r['SKU_ID']+'</div>'+
+      '</div>'+
+      '<span style="font-size:10px;color:var(--text3);white-space:nowrap;">'+(r['バーコード種別']||'QR')+'</span>'+
+    '</label>';
+  });
+  if(filtered.length===0) html='<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3);">商品がありません</div>';
+  document.getElementById('label-bulk-list').innerHTML=html;
+  updateLabelBulkCount();
+}
+function labelBulkToggle(skuId){
+  if(labelBulkSelected[skuId]) delete labelBulkSelected[skuId];
+  else labelBulkSelected[skuId]=true;
+  updateLabelBulkCount();
+}
+function labelBulkSelectAll(){
+  var cat=document.getElementById('label-bulk-cat').value;
+  masterAll.filter(function(r){
+    if(!(r['有効']===true||r['有効']==='TRUE')) return false;
+    if(cat&&r['カテゴリ']!==cat) return false;
+    return true;
+  }).forEach(function(r){labelBulkSelected[r['SKU_ID']]=true;});
+  renderLabelBulkList();
+}
+function labelBulkClearAll(){
+  labelBulkSelected={};
+  renderLabelBulkList();
+}
+function updateLabelBulkCount(){
+  var cnt=Object.keys(labelBulkSelected).length;
+  document.getElementById('label-bulk-count').textContent=cnt+'件選択';
+}
+function executeBulkLabelPrint(){
+  var skuIds=Object.keys(labelBulkSelected);
+  if(skuIds.length===0){showToast('商品を選択してください');return;}
+  var items=skuIds.map(function(id){return masterAll.find(function(r){return r['SKU_ID']===id;});}).filter(Boolean);
+  printLabels(items,labelBulkQty);
+  closeLabelBulkModal();
+}
+
+// ============================================================
+// 在庫確認
+// ============================================================
 var currentWarehouseFilter='all',currentStockCategory='';
 function renderStockWarehouseTabs(){
   var tabHtml='<div class="filter-btn'+(currentWarehouseFilter==='all'?' active':'')+'" onclick="switchStockWarehouse(\'all\')" style="white-space:nowrap;">すべて</div>';
@@ -887,11 +1169,11 @@ function setHistDateFilter(filter,btn){
 function renderHistoryList(){
   var typeFilter=document.getElementById('hist-type-filter').value;
   var warehouseFilter=document.getElementById('hist-warehouse-filter').value;
+  var showCancel=document.getElementById('hist-show-cancel').checked;
   var now=new Date();
 
-  var showCancel=document.getElementById('hist-show-cancel').checked;
-var filtered=historyLogs.filter(function(r){
-    if(!showCancel && r['操作種別'] && r['操作種別'].indexOf('取消')===0) return false;
+  var filtered=historyLogs.filter(function(r){
+    if(!showCancel&&r['操作種別']&&r['操作種別'].indexOf('取消')===0) return false;
     var d=new Date(r['日時']);
     if(histDateFilter==='today'){if(d.toDateString()!==now.toDateString()) return false;}
     else if(histDateFilter==='week'){var wa=new Date(now);wa.setDate(wa.getDate()-7);if(d<wa) return false;}
@@ -907,32 +1189,20 @@ var filtered=historyLogs.filter(function(r){
     return;
   }
 
-  // 取消済みLOG_IDを全ログから収集
   var cancelledIds={};
   historyLogs.forEach(function(r){
     var m=(r['備考']||'').match(/取消（元LOG_ID:\s*([^）]+)）/);
     if(m) cancelledIds[m[1].trim()]=true;
   });
 
-  // グループIDでまとめる。
-  // 【重要】操作種別が「取消」で始まる行は、グループIDが付いていても
-  // 取消ログ専用グループなので、元グループのカードには混入させない。
-  var groups=[];
-  var groupIndexMap={};
+  var groups=[],groupIndexMap={};
   filtered.forEach(function(r){
     var isCancelRow=r['操作種別']&&r['操作種別'].indexOf('取消')===0;
     var gid=r['グループID']&&String(r['グループID']).trim();
-    // 取消ログは常に単独カード（グループには混ぜない）
-    if(gid && !isCancelRow){
-      if(groupIndexMap[gid]===undefined){
-        groupIndexMap[gid]=groups.length;
-        groups.push({groupId:gid,items:[r]});
-      }else{
-        groups[groupIndexMap[gid]].items.push(r);
-      }
-    }else{
-      groups.push({groupId:null,items:[r]});
-    }
+    if(gid&&!isCancelRow){
+      if(groupIndexMap[gid]===undefined){groupIndexMap[gid]=groups.length;groups.push({groupId:gid,items:[r]});}
+      else{groups[groupIndexMap[gid]].items.push(r);}
+    }else{groups.push({groupId:null,items:[r]});}
   });
 
   var typeColors={'入庫':'#dcfce7','出庫（販売）':'#fee2e2','出庫（使用）':'#fee2e2','出庫（廃棄）':'#fee2e2','移動（出）':'#ede9fe','移動（入）':'#ede9fe','棚卸し修正':'#fef9c3'};
@@ -940,11 +1210,8 @@ var filtered=historyLogs.filter(function(r){
 
   var html='';
   groups.forEach(function(g){
-    if(g.groupId){
-      html+=renderGroupCard(g,cancelledIds);
-    }else{
-      html+=renderSingleCard(g.items[0],cancelledIds,typeColors,typeTextColors);
-    }
+    if(g.groupId) html+=renderGroupCard(g,cancelledIds);
+    else html+=renderSingleCard(g.items[0],cancelledIds,typeColors,typeTextColors);
   });
   document.getElementById('history-log-list').innerHTML=html;
 }
@@ -992,7 +1259,6 @@ function renderGroupCard(g,cancelledIds){
   var toWarehouse=outRow?outRow['移動先倉庫']:inRow2?inRow2['倉庫']:'';
   var finalQty=inRow2?Number(inRow2['数量変動'])||0:Number(items[items.length-1]['数量変動'])||0;
   var finalUnit=inRow2?inRow2['単位']||'':items[items.length-1]['単位']||'';
-  // グループ内のいずれかのLOG_IDが取消済みならグループ全体を取消済みとみなす
   var alreadyCancelled=items.some(function(r){return cancelledIds[r['LOG_ID']]===true;});
   return '<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1.5px solid '+groupTc+';'+(alreadyCancelled?'opacity:.6;':'')+'">'+
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
@@ -1017,9 +1283,7 @@ function renderGroupCard(g,cancelledIds){
 function handleCancelBtn(btn){
   openCancelLogModal(btn.dataset.logId,btn.dataset.skuId,btn.dataset.type,btn.dataset.warehouse,btn.dataset.dest,btn.dataset.staff,Number(btn.dataset.qty));
 }
-function handleCancelGroupBtn(btn){
-  openCancelLogGroupModal(btn.dataset.groupId);
-}
+function handleCancelGroupBtn(btn){openCancelLogGroupModal(btn.dataset.groupId);}
 function openCancelLogModal(logId,skuId,type,warehouse,dest,staff,qty){
   cancelGroupTarget=null;
   cancelTarget={LOG_ID:logId,SKU_ID:skuId,操作種別:type,倉庫:warehouse,移動先倉庫:dest,担当者:staff,数量変動:qty};
@@ -1061,7 +1325,7 @@ async function confirmCancelLog(){
 }
 
 // ============================================================
-// 補充確認・棚卸し・PDF出力
+// 補充確認
 // ============================================================
 function printReplenishList(){
   var wName=currentReplenishWarehouse;
@@ -1130,6 +1394,9 @@ function renderReplenishList(){
   document.getElementById('replenish-list').innerHTML=html;
 }
 
+// ============================================================
+// 棚卸し
+// ============================================================
 let inventoryStock=[],currentInvProduct=null,invQty='',invCurrentCategory='',invCurrentProductName='',invRecordedSizes=[];
 async function loadInventoryStock(){
   try{
@@ -1336,11 +1603,40 @@ function renderMasterList(){
     grouped[cat].forEach(function(r){
       var inactive=!r['有効'];
       var ss=escAttr(r['SKU_ID']),ns=escAttr(r['商品名']),sz=escAttr(r['サイズ']);
-      html+='<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid '+(inactive?'#fde68a':'var(--border)')+';opacity:'+(inactive?'.65':'1')+';display:flex;align-items:center;gap:8px"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:15px;font-weight:700;color:'+(inactive?'var(--text3)':'var(--text)')+'">'+r['商品名']+'</span><span style="font-size:13px;color:var(--text2)">'+r['サイズ']+'</span>'+(inactive?'<span class="badge" style="background:#fef3c7;color:#92400e">廃番</span>':'')+'</div><div style="font-size:11px;color:var(--text3);font-family:monospace;margin-top:2px">'+r['SKU_ID']+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+r['商品区分']+(r['備考']?'／'+r['備考']:'')+'</div></div><button onclick="openEditMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--primary);color:var(--primary);background:#fff;cursor:pointer;white-space:nowrap;margin-right:4px">編集</button><button onclick="openDupeMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid #6b7280;color:#6b7280;background:#fff;cursor:pointer;white-space:nowrap;margin-right:4px">複製</button>'+(inactive?'<button onclick="openToggleMasterModal(\''+ss+'\',\''+ns+'\',\''+sz+'\',true)" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--success);color:var(--success);background:#fff;cursor:pointer;white-space:nowrap">復元</button>':'<button onclick="openToggleMasterModal(\''+ss+'\',\''+ns+'\',\''+sz+'\',false)" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;cursor:pointer;white-space:nowrap">廃番</button>')+'</div>';
+      // ラベル印刷ボタン用データ
+      var itemJson=escAttr(JSON.stringify({SKU_ID:r['SKU_ID'],商品名:r['商品名'],サイズ:r['サイズ'],バーコード種別:r['バーコード種別']||'QR',バーコード番号:r['バーコード番号']||''}));
+      html+='<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid '+(inactive?'#fde68a':'var(--border)')+';opacity:'+(inactive?'.65':'1')+';display:flex;align-items:center;gap:6px">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+
+            '<span style="font-size:15px;font-weight:700;color:'+(inactive?'var(--text3)':'var(--text)')+'">'+r['商品名']+'</span>'+
+            '<span style="font-size:13px;color:var(--text2)">'+r['サイズ']+'</span>'+
+            (inactive?'<span class="badge" style="background:#fef3c7;color:#92400e">廃番</span>':'')+
+          '</div>'+
+          '<div style="font-size:11px;color:var(--text3);font-family:monospace;margin-top:2px">'+r['SKU_ID']+'</div>'+
+          '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+r['商品区分']+(r['備考']?'／'+r['備考']:'')+
+          '　<span style="color:var(--text3);">'+(r['バーコード種別']||'QR')+'</span></div>'+
+        '</div>'+
+        // ラベル印刷ボタン
+        '<button onclick="openLabelPrintModalByJson(\''+itemJson+'\')" style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid #16a34a;color:#16a34a;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="ラベル印刷"><i class="ti ti-tag"></i></button>'+
+        '<button onclick="openEditMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--primary);color:var(--primary);background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">編集</button>'+
+        '<button onclick="openDupeMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #6b7280;color:#6b7280;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">複製</button>'+
+        (inactive?
+          '<button onclick="openToggleMasterModal(\''+ss+'\',\''+ns+'\',\''+sz+'\',true)" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--success);color:var(--success);background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">復元</button>':
+          '<button onclick="openToggleMasterModal(\''+ss+'\',\''+ns+'\',\''+sz+'\',false)" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">廃番</button>')+
+      '</div>';
     });
   });
   document.getElementById('master-list').innerHTML=html;
 }
+
+// JSONエンコードされた商品情報からラベル印刷モーダルを開く
+function openLabelPrintModalByJson(itemJson){
+  try{
+    var item=JSON.parse(itemJson);
+    openLabelPrintModal(item);
+  }catch(e){showToast('ラベルデータの読み込みに失敗しました');}
+}
+
 function openDupeMasterModal(skuId){
   var item=masterAll.find(function(r){return r['SKU_ID']===skuId;});if(!item) return;
   openAddMasterModal();
