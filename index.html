@@ -1184,7 +1184,7 @@ function showToast(msg){
   },2000);
 }
 
-var historyLogs=[], histDateFilter='today', cancelTarget=null;
+var historyLogs=[], histDateFilter='today', cancelTarget=null, cancelGroupTarget=null;
 
 async function loadHistoryLogs(){
   document.getElementById('history-log-list').innerHTML='<div class="loading">読み込み中...</div>';
@@ -1240,12 +1240,32 @@ function renderHistoryList(){
     return;
   }
 
+  // 既に取消済みの元LOG_IDを全ログから収集する（フィルター後ではなく全履歴から判定する必要がある）
   var cancelledSourceIds={};
   historyLogs.forEach(function(r){
     var note=r['備考']||'';
     var m=note.match(/取消（元LOG_ID:\s*([^）]+)）/);
     if(m){
       cancelledSourceIds[m[1].trim()]=true;
+    }
+  });
+
+  // グループID（入庫後即移動・倉庫間移動のペア）でまとめる。
+  // グループIDが無い行（単発の入庫・出庫・棚卸し修正・取消ログ）は単独カードとして扱う。
+  var groups=[];
+  var groupIndexMap={};
+  filtered.forEach(function(r){
+    var isCancelledRow=r['操作種別']&&r['操作種別'].indexOf('取消')===0;
+    var gid=r['グループID'];
+    if(gid && !isCancelledRow){
+      if(groupIndexMap[gid]===undefined){
+        groupIndexMap[gid]=groups.length;
+        groups.push({groupId:gid, items:[r]});
+      }else{
+        groups[groupIndexMap[gid]].items.push(r);
+      }
+    }else{
+      groups.push({groupId:null, items:[r]});
     }
   });
 
@@ -1259,46 +1279,116 @@ function renderHistoryList(){
   };
 
   var html='';
-  filtered.forEach(function(r){
-    var isCancelled=r['操作種別']&&r['操作種別'].indexOf('取消')===0;
-    var alreadyCancelled=cancelledSourceIds[r['LOG_ID']]===true;
-    var canCancel=!isCancelled&&!alreadyCancelled&&r['LOG_ID'];
-    var qty=parseFloat(r['数量変動'])||0;
-    var qtyColor=qty>0?'var(--success)':qty<0?'var(--danger)':'var(--text2)';
-    var qtyStr=(qty>0?'+':'')+qty;
-    var bg=typeColors[r['操作種別']]||'#f3f4f6';
-    var tc=typeTextColors[r['操作種別']]||'#374151';
-    if(isCancelled){bg='#f3f4f6';tc='#6b7280';}
-
-    var logIdSafe=escAttr(r['LOG_ID']||'');
-    var skuSafe=escAttr(r['SKU_ID']||'');
-    var typeSafe=escAttr(r['操作種別']||'');
-    var warehouseSafe=escAttr(r['倉庫']||'');
-    var destSafe=escAttr(r['移動先倉庫']||'');
-    var staffSafe=escAttr(r['担当者']||'');
-    var qtyVal=r['数量変動']||0;
-
-    html+='<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);'+(isCancelled?'opacity:.6;':'')+'">'+
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
-        '<span style="background:'+bg+';color:'+tc+';font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;">'+r['操作種別']+'</span>'+
-        '<span style="font-size:11px;color:var(--text3);margin-left:auto;">'+r['日時']+'</span>'+
-      '</div>'+
-      '<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;">'+(r['商品名（自動）']||r['商品名']||'')+' '+(r['サイズ（自動）']||r['サイズ']||'')+'</div>'+
-      '<div style="font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:6px;">'+r['SKU_ID']+'</div>'+
-      '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);">'+
-        '<span>'+r['倉庫']+(r['移動先倉庫']?' → '+r['移動先倉庫']:'')+'</span>'+
-        '<span>'+r['担当者']+'</span>'+
-        '<span style="margin-left:auto;font-size:16px;font-weight:700;color:'+qtyColor+';">'+qtyStr+' '+r['単位']+'</span>'+
-      '</div>'+
-      (canCancel?
-        '<button data-log-id="'+logIdSafe+'" data-sku-id="'+skuSafe+'" data-type="'+typeSafe+'" data-warehouse="'+warehouseSafe+'" data-dest="'+destSafe+'" data-staff="'+staffSafe+'" data-qty="'+qtyVal+'" onclick="handleCancelBtn(this)" '+
-        'style="width:100%;margin-top:10px;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;">'+
-        '取消する</button>':
-        (alreadyCancelled?'<div style="width:100%;margin-top:10px;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">取消済み</div>':''))+
-    '</div>';
+  groups.forEach(function(g){
+    if(g.groupId){
+      html+=renderGroupCard(g, cancelledSourceIds);
+    }else{
+      html+=renderSingleCard(g.items[0], cancelledSourceIds, typeColors, typeTextColors);
+    }
   });
 
   document.getElementById('history-log-list').innerHTML=html;
+}
+
+function renderSingleCard(r, cancelledSourceIds, typeColors, typeTextColors){
+  var isCancelled=r['操作種別']&&r['操作種別'].indexOf('取消')===0;
+  var alreadyCancelled=cancelledSourceIds[r['LOG_ID']]===true;
+  var canCancel=!isCancelled&&!alreadyCancelled&&r['LOG_ID'];
+  var qty=parseFloat(r['数量変動'])||0;
+  var qtyColor=qty>0?'var(--success)':qty<0?'var(--danger)':'var(--text2)';
+  var qtyStr=(qty>0?'+':'')+qty;
+  var bg=typeColors[r['操作種別']]||'#f3f4f6';
+  var tc=typeTextColors[r['操作種別']]||'#374151';
+  if(isCancelled){bg='#f3f4f6';tc='#6b7280';}
+
+  var logIdSafe=escAttr(r['LOG_ID']||'');
+  var skuSafe=escAttr(r['SKU_ID']||'');
+  var typeSafe=escAttr(r['操作種別']||'');
+  var warehouseSafe=escAttr(r['倉庫']||'');
+  var destSafe=escAttr(r['移動先倉庫']||'');
+  var staffSafe=escAttr(r['担当者']||'');
+  var qtyVal=r['数量変動']||0;
+
+  return '<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);'+(isCancelled?'opacity:.6;':'')+'">'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
+      '<span style="background:'+bg+';color:'+tc+';font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;">'+r['操作種別']+'</span>'+
+      '<span style="font-size:11px;color:var(--text3);margin-left:auto;">'+r['日時']+'</span>'+
+    '</div>'+
+    '<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;">'+(r['商品名（自動）']||r['商品名']||'')+' '+(r['サイズ（自動）']||r['サイズ']||'')+'</div>'+
+    '<div style="font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:6px;">'+r['SKU_ID']+'</div>'+
+    '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);">'+
+      '<span>'+r['倉庫']+(r['移動先倉庫']?' → '+r['移動先倉庫']:'')+'</span>'+
+      '<span>'+r['担当者']+'</span>'+
+      '<span style="margin-left:auto;font-size:16px;font-weight:700;color:'+qtyColor+';">'+qtyStr+' '+r['単位']+'</span>'+
+    '</div>'+
+    (canCancel?
+      '<button data-log-id="'+logIdSafe+'" data-sku-id="'+skuSafe+'" data-type="'+typeSafe+'" data-warehouse="'+warehouseSafe+'" data-dest="'+destSafe+'" data-staff="'+staffSafe+'" data-qty="'+qtyVal+'" onclick="handleCancelBtn(this)" '+
+      'style="width:100%;margin-top:10px;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;">'+
+      '取消する</button>':
+      (alreadyCancelled?'<div style="width:100%;margin-top:10px;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">取消済み</div>':''))+
+  '</div>';
+}
+
+function renderGroupCard(g, cancelledSourceIds){
+  var items=g.items;
+  var hasIn=items.some(function(r){return r['操作種別']==='入庫';});
+  var groupLabel=hasIn?'入庫 → 即移動':'倉庫間移動';
+  var groupBg=hasIn?'#e0f2fe':'#ede9fe';
+  var groupTc=hasIn?'#075985':'#4c1d95';
+
+  var rep=items[0];
+  var productName=(rep['商品名（自動）']||rep['商品名']||'')+' '+(rep['サイズ（自動）']||rep['サイズ']||'');
+
+  var fromWarehouse='', toWarehouse='';
+  var inRow=items.find(function(r){return r['操作種別']==='入庫';});
+  var outRow=items.find(function(r){return r['操作種別']==='移動（出）';});
+  var inRow2=items.find(function(r){return r['操作種別']==='移動（入）';});
+  if(inRow){
+    fromWarehouse=inRow['倉庫'];
+  }else if(outRow){
+    fromWarehouse=outRow['倉庫'];
+  }
+  if(outRow){
+    toWarehouse=outRow['移動先倉庫'];
+  }else if(inRow2){
+    toWarehouse=inRow2['倉庫'];
+  }
+
+  var finalQty=0, finalUnit='';
+  if(inRow2){
+    finalQty=Number(inRow2['数量変動'])||0;
+    finalUnit=inRow2['単位']||'';
+  }else if(items.length){
+    finalQty=Number(items[items.length-1]['数量変動'])||0;
+    finalUnit=items[items.length-1]['単位']||'';
+  }
+
+  var alreadyCancelled=items.some(function(r){return cancelledSourceIds[r['LOG_ID']]===true;});
+  var canCancel=!alreadyCancelled;
+
+  var groupIdSafe=escAttr(g.groupId);
+  var staffSafe=(rep['担当者']||'');
+
+  return '<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1.5px solid '+groupTc+';'+(alreadyCancelled?'opacity:.6;':'')+'">'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
+      '<span style="background:'+groupBg+';color:'+groupTc+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">'+groupLabel+'</span>'+
+      '<span style="font-size:11px;color:var(--text3);margin-left:auto;">'+rep['日時']+'</span>'+
+    '</div>'+
+    '<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;">'+productName+'</div>'+
+    '<div style="font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:6px;">'+rep['SKU_ID']+'</div>'+
+    '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);font-weight:600;margin-bottom:6px;">'+
+      '<span>'+fromWarehouse+'</span><span style="color:var(--text3);">→</span><span>'+toWarehouse+'</span>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);">'+
+      '<span>'+staffSafe+'</span>'+
+      '<span style="margin-left:auto;font-size:16px;font-weight:700;color:var(--success);">+'+finalQty+' '+finalUnit+'</span>'+
+    '</div>'+
+    (canCancel?
+      '<button data-group-id="'+groupIdSafe+'" onclick="handleCancelGroupBtn(this)" '+
+      'style="width:100%;margin-top:10px;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;">'+
+      '取消する</button>':
+      '<div style="width:100%;margin-top:10px;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">取消済み</div>')+
+  '</div>';
 }
 
 function handleCancelBtn(btn){
@@ -1312,7 +1402,13 @@ function handleCancelBtn(btn){
   openCancelLogModal(logId,skuId,type,warehouse,dest,staff,qty);
 }
 
+function handleCancelGroupBtn(btn){
+  var groupId=btn.dataset.groupId;
+  openCancelLogGroupModal(groupId);
+}
+
 function openCancelLogModal(logId,skuId,type,warehouse,dest,staff,qty){
+  cancelGroupTarget=null;
   cancelTarget={LOG_ID:logId,SKU_ID:skuId,操作種別:type,倉庫:warehouse,移動先倉庫:dest,担当者:staff,数量変動:qty};
   var qtyStr=(qty>0?'+':'')+qty;
   document.getElementById('cancel-log-body').textContent=type+' '+qtyStr+' の記録を取消しますか？取消ログが追記されて在庫が元に戻ります。';
@@ -1320,20 +1416,36 @@ function openCancelLogModal(logId,skuId,type,warehouse,dest,staff,qty){
   document.getElementById('cancelLogModal').classList.add('show');
 }
 
+function openCancelLogGroupModal(groupId){
+  cancelTarget=null;
+  cancelGroupTarget=groupId;
+  document.getElementById('cancel-log-body').textContent='この一連の操作（入庫・移動）をまとめて取消しますか？関連するすべての記録が取消され、在庫が元に戻ります。';
+
+  document.getElementById('cancelLogModal').classList.add('show');
+}
+
 function closeCancelLogModal(){
   document.getElementById('cancelLogModal').classList.remove('show');
   cancelTarget=null;
+  cancelGroupTarget=null;
 }
 
 async function confirmCancelLog(){
-  if(!cancelTarget) return;
+  if(!cancelTarget && !cancelGroupTarget) return;
   var btn=document.getElementById('cancel-log-confirm-btn');
   btn.disabled=true;btn.textContent='取消中...';
   try{
-    const res=await fetch(API,{method:'POST',body:JSON.stringify(Object.assign({action:'cancelLog'},cancelTarget))});
-    const json=await res.json();
-    if(!json.success) throw new Error(json.message);
-    showToast('✅ 取消しました');
+    if(cancelGroupTarget){
+      const res=await fetch(API,{method:'POST',body:JSON.stringify({action:'cancelLogGroup',グループID:cancelGroupTarget})});
+      const json=await res.json();
+      if(!json.success) throw new Error(json.message);
+      showToast('✅ 取消しました（'+json.count+'件）');
+    }else{
+      const res=await fetch(API,{method:'POST',body:JSON.stringify(Object.assign({action:'cancelLog'},cancelTarget))});
+      const json=await res.json();
+      if(!json.success) throw new Error(json.message);
+      showToast('✅ 取消しました');
+    }
     closeCancelLogModal();
     await loadHistoryLogs();
   }catch(e){
