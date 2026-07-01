@@ -1617,7 +1617,7 @@ function renderMasterList(){
           '　<span style="color:var(--text3);">'+(r['バーコード種別']||'QR')+'</span></div>'+
         '</div>'+
         // ラベル印刷ボタン
-        '<button onclick="openLabelPrintModalByJson(\''+itemJson+'\')" style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid #16a34a;color:#16a34a;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="ラベル印刷"><i class="ti ti-tag"></i></button>'+
+        '<button onclick="openLabelPrintModalBySku(\''+ss+'\')" style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid #16a34a;color:#16a34a;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="ラベル印刷"><i class="ti ti-tag"></i></button>'+
         '<button onclick="openEditMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--primary);color:var(--primary);background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">編集</button>'+
         '<button onclick="openDupeMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #6b7280;color:#6b7280;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">複製</button>'+
         (inactive?
@@ -1630,13 +1630,11 @@ function renderMasterList(){
 }
 
 // JSONエンコードされた商品情報からラベル印刷モーダルを開く
-function openLabelPrintModalByJson(itemJson){
-  try{
-    var item=JSON.parse(itemJson);
-    openLabelPrintModal(item);
-  }catch(e){showToast('ラベルデータの読み込みに失敗しました');}
+function openLabelPrintModalBySku(skuId){
+  var item=masterAll.find(function(r){return r['SKU_ID']===skuId;});
+  if(!item){showToast('商品が見つかりません');return;}
+  openLabelPrintModal(item);
 }
-
 function openDupeMasterModal(skuId){
   var item=masterAll.find(function(r){return r['SKU_ID']===skuId;});if(!item) return;
   openAddMasterModal();
