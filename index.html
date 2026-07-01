@@ -864,23 +864,39 @@ function executeLabelPrint(){
 // QR生成をPromise化（qrcode@1.5.3のブラウザビルド対応）
 function qrToDataURL(val){
   return new Promise(function(resolve){
-    // コールバック形式を試みる
+    var done=false;
+    function ok(url){if(!done){done=true;resolve(url||'');}}
+    function fail(){if(!done){done=true;resolve('');}}
+
+    // パターンA: toDataURL → Promise
     try{
-      QRCode.toDataURL(val,{width:90,margin:1},function(err,url){
-        if(url) resolve(url);
-        else resolve('');
-      });
-    }catch(e){
-      // Promiseを返すバージョンの場合
+      var r=QRCode.toDataURL(val,{width:90,margin:1});
+      if(r&&typeof r.then==='function'){r.then(ok).catch(function(){tryB();});return;}
+      if(typeof r==='string'&&r.length>10){ok(r);return;}
+    }catch(e){}
+
+    // パターンB: toCanvas → Promise
+    function tryB(){
       try{
-        var p=QRCode.toDataURL(val,{width:90,margin:1});
-        if(p&&typeof p.then==='function'){
-          p.then(function(url){resolve(url||'');}).catch(function(){resolve('');});
-        }else{
-          resolve('');
-        }
-      }catch(e2){resolve('');}
+        var c=document.createElement('canvas');
+        var r2=QRCode.toCanvas(c,val,{width:90,margin:1});
+        if(r2&&typeof r2.then==='function'){r2.then(function(){ok(c.toDataURL('image/png'));}).catch(function(){tryC(c);});return;}
+      }catch(e){}
+      tryC(null);
     }
+
+    // パターンC: toCanvas → コールバック
+    function tryC(canvas){
+      try{
+        var c=canvas||document.createElement('canvas');
+        QRCode.toCanvas(c,val,{width:90,margin:1},function(err){
+          if(!err){ok(c.toDataURL('image/png'));}else{fail();}
+        });
+        setTimeout(function(){fail();},2000);
+      }catch(e){fail();}
+    }
+
+    tryB();
   });
 }
 
