@@ -586,6 +586,7 @@ function buildWarehouseSelects(){
 
 window.onload=function(){
   document.getElementById('modal-start-btn').addEventListener('click',startSession);
+  document.addEventListener('click',function(e){var b=e.target.closest('.label-print-btn');if(b&&b.dataset.sku) openLabelPrintModalBySku(b.dataset.sku);});
   var savedStaff=localStorage.getItem('staff_name');
   if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
   loadData();
@@ -1548,7 +1549,7 @@ function renderMasterList(){
           '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+r['商品区分']+(r['備考']?'／'+r['備考']:'')+
           '　<span style="color:var(--text3);">'+(r['バーコード種別']||'QR')+'</span></div>'+
         '</div>'+
-        '<button onclick="openLabelPrintModalBySku(\''+ss+'\')" style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid #16a34a;color:#16a34a;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="ラベル印刷"><i class="ti ti-tag"></i></button>'+
+        '<button data-sku="'+ss+'" class="label-print-btn" style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid #16a34a;color:#16a34a;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="ラベル印刷"><i class="ti ti-tag"></i></button>'+
         '<button onclick="openEditMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--primary);color:var(--primary);background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">編集</button>'+
         '<button onclick="openDupeMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #6b7280;color:#6b7280;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">複製</button>'+
         (inactive?
