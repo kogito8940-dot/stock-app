@@ -1587,7 +1587,7 @@ function renderMasterList(){
     html+='<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;margin:14px 0 6px;text-transform:uppercase">'+cat+'</div>';
     grouped[cat].forEach(function(r){
       var inactive=!r['有効'];
-      var ss=escAttr(r['SKU_ID']),ns=escAttr(r['商品名']),sz=escAttr(r['サイズ']);
+      var ss=r['SKU_ID'],ns=escAttr(r['商品名']),sz=escAttr(r['サイズ']);
       // ラベル印刷ボタン用データ
       html+='<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid '+(inactive?'#fde68a':'var(--border)')+';opacity:'+(inactive?'.65':'1')+';display:flex;align-items:center;gap:6px">'+
         '<div style="flex:1;min-width:0">'+
@@ -1601,7 +1601,7 @@ function renderMasterList(){
           '　<span style="color:var(--text3);">'+(r['バーコード種別']||'QR')+'</span></div>'+
         '</div>'+
         // ラベル印刷ボタン
-        '<button onclick="openLabelPrintModalBySku(\\\'' +ss+ '\')" style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid #16a34a;color:#16a34a;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="ラベル印刷"><i class="ti ti-tag"></i></button>'+
+        '<button onclick="openLabelPrintModalBySku(\'' +ss+ '\')" style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid #16a34a;color:#16a34a;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="ラベル印刷"><i class="ti ti-tag"></i></button>'+
         '<button onclick="openEditMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--primary);color:var(--primary);background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">編集</button>'+
         '<button onclick="openDupeMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #6b7280;color:#6b7280;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">複製</button>'+
         (inactive?
