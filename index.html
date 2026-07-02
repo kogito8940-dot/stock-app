@@ -538,9 +538,11 @@ window.onload=function(){
   var savedStaff=localStorage.getItem('staff_name');
   if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
   loadData();
-  // 初期ホーム画面でキャラを表示
+  // 初期ホーム画面でキャラとC&B Limitedを表示
   var chara=document.getElementById('home-chara');
   if(chara) chara.style.display='block';
+  var cb=document.getElementById('cb-limited');
+  if(cb) cb.style.display='';
 };
 
 function openModal(){
@@ -604,23 +606,21 @@ function showScreen(name){
   var titles={home:'在庫管理',operation:'入出庫',category:'商品選択',product:'商品選択',size:'サイズ選択',qty:'数量入力',stock:'在庫確認',master:'商品マスタ','stock-items':'在庫確認',replenish:'補充確認',history:'履歴','inv-category':'棚卸し','inv-product':'棚卸し','inv-size':'棚卸し',inventoryQty:'棚卸し 数量入力'};
   document.getElementById('header-title').textContent=titles[name]||'';
   document.querySelectorAll('.bnav-item').forEach(function(i){i.classList.remove('active');});
+  var chara=document.getElementById('home-chara');
+  var cb=document.getElementById('cb-limited');
   if(name==='home'){
-    var chara=document.getElementById('home-chara');
     if(chara) chara.style.display='block';
+    if(cb) cb.style.display='';
     document.getElementById('nav-home').classList.add('active');
     document.getElementById('header-sub').classList.add('hidden');
     document.getElementById('header-change').classList.add('hidden');
     document.getElementById('back-btn').classList.add('hidden');
     document.getElementById('nav-session').style.display='none';
     session.mode='';
-    var cb=document.getElementById('cb-limited');
-    if(cb) cb.style.display='';
   }else{
-    document.getElementById('back-btn').classList.remove('hidden');
-    var chara=document.getElementById('home-chara');
     if(chara) chara.style.display='none';
-    var cb=document.getElementById('cb-limited');
     if(cb) cb.style.display='none';
+    document.getElementById('back-btn').classList.remove('hidden');
   }
   if(name==='master'){document.getElementById('nav-master').classList.add('active');loadMasterAll();}
   if(name==='history'){document.getElementById('nav-history').classList.add('active');loadHistoryLogs();}
