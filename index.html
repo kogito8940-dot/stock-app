@@ -921,17 +921,18 @@ function renderSingleCard(r,cancelledIds,typeColors,typeTextColors){
   var qtyStr=(qty>0?'+':'')+qty;
   var bg=typeColors[r['操作種別']]||'#f3f4f6';
   var tc=typeTextColors[r['操作種別']]||'#374151';
+  var fadeOut=isCancelled||alreadyCancelled;
   if(isCancelled){bg='#f3f4f6';tc='#6b7280';}
   var noteHtml='';
   if(r['操作種別']==='棚卸し修正'&&r['備考']) noteHtml='<div style="font-size:11px;color:var(--text3);margin-top:4px;margin-bottom:10px;">'+r['備考']+'</div>';
   else noteHtml='<div style="margin-bottom:10px;"></div>';
-  return '<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);'+(isCancelled?'opacity:.55;':'')+'">'+
+  return '<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);'+(fadeOut?'opacity:.55;':'')+'">'+
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
       '<span style="background:'+bg+';color:'+tc+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0;">'+r['操作種別']+'</span>'+
       '<span style="font-size:11px;color:var(--text3);margin-left:auto;">担当：'+(r['担当者']||'')+'</span>'+
       '<span style="font-size:11px;color:var(--text3);flex-shrink:0;">'+r['日時']+'</span>'+
     '</div>'+
-    '<div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;">'+(r['商品名（自動）']||r['商品名']||'')+' '+(r['サイズ（自動）']||r['サイズ']||'')+'</div>'+
+    '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">'+(r['商品名（自動）']||r['商品名']||'')+' '+(r['サイズ（自動）']||r['サイズ']||'')+'</div>'+
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'+
       '<span style="font-size:13px;font-weight:700;color:var(--text2);">'+r['倉庫']+'</span>'+
       '<span style="font-size:16px;font-weight:700;margin-left:auto;color:'+qtyColor+';">'+qtyStr+' '+r['単位']+'</span>'+
@@ -996,7 +997,7 @@ function renderGroupCard(g,cancelledIds){
       '<span style="font-size:11px;color:var(--text3);margin-left:auto;">担当：'+(rep['担当者']||'')+'</span>'+
       '<span style="font-size:11px;color:var(--text3);flex-shrink:0;">'+rep['日時']+'</span>'+
     '</div>'+
-    '<div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;">'+productName+'</div>'+
+    '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">'+productName+'</div>'+
     flowHtml+
     resultHtml+
     (alreadyCancelled?
