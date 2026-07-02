@@ -919,14 +919,11 @@ function setHistDateFilter(filter,btn){
   renderHistoryList();
 }
 function parseJSTDate(str){
-  // 'yyyy/MM/dd HH:mm' または 'yyyy/MM/dd HH:mm:ss' をパース（iOS対応）
+  // 'yyyy/MM/dd HH:mm' または 'yyyy/MM/dd HH:mm:ss' を
+  // ローカル時刻（日本時間）として正しくパースする
   if(!str) return new Date(NaN);
-  var s=String(str).replace(/\//g,'-').replace(' ','T');
-  var d=new Date(s);
-  if(!isNaN(d)) return d;
-  // フォールバック: 手動パース
-  var m=String(str).match(/(\d{4})[\/-](\d{2})[\/-](\d{2})[T ](\d{2}):(\d{2})/);
-  if(m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]),parseInt(m[4]),parseInt(m[5]));
+  var m=String(str).match(/(\d{4})[\/-](\d{2})[\/-](\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if(m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]),parseInt(m[4]),parseInt(m[5]),parseInt(m[6]||0));
   return new Date(NaN);
 }
 function renderHistoryList(){
