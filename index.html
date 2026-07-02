@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>在庫管理</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -610,50 +610,61 @@ function showScreen(name){
 }
 function goBack(){screenStack.pop();var prev=screenStack.pop()||'home';showScreen(prev);}
 
-var zxingReader=null,scanActive=false,scanAnimFrame=null;
+var scanStream=null,scanAnimFrame=null,scanActive=false;
 function startScan(){
   var modal=document.getElementById('scanModal');
   modal.style.display='flex';modal.style.flexDirection='column';
   scanActive=true;
   document.getElementById('scanStatus').textContent='カメラを起動中...';
-  try{
-    zxingReader=new ZXing.BrowserMultiFormatReader();
-    // 背面カメラを優先して取得
-    zxingReader.listVideoInputDevices().then(function(devices){
-      // 背面カメラ（environment）を優先
-      var deviceId=null;
-      for(var i=0;i<devices.length;i++){
-        var label=(devices[i].label||'').toLowerCase();
-        if(label.indexOf('back')!==-1||label.indexOf('rear')!==-1||label.indexOf('environment')!==-1){
-          deviceId=devices[i].deviceId;break;
-        }
-      }
-      // 見つからなければ最後のデバイス（通常背面）を使用
-      if(!deviceId&&devices.length>0) deviceId=devices[devices.length-1].deviceId;
-      document.getElementById('scanStatus').textContent='QRコードまたはバーコードを枠内に合わせてください';
-      return zxingReader.decodeFromVideoDevice(deviceId,'scanVideo',function(result,err){
-        if(!scanActive) return;
-        if(result){
-          onScanSuccess(result.getText());
-          return;
-        }
-        if(err&&err.name!=='NotFoundException'){
-          console.warn('ZXing err:',err);
-        }
+  // 高解像度＋連続オートフォーカスを指定
+  var constraints={
+    video:{
+      facingMode:'environment',
+      width:{ideal:1920},
+      height:{ideal:1080},
+      advanced:[{focusMode:'continuous'},{zoom:1}]
+    }
+  };
+  navigator.mediaDevices.getUserMedia(constraints)
+    .catch(function(){
+      // advancedが非対応の場合はシンプルな制約で再試行
+      return navigator.mediaDevices.getUserMedia({
+        video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}
+      });
+    })
+    .then(function(stream){
+      scanStream=stream;
+      var video=document.getElementById('scanVideo');
+      video.srcObject=stream;
+      video.play();
+      video.addEventListener('loadedmetadata',function(){
+        document.getElementById('scanStatus').textContent='QRコードまたはバーコードを枠内に合わせてください';
+        scanFrame();
       });
     }).catch(function(e){
       document.getElementById('scanStatus').textContent='カメラの起動に失敗しました: '+e.message;
     });
-  }catch(e){
-    document.getElementById('scanStatus').textContent='カメラの起動に失敗しました: '+e.message;
+}
+function scanFrame(){
+  if(!scanActive) return;
+  var video=document.getElementById('scanVideo');
+  var canvas=document.getElementById('scanCanvas');
+  if(video.readyState===video.HAVE_ENOUGH_DATA){
+    canvas.width=video.videoWidth;
+    canvas.height=video.videoHeight;
+    var ctx=canvas.getContext('2d');
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'attemptBoth'});
+    if(code){onScanSuccess(code.data);return;}
   }
+  scanAnimFrame=requestAnimationFrame(scanFrame);
 }
 function stopScan(){
   scanActive=false;
-  if(zxingReader){
-    try{zxingReader.reset();}catch(e){}
-    zxingReader=null;
-  }
+  if(scanAnimFrame) cancelAnimationFrame(scanAnimFrame);
+  if(scanStream) scanStream.getTracks().forEach(function(t){t.stop();});
+  scanStream=null;
   document.getElementById('scanModal').style.display='none';
 }
 async function onScanSuccess(code){
