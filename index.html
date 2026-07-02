@@ -922,42 +922,24 @@ function renderSingleCard(r,cancelledIds,typeColors,typeTextColors){
   var bg=typeColors[r['操作種別']]||'#f3f4f6';
   var tc=typeTextColors[r['操作種別']]||'#374151';
   if(isCancelled){bg='#f3f4f6';tc='#6b7280';}
-  var isMove=r['操作種別']==='移動（出）';
-  var destWarehouse=r['移動先倉庫']||'';
-  // 移動（出）の場合：2段＋矢印表示
-  var warehouseHtml;
-  if(isMove&&destWarehouse){
-    warehouseHtml=
-      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:0px;margin-left:auto;">'+
-        '<div style="display:flex;align-items:center;gap:6px;">'+
-          '<span style="font-size:12px;color:var(--text2);">'+r['倉庫']+'</span>'+
-          '<span style="font-size:15px;font-weight:700;color:var(--danger);">'+(-Math.abs(qty))+' '+r['単位']+'</span>'+
-        '</div>'+
-        '<div style="font-size:18px;color:var(--text3);line-height:1;text-align:right;">↓</div>'+
-        '<div style="display:flex;align-items:center;gap:6px;">'+
-          '<span style="font-size:12px;color:var(--text2);">'+destWarehouse+'</span>'+
-          '<span style="font-size:15px;font-weight:700;color:var(--success);">+'+Math.abs(qty)+' '+r['単位']+'</span>'+
-        '</div>'+
-      '</div>';
-  }else{
-    warehouseHtml=
-      '<span>'+r['倉庫']+(destWarehouse?' → '+destWarehouse:'')+'</span>'+
-      '<span style="margin-left:auto;font-size:16px;font-weight:700;color:'+qtyColor+';">'+qtyStr+' '+r['単位']+'</span>';
-  }
-  return '<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);'+(isCancelled?'opacity:.6;':'')+'">'+
+  var noteHtml='';
+  if(r['操作種別']==='棚卸し修正'&&r['備考']) noteHtml='<div style="font-size:11px;color:var(--text3);margin-top:4px;margin-bottom:10px;">'+r['備考']+'</div>';
+  else noteHtml='<div style="margin-bottom:10px;"></div>';
+  return '<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);'+(isCancelled?'opacity:.55;':'')+'">'+
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
-      '<span style="background:'+bg+';color:'+tc+';font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;">'+r['操作種別']+'</span>'+
-      '<span style="font-size:11px;color:var(--text3);margin-left:auto;">'+r['日時']+'</span>'+
+      '<span style="background:'+bg+';color:'+tc+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0;">'+r['操作種別']+'</span>'+
+      '<span style="font-size:11px;color:var(--text3);margin-left:auto;">担当：'+(r['担当者']||'')+'</span>'+
+      '<span style="font-size:11px;color:var(--text3);flex-shrink:0;">'+r['日時']+'</span>'+
     '</div>'+
-    '<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;">'+(r['商品名（自動）']||r['商品名']||'')+' '+(r['サイズ（自動）']||r['サイズ']||'')+'</div>'+
-    '<div style="font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:6px;">'+r['SKU_ID']+'</div>'+
-    '<div style="display:flex;align-items:'+(isMove&&destWarehouse?'flex-start':'center')+';gap:10px;font-size:12px;color:var(--text2);">'+
-      '<span>'+r['担当者']+'</span>'+
-      warehouseHtml+
+    '<div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;">'+(r['商品名（自動）']||r['商品名']||'')+' '+(r['サイズ（自動）']||r['サイズ']||'')+'</div>'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'+
+      '<span style="font-size:13px;font-weight:700;color:var(--text2);">'+r['倉庫']+'</span>'+
+      '<span style="font-size:16px;font-weight:700;margin-left:auto;color:'+qtyColor+';">'+qtyStr+' '+r['単位']+'</span>'+
     '</div>'+
+    noteHtml+
     (canCancel?
-      '<button data-log-id="'+escAttr(r['LOG_ID']||'')+'" data-sku-id="'+escAttr(r['SKU_ID']||'')+'" data-type="'+escAttr(r['操作種別']||'')+'" data-warehouse="'+escAttr(r['倉庫']||'')+'" data-dest="'+escAttr(r['移動先倉庫']||'')+'" data-staff="'+escAttr(r['担当者']||'')+'" data-qty="'+(r['数量変動']||0)+'" onclick="handleCancelBtn(this)" style="width:100%;margin-top:10px;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;">取消する</button>':
-      (alreadyCancelled?'<div style="width:100%;margin-top:10px;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">取消済み</div>':''))+
+      '<button data-log-id="'+escAttr(r['LOG_ID']||'')+'" data-sku-id="'+escAttr(r['SKU_ID']||'')+'" data-type="'+escAttr(r['操作種別']||'')+'" data-warehouse="'+escAttr(r['倉庫']||'')+'" data-dest="'+escAttr(r['移動先倉庫']||'')+'" data-staff="'+escAttr(r['担当者']||'')+'" data-qty="'+(r['数量変動']||0)+'" onclick="handleCancelBtn(this)" style="width:100%;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;text-align:center;">取消する</button>':
+      (alreadyCancelled?'<div style="width:100%;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">取消済み</div>':''))+
   '</div>';
 }
 function renderGroupCard(g,cancelledIds){
@@ -966,6 +948,7 @@ function renderGroupCard(g,cancelledIds){
   var groupLabel=hasIn?'入庫 → 即移動':'倉庫間移動';
   var groupBg=hasIn?'#e0f2fe':'#ede9fe';
   var groupTc=hasIn?'#075985':'#4c1d95';
+  var groupBorder=hasIn?'#075985':'#4c1d95';
   var rep=items[0];
   var productName=(rep['商品名（自動）']||rep['商品名']||'')+' '+(rep['サイズ（自動）']||rep['サイズ']||'');
   var inRow=items.find(function(r){return r['操作種別']==='入庫';});
@@ -973,33 +956,52 @@ function renderGroupCard(g,cancelledIds){
   var inRow2=items.find(function(r){return r['操作種別']==='移動（入）';});
   var fromWarehouse=inRow?inRow['倉庫']:outRow?outRow['倉庫']:'';
   var toWarehouse=outRow?outRow['移動先倉庫']:inRow2?inRow2['倉庫']:'';
-  var finalQty=inRow2?Number(inRow2['数量変動'])||0:Number(items[items.length-1]['数量変動'])||0;
+  var finalQty=Math.abs(inRow2?Number(inRow2['数量変動'])||0:Number(items[items.length-1]['数量変動'])||0);
   var finalUnit=inRow2?inRow2['単位']||'':items[items.length-1]['単位']||'';
   var alreadyCancelled=items.some(function(r){return cancelledIds[r['LOG_ID']]===true;});
-  return '<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1.5px solid '+groupTc+';'+(alreadyCancelled?'opacity:.6;':'')+'">'+
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
-      '<span style="background:'+groupBg+';color:'+groupTc+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">'+groupLabel+'</span>'+
-      '<span style="font-size:11px;color:var(--text3);margin-left:auto;">'+rep['日時']+'</span>'+
-    '</div>'+
-    '<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;">'+productName+'</div>'+
-    '<div style="font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:8px;">'+rep['SKU_ID']+'</div>'+
-    '<div style="display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--text2);">'+
-      '<span>'+(rep['担当者']||'')+'</span>'+
-      '<div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:0;">'+
-        '<div style="display:flex;align-items:center;gap:6px;">'+
-          '<span style="font-size:13px;color:var(--text2);">'+fromWarehouse+'</span>'+
-          '<span style="font-size:15px;font-weight:700;color:var(--danger);">-'+finalQty+' '+finalUnit+'</span>'+
-        '</div>'+
-        '<div style="font-size:20px;color:var(--text3);line-height:1;text-align:right;padding:2px 0;">↓</div>'+
-        '<div style="display:flex;align-items:center;gap:6px;">'+
-          '<span style="font-size:13px;color:var(--text2);">'+toWarehouse+'</span>'+
-          '<span style="font-size:15px;font-weight:700;color:var(--success);">+'+finalQty+' '+finalUnit+'</span>'+
-        '</div>'+
+
+  // フローpill
+  var flowHtml='<div style="display:flex;align-items:center;gap:5px;margin-bottom:8px;flex-wrap:wrap;">';
+  if(hasIn){
+    // 入庫→即移動: 入庫倉庫+N → 入庫倉庫-N → 到着倉庫+N
+    flowHtml+=
+      '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#dcfce7;color:#166534;">'+fromWarehouse+' +'+finalQty+finalUnit+'</span>'+
+      '<span style="color:var(--text3);font-size:11px;">→</span>'+
+      '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#fee2e2;color:#991b1b;">'+fromWarehouse+' −'+finalQty+finalUnit+'</span>'+
+      '<span style="color:var(--text3);font-size:11px;">→</span>'+
+      '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#dcfce7;color:#166534;">'+toWarehouse+' +'+finalQty+finalUnit+'</span>';
+  }else{
+    // 倉庫間移動: 移動元-N → 移動先+N
+    flowHtml+=
+      '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#fee2e2;color:#991b1b;">'+fromWarehouse+' −'+finalQty+finalUnit+'</span>'+
+      '<span style="color:var(--text3);font-size:11px;">→</span>'+
+      '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#dcfce7;color:#166534;">'+toWarehouse+' +'+finalQty+finalUnit+'</span>';
+  }
+  flowHtml+='</div>';
+
+  // 結果ボックス
+  var resultLabel=hasIn?'最終到着倉庫':'到着倉庫';
+  var resultHtml=
+    '<div style="background:#f0fdf4;border:1.5px solid var(--success);border-radius:10px;padding:7px 12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'+
+      '<div>'+
+        '<div style="font-size:10px;color:var(--success);font-weight:600;margin-bottom:1px;">'+resultLabel+'</div>'+
+        '<div style="font-size:13px;font-weight:700;color:var(--text);">'+toWarehouse+'</div>'+
       '</div>'+
+      '<div style="font-size:16px;font-weight:700;color:var(--success);">+'+finalQty+' '+finalUnit+'</div>'+
+    '</div>';
+
+  return '<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1.5px solid '+groupBorder+';'+(alreadyCancelled?'opacity:.55;':'')+'">'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
+      '<span style="background:'+groupBg+';color:'+groupTc+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0;">'+groupLabel+'</span>'+
+      '<span style="font-size:11px;color:var(--text3);margin-left:auto;">担当：'+(rep['担当者']||'')+'</span>'+
+      '<span style="font-size:11px;color:var(--text3);flex-shrink:0;">'+rep['日時']+'</span>'+
     '</div>'+
+    '<div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;">'+productName+'</div>'+
+    flowHtml+
+    resultHtml+
     (alreadyCancelled?
-      '<div style="width:100%;margin-top:10px;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">取消済み</div>':
-      '<button data-group-id="'+escAttr(g.groupId)+'" onclick="handleCancelGroupBtn(this)" style="width:100%;margin-top:10px;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;">取消する</button>')+
+      '<div style="width:100%;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">取消済み</div>':
+      '<button data-group-id="'+escAttr(g.groupId)+'" onclick="handleCancelGroupBtn(this)" style="width:100%;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;text-align:center;">取消する</button>')+
   '</div>';
 }
 function handleCancelBtn(btn){openCancelLogModal(btn.dataset.logId,btn.dataset.skuId,btn.dataset.type,btn.dataset.warehouse,btn.dataset.dest,btn.dataset.staff,Number(btn.dataset.qty));}
