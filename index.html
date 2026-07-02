@@ -611,40 +611,28 @@ function showScreen(name){
 function goBack(){screenStack.pop();var prev=screenStack.pop()||'home';showScreen(prev);}
 
 var scanStream=null,scanAnimFrame=null,scanActive=false;
+
 function startScan(){
   var modal=document.getElementById('scanModal');
   modal.style.display='flex';modal.style.flexDirection='column';
   scanActive=true;
   document.getElementById('scanStatus').textContent='カメラを起動中...';
-  // 高解像度＋連続オートフォーカスを指定
-  var constraints={
-    video:{
-      facingMode:'environment',
-      width:{ideal:1920},
-      height:{ideal:1080},
-      advanced:[{focusMode:'continuous'},{zoom:1}]
-    }
-  };
-  navigator.mediaDevices.getUserMedia(constraints)
-    .catch(function(){
-      // advancedが非対応の場合はシンプルな制約で再試行
-      return navigator.mediaDevices.getUserMedia({
-        video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}
-      });
-    })
-    .then(function(stream){
-      scanStream=stream;
-      var video=document.getElementById('scanVideo');
-      video.srcObject=stream;
-      video.play();
-      video.addEventListener('loadedmetadata',function(){
-        document.getElementById('scanStatus').textContent='QRコードまたはバーコードを枠内に合わせてください';
-        scanFrame();
-      });
-    }).catch(function(e){
-      document.getElementById('scanStatus').textContent='カメラの起動に失敗しました: '+e.message;
+  navigator.mediaDevices.getUserMedia({
+    video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}
+  }).then(function(stream){
+    scanStream=stream;
+    var video=document.getElementById('scanVideo');
+    video.srcObject=stream;
+    video.play();
+    video.addEventListener('loadedmetadata',function(){
+      document.getElementById('scanStatus').textContent='QRコードまたはバーコードを枠内に合わせてください';
+      scanFrame();
     });
+  }).catch(function(e){
+    document.getElementById('scanStatus').textContent='カメラの起動に失敗しました: '+e.message;
+  });
 }
+
 function scanFrame(){
   if(!scanActive) return;
   var video=document.getElementById('scanVideo');
@@ -660,6 +648,7 @@ function scanFrame(){
   }
   scanAnimFrame=requestAnimationFrame(scanFrame);
 }
+
 function stopScan(){
   scanActive=false;
   if(scanAnimFrame) cancelAnimationFrame(scanAnimFrame);
@@ -929,6 +918,17 @@ function setHistDateFilter(filter,btn){
   btn.classList.add('active');
   renderHistoryList();
 }
+function parseJSTDate(str){
+  // 'yyyy/MM/dd HH:mm' または 'yyyy/MM/dd HH:mm:ss' をパース（iOS対応）
+  if(!str) return new Date(NaN);
+  var s=String(str).replace(/\//g,'-').replace(' ','T');
+  var d=new Date(s);
+  if(!isNaN(d)) return d;
+  // フォールバック: 手動パース
+  var m=String(str).match(/(\d{4})[\/-](\d{2})[\/-](\d{2})[T ](\d{2}):(\d{2})/);
+  if(m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]),parseInt(m[4]),parseInt(m[5]));
+  return new Date(NaN);
+}
 function renderHistoryList(){
   var typeFilter=document.getElementById('hist-type-filter').value;
   var warehouseFilter=document.getElementById('hist-warehouse-filter').value;
@@ -936,7 +936,7 @@ function renderHistoryList(){
   var now=new Date();
   var filtered=historyLogs.filter(function(r){
     if(!showCancel&&r['操作種別']&&r['操作種別'].indexOf('取消')===0) return false;
-    var d=new Date(r['日時']);
+    var d=parseJSTDate(r['日時']);
     if(histDateFilter==='today'){if(d.toDateString()!==now.toDateString()) return false;}
     else if(histDateFilter==='week'){var wa=new Date(now);wa.setDate(wa.getDate()-7);if(d<wa) return false;}
     else if(histDateFilter==='month'){var ma=new Date(now);ma.setMonth(ma.getMonth()-1);if(d<ma) return false;}
