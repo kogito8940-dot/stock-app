@@ -287,7 +287,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 </div>
 
 <div class="main">
-  <div id="screen-home" class="screen active">
+  <div id="screen-home" class="screen active" style="position:relative;">
     <div class="tile-grid">
       <div class="tile" onclick="startOperation('入庫')"><i class="ti ti-package tile-icon"></i><div class="tile-label">入庫</div></div>
       <div class="tile" onclick="startOperation('出庫')"><i class="ti ti-truck tile-icon"></i><div class="tile-label">出庫</div></div>
@@ -296,6 +296,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       <div class="tile" onclick="startOperation('棚卸し')"><i class="ti ti-clipboard-list tile-icon"></i><div class="tile-label">棚卸し</div></div>
       <div class="tile" onclick="showScreen('replenish')" style="border:1.5px solid #fca5a5;"><i class="ti ti-bell tile-icon" style="color:#ea580c;"></i><div class="tile-label" style="color:#ea580c;">補充確認</div></div>
     </div>
+    <!-- フッターの裏から生えてくる右下キャラ画像 -->
+    <img src="hutari_mimuzushi.png" alt=""
+      style="position:absolute;bottom:0;right:0;width:180px;pointer-events:none;display:block;">
   </div>
   <div id="screen-operation" class="screen">
     <div class="scan-area" onclick="startScan()">
