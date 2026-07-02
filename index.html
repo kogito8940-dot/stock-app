@@ -490,7 +490,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   <img src="https://drive.google.com/thumbnail?id=1chiSItZQrcVpr42zmEa3d5_EiJslSlKT&sz=w800"
     id="home-chara"
     alt=""
-    style="position:absolute;bottom:0;right:0;width:720px;pointer-events:none;display:none;z-index:50;">
+    style="position:absolute;bottom:0;right:0;width:360px;pointer-events:none;display:none;z-index:50;">
 
 </div>
 <script>
@@ -537,6 +537,9 @@ window.onload=function(){
   var savedStaff=localStorage.getItem('staff_name');
   if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
   loadData();
+  // 初期ホーム画面でキャラを表示
+  var chara=document.getElementById('home-chara');
+  if(chara) chara.style.display='block';
 };
 
 function openModal(){
