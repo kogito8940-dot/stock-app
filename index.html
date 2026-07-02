@@ -648,6 +648,25 @@ function stopScan(){
 }
 async function onScanSuccess(code){
   stopScan();
+  // バーコード登録モードの場合
+  if(scanModeBarcode){
+    scanModeBarcode=false;
+    if(!barcodeScanTargetSku){showToast('❌ 対象SKUが不明です');return;}
+    showToast('読み取り: '+code);
+    try{
+      var res=await fetch(API,{method:'POST',body:JSON.stringify({action:'updateBarcode',SKU_ID:barcodeScanTargetSku,バーコード番号:code})});
+      var json=await res.json();
+      if(json.success){
+        showToast('✅ バーコード番号を登録しました');
+        barcodeScanTargetSku=null;
+        await loadMasterAll();
+      }else{
+        showToast('❌ 登録失敗: '+(json.message||''));
+      }
+    }catch(e){showToast('❌ 通信エラー');}
+    return;
+  }
+  // 通常の入出庫スキャンモード
   showToast('読み取り: '+code);
   try{
     var res=await fetch(API+'?action=findByBarcode&code='+encodeURIComponent(code));
@@ -761,6 +780,23 @@ function escAttr(str){return String(str||'').replace(/\\/g,'\\\\').replace(/'/g,
 // ラベル印刷機能
 // ============================================================
 
+
+
+// ============================================================
+// マスタ画面：バーコード番号スキャン登録
+// ============================================================
+var barcodeScanTargetSku = null;
+
+function openBarcodeScanForSku(skuId) {
+  var item = masterAll.find(function(r){ return r['SKU_ID'] === skuId; });
+  if (!item) { showToast('商品が見つかりません'); return; }
+  barcodeScanTargetSku = skuId;
+  // 既存のスキャンモーダルを流用（onScanSuccessをバーコード登録用に切り替え）
+  scanModeBarcode = true;
+  startScan();
+}
+
+var scanModeBarcode = false;
 
 // ============================================================
 // 在庫確認
@@ -1334,6 +1370,7 @@ function renderMasterList(){
           '　<span style="color:var(--text3);">'+(r['バーコード種別']||'QR')+'</span></div>'+
         '</div>'+
         
+        '<button onclick="openBarcodeScanForSku(\''+ss+'\')" style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid #0891b2;color:#0891b2;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="バーコード登録"><i class=\"ti ti-scan\"></i></button>'+
         '<button onclick="openEditMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--primary);color:var(--primary);background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">編集</button>'+
         '<button onclick="openDupeMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #6b7280;color:#6b7280;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">複製</button>'+
         (inactive?
