@@ -287,7 +287,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 </div>
 
 <div class="main">
-  <div id="screen-home" class="screen active" style="position:relative;">
+  <div id="screen-home" class="screen active">
     <div class="tile-grid">
       <div class="tile" onclick="startOperation('入庫')"><i class="ti ti-package tile-icon"></i><div class="tile-label">入庫</div></div>
       <div class="tile" onclick="startOperation('出庫')"><i class="ti ti-truck tile-icon"></i><div class="tile-label">出庫</div></div>
@@ -296,9 +296,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       <div class="tile" onclick="startOperation('棚卸し')"><i class="ti ti-clipboard-list tile-icon"></i><div class="tile-label">棚卸し</div></div>
       <div class="tile" onclick="showScreen('replenish')" style="border:1.5px solid #fca5a5;"><i class="ti ti-bell tile-icon" style="color:#ea580c;"></i><div class="tile-label" style="color:#ea580c;">補充確認</div></div>
     </div>
-    <!-- フッターの裏から生えてくる右下キャラ画像 -->
-    <img src="https://drive.google.com/thumbnail?id=1chiSItZQrcVpr42zmEa3d5_EiJslSlKT&sz=w400" alt=""
-      style="position:absolute;bottom:0;right:0;width:180px;pointer-events:none;display:block;">
+
   </div>
   <div id="screen-operation" class="screen">
     <div class="scan-area" onclick="startScan()">
@@ -488,6 +486,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   <div class="bnav-item" onclick="showScreen('history')" id="nav-history" style="min-width:60px;"><i class="ti ti-history bnav-icon"></i>履歴</div>
   <div class="bnav-item" onclick="showScreen('master')" id="nav-master" style="min-width:60px;"><i class="ti ti-layout-grid bnav-icon"></i>マスタ</div>
 </div>
+  <!-- フッターの裏から生えてくるキャラ画像 -->
+  <img src="https://drive.google.com/thumbnail?id=1chiSItZQrcVpr42zmEa3d5_EiJslSlKT&sz=w800"
+    id="home-chara"
+    alt=""
+    style="position:absolute;bottom:0;right:0;width:720px;pointer-events:none;display:none;z-index:50;">
 
 </div>
 <script>
@@ -598,6 +601,8 @@ function showScreen(name){
   document.getElementById('header-title').textContent=titles[name]||'';
   document.querySelectorAll('.bnav-item').forEach(function(i){i.classList.remove('active');});
   if(name==='home'){
+    var chara=document.getElementById('home-chara');
+    if(chara) chara.style.display='block';
     document.getElementById('nav-home').classList.add('active');
     document.getElementById('header-sub').classList.add('hidden');
     document.getElementById('header-change').classList.add('hidden');
@@ -606,6 +611,8 @@ function showScreen(name){
     session.mode='';
   }else{
     document.getElementById('back-btn').classList.remove('hidden');
+    var chara=document.getElementById('home-chara');
+    if(chara) chara.style.display='none';
   }
   if(name==='master'){document.getElementById('nav-master').classList.add('active');loadMasterAll();}
   if(name==='history'){document.getElementById('nav-history').classList.add('active');loadHistoryLogs();}
