@@ -610,7 +610,7 @@ function showScreen(name){
 }
 function goBack(){screenStack.pop();var prev=screenStack.pop()||'home';showScreen(prev);}
 
-var zxingReader=null,scanActive=false;
+var zxingReader=null,scanActive=false,scanAnimFrame=null;
 function startScan(){
   var modal=document.getElementById('scanModal');
   modal.style.display='flex';modal.style.flexDirection='column';
@@ -618,18 +618,32 @@ function startScan(){
   document.getElementById('scanStatus').textContent='カメラを起動中...';
   try{
     zxingReader=new ZXing.BrowserMultiFormatReader();
-    zxingReader.decodeFromVideoDevice(null,'scanVideo',function(result,err){
-      if(!scanActive) return;
-      if(result){
-        onScanSuccess(result.getText());
-        return;
+    // 背面カメラを優先して取得
+    zxingReader.listVideoInputDevices().then(function(devices){
+      // 背面カメラ（environment）を優先
+      var deviceId=null;
+      for(var i=0;i<devices.length;i++){
+        var label=(devices[i].label||'').toLowerCase();
+        if(label.indexOf('back')!==-1||label.indexOf('rear')!==-1||label.indexOf('environment')!==-1){
+          deviceId=devices[i].deviceId;break;
+        }
       }
-      // err はフレームごとに発生するNotFoundExceptionは無視
-      if(err && !(err instanceof ZXing.NotFoundException)){
-        document.getElementById('scanStatus').textContent='読み取りエラー: '+err.message;
-      }
+      // 見つからなければ最後のデバイス（通常背面）を使用
+      if(!deviceId&&devices.length>0) deviceId=devices[devices.length-1].deviceId;
+      document.getElementById('scanStatus').textContent='QRコードまたはバーコードを枠内に合わせてください';
+      return zxingReader.decodeFromVideoDevice(deviceId,'scanVideo',function(result,err){
+        if(!scanActive) return;
+        if(result){
+          onScanSuccess(result.getText());
+          return;
+        }
+        if(err&&err.name!=='NotFoundException'){
+          console.warn('ZXing err:',err);
+        }
+      });
+    }).catch(function(e){
+      document.getElementById('scanStatus').textContent='カメラの起動に失敗しました: '+e.message;
     });
-    document.getElementById('scanStatus').textContent='QRコードまたはバーコードを枠内に合わせてください';
   }catch(e){
     document.getElementById('scanStatus').textContent='カメラの起動に失敗しました: '+e.message;
   }
@@ -637,7 +651,7 @@ function startScan(){
 function stopScan(){
   scanActive=false;
   if(zxingReader){
-    zxingReader.reset();
+    try{zxingReader.reset();}catch(e){}
     zxingReader=null;
   }
   document.getElementById('scanModal').style.display='none';
