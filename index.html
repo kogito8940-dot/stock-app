@@ -519,6 +519,11 @@ function buildWarehouseSelects(){
     var el=document.getElementById(id);
     if(el) el.innerHTML=opts;
   });
+  // 移動のデフォルト: 移動元=山科倉庫、移動先=事務所
+  var selW=document.getElementById('sel-warehouse');
+  var selD=document.getElementById('sel-dest');
+  if(selW) for(var i=0;i<selW.options.length;i++){if(selW.options[i].value==='山科倉庫'||selW.options[i].text==='山科倉庫'){selW.selectedIndex=i;break;}}
+  if(selD) for(var i=0;i<selD.options.length;i++){if(selD.options[i].value==='事務所'||selD.options[i].text==='事務所'){selD.selectedIndex=i;break;}}
 }
 
 window.onload=function(){
