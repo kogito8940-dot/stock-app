@@ -284,6 +284,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   <div class="header-title" id="header-title">在庫管理</div>
   <span class="header-badge hidden" id="header-sub" style="font-size:13px;padding:5px 12px;"></span>
   <span class="hidden" id="header-change" onclick="openModal()" style="font-size:12px;color:var(--primary);text-decoration:underline;cursor:pointer;white-space:nowrap;margin-left:4px;">変更</span>
+  <span class="hidden" id="header-staff" style="font-size:12px;color:var(--text2);white-space:nowrap;margin-left:8px;font-weight:600;"></span>
   <span id="cb-limited" style="font-size:22px !important;font-weight:400;color:#9ca3af;white-space:nowrap;margin-left:auto;flex-shrink:0;display:none;font-family:Georgia,'Times New Roman',serif !important;letter-spacing:.02em;font-style:italic !important;">C&amp;B Limited</span>
 </div>
 
@@ -316,10 +317,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     </div>
   </div>
   <div id="screen-category" class="screen">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-      <div class="section-title" style="margin:0 0 0 16px;">カテゴリ</div>
-      <button onclick="startScan()" style="background:#0891b2;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;margin-right:4px;"><i class="ti ti-scan" style="margin-right:4px;"></i>QRスキャン</button>
-    </div>
+    <div class="section-title">カテゴリ</div>
     <div id="category-list"><div class="loading">読み込み中...</div></div>
   </div>
   <div id="screen-product" class="screen">
@@ -487,8 +485,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 
 <div class="bnav">
   <div class="bnav-item active" onclick="showScreen('home')" id="nav-home" style="min-width:60px;"><i class="ti ti-home bnav-icon"></i>ホーム</div>
-  <div id="nav-session" style="flex:1;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:6px 10px 10px;display:none;flex-direction:column;align-items:center;justify-content:center;">
-    <div style="font-size:14px;font-weight:600;color:var(--text);" id="bnav-staff"></div>
+  <div id="nav-session" style="flex:1;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:4px 6px 8px;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;" onclick="startScan()">
+    <i class="ti ti-scan bnav-icon" style="color:#0891b2;"></i>
+    <span style="font-size:10px;color:#0891b2;font-weight:600;">スキャン</span>
   </div>
   <div class="bnav-item" onclick="showScreen('history')" id="nav-history" style="min-width:60px;"><i class="ti ti-history bnav-icon"></i>履歴</div>
   <div class="bnav-item" onclick="showScreen('master')" id="nav-master" style="min-width:60px;"><i class="ti ti-layout-grid bnav-icon"></i>マスタ</div>
@@ -598,7 +597,8 @@ function startSession(){
   sub.classList.remove('hidden');
   document.getElementById('header-change').classList.remove('hidden');
   document.getElementById('nav-session').style.display='flex';
-  document.getElementById('bnav-staff').textContent=s;
+  var hs=document.getElementById('header-staff');
+  if(hs){hs.textContent=s;hs.classList.remove('hidden');}
   closeModal();
   sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
   if(session.mode==='棚卸し') showScreen('inv-category');
@@ -622,6 +622,8 @@ function showScreen(name){
     document.getElementById('header-change').classList.add('hidden');
     document.getElementById('back-btn').classList.add('hidden');
     document.getElementById('nav-session').style.display='none';
+    var hs=document.getElementById('header-staff');
+    if(hs) hs.classList.add('hidden');
     session.mode='';
   }else{
     if(chara) chara.style.display='none';
