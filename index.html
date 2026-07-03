@@ -204,6 +204,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
 </div>
 
+  <div id="masterPwModal" class="modal-overlay">
+  <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:28px 20px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:36px;margin-bottom:8px;">🔒</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text);">マスタ管理</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px;">4桁のPINを入力してください</div>
+    </div>
+    <div style="display:flex;justify-content:center;gap:20px;margin-bottom:8px;">
+      <div id="pin-dot-0" style="width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:.15s;"></div>
+      <div id="pin-dot-1" style="width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:.15s;"></div>
+      <div id="pin-dot-2" style="width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:.15s;"></div>
+      <div id="pin-dot-3" style="width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:.15s;"></div>
+    </div>
+    <div id="pin-error" style="color:var(--danger);font-size:12px;text-align:center;margin-bottom:14px;min-height:18px;"></div>
+    <div class="numpad">
+      <div class="numpad-btn" onclick="pinInput('7')">7</div>
+      <div class="numpad-btn" onclick="pinInput('8')">8</div>
+      <div class="numpad-btn" onclick="pinInput('9')">9</div>
+      <div class="numpad-btn" onclick="pinInput('4')">4</div>
+      <div class="numpad-btn" onclick="pinInput('5')">5</div>
+      <div class="numpad-btn" onclick="pinInput('6')">6</div>
+      <div class="numpad-btn" onclick="pinInput('1')">1</div>
+      <div class="numpad-btn" onclick="pinInput('2')">2</div>
+      <div class="numpad-btn" onclick="pinInput('3')">3</div>
+      <div class="numpad-btn zero" onclick="pinInput('0')">0</div>
+      <div class="numpad-btn del" onclick="pinDel()">⌫</div>
+    </div>
+    <button onclick="closeMasterPwModal()" style="width:100%;background:none;border:none;color:var(--text3);font-size:13px;padding:12px;cursor:pointer;margin-top:6px;">キャンセル</button>
+  </div>
+</div>
+
 <div id="cancelLogModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px;">
     <div class="modal-title" style="font-size:17px;">取消の確認</div>
@@ -487,7 +518,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     <span style="font-size:10px;color:#0891b2;font-weight:600;">スキャン</span>
   </div>
   <div class="bnav-item" onclick="showScreen('history')" id="nav-history" style="min-width:60px;"><i class="ti ti-history bnav-icon"></i>履歴</div>
-  <div class="bnav-item" onclick="showScreen('master')" id="nav-master" style="min-width:60px;"><i class="ti ti-layout-grid bnav-icon"></i>マスタ</div>
+  <div class="bnav-item" onclick="masterUnlocked?showScreen('master'):openMasterPwModal()" id="nav-master" style="min-width:60px;"><i class="ti ti-layout-grid bnav-icon"></i>マスタ</div>
 </div>
   <!-- フッターの裏から生えてくるキャラ画像 -->
   <img src="https://drive.google.com/thumbnail?id=1chiSItZQrcVpr42zmEa3d5_EiJslSlKT&sz=w800"
@@ -498,6 +529,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 </div>
 <script>
 const API='https://script.google.com/macros/s/AKfycbz2K9_frpjl7gXnl4jMcqSNIt4Yupx-SYcVJHiM6Wtb0gFsRlgmNLlBy06Xz7TnOPgx/exec';
+var masterPassword='1234';
+var masterUnlocked=false;
+var pinCurrent='';
 let master=[],summary=[],warehouses=[],minStockData=[],masterAll=[],categoryOrder=[],session={warehouse:'',dest:'',staff:'',mode:'',reason:'',immediateDest:''},currentQty='',currentProduct=null,currentCategory='',currentProductName='',sessionHistory=[],recordedSizes=[],screenStack=[];
 
 async function loadData(){
@@ -833,6 +867,40 @@ function renderHistory(){
   }).join('');
 }
 function updateHome(){}
+  function openMasterPwModal(){
+  pinCurrent='';updatePinDots();
+  document.getElementById('pin-error').textContent='';
+  document.getElementById('masterPwModal').classList.add('show');
+}
+function closeMasterPwModal(){
+  document.getElementById('masterPwModal').classList.remove('show');
+  pinCurrent='';updatePinDots();
+}
+function updatePinDots(){
+  for(var i=0;i<4;i++){
+    var d=document.getElementById('pin-dot-'+i);
+    d.style.background=i<pinCurrent.length?'var(--primary)':'#fff';
+    d.style.borderColor=i<pinCurrent.length?'var(--primary)':'var(--border)';
+  }
+}
+function pinInput(n){
+  if(pinCurrent.length>=4) return;
+  pinCurrent+=n;updatePinDots();
+  if(pinCurrent.length===4){
+    setTimeout(function(){
+      if(pinCurrent===masterPassword){
+        masterUnlocked=true;closeMasterPwModal();showScreen('master');
+      }else{
+        document.getElementById('pin-error').textContent='PINが違います';
+        pinCurrent='';updatePinDots();
+      }
+    },150);
+  }
+}
+function pinDel(){
+  pinCurrent=pinCurrent.slice(0,-1);updatePinDots();
+  document.getElementById('pin-error').textContent='';
+}
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   var m=document.getElementById('toast-mascot');if(m)m.classList.add('show');
