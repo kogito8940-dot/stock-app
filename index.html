@@ -377,10 +377,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   <div id="screen-inv-category" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div class="section-title" style="margin:0 0 0 16px;">カテゴリ</div>
-      <div style="display:flex;gap:8px;flex-shrink:0;">
-        <button onclick="startInvScan()" style="background:#0891b2;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-scan" style="margin-right:4px;"></i>QRスキャン</button>
-        <button onclick="printInventoryList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-printer" style="margin-right:4px;"></i>棚卸表PDF出力</button>
-      </div>
+      <button onclick="printInventoryList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-printer" style="margin-right:4px;"></i>棚卸表PDF出力</button>
     </div>
     <div id="inv-category-list"><div class="loading">読み込み中...</div></div>
   </div>
@@ -485,7 +482,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 
 <div class="bnav">
   <div class="bnav-item active" onclick="showScreen('home')" id="nav-home" style="min-width:60px;"><i class="ti ti-home bnav-icon"></i>ホーム</div>
-  <div id="nav-session" style="flex:1;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:4px 6px 8px;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;" onclick="startScan()">
+  <div id="nav-session" style="flex:1;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:4px 6px 8px;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;" onclick="handleNavScan()">
     <i class="ti ti-scan bnav-icon" style="color:#0891b2;"></i>
     <span style="font-size:10px;color:#0891b2;font-weight:600;">スキャン</span>
   </div>
@@ -855,6 +852,16 @@ var scanModeInventory = false;
 function startInvScan(){
   scanModeInventory = true;
   startScan();
+}
+
+function handleNavScan(){
+  // 棚卸し画面のときはinventoryモード、それ以外は通常スキャン
+  var activeScreen = screenStack.length ? screenStack[screenStack.length-1] : '';
+  if(activeScreen === 'inv-category' || activeScreen === 'inv-product' || activeScreen === 'inv-size'){
+    startInvScan();
+  } else {
+    startScan();
+  }
 }
 
 // ============================================================
