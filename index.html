@@ -376,7 +376,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   <div id="screen-inv-category" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div class="section-title" style="margin:0 0 0 16px;">カテゴリ</div>
-      <button onclick="printInventoryList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-printer" style="margin-right:4px;"></i>棚卸表PDF出力</button>
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        <button onclick="startInvScan()" style="background:#0891b2;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-scan" style="margin-right:4px;"></i>QRスキャン</button>
+        <button onclick="printInventoryList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-printer" style="margin-right:4px;"></i>棚卸表PDF出力</button>
+      </div>
     </div>
     <div id="inv-category-list"><div class="loading">読み込み中...</div></div>
   </div>
@@ -681,6 +684,30 @@ function stopScan(){
 }
 async function onScanSuccess(code){
   stopScan();
+  // 棚卸しスキャンモードの場合
+  if(scanModeInventory){
+    scanModeInventory=false;
+    showToast('読み取り: '+code);
+    try{
+      var res=await fetch(API+'?action=findByBarcode&code='+encodeURIComponent(code));
+      var json=await res.json();
+      if(!json.success){showToast('❌ 商品が見つかりません');return;}
+      var item=json.data;
+      // 棚卸し用：商品情報をセットして数量入力画面へ
+      var stock=inventoryStock.find(function(r){return r.SKU_ID===item['SKU_ID'];});
+      if(!stock){
+        // inventoryStockにない場合はダミーで作成
+        stock={SKU_ID:item['SKU_ID'],商品名:item['商品名'],サイズ:String(item['サイズ']),単位:item['単位'],在庫数:0};
+      }
+      invCurrentCategory=item['カテゴリ'];
+      invCurrentProductName=item['商品名'];
+      document.getElementById('inv-bc-category').textContent=item['カテゴリ'];
+      document.getElementById('inv-bc-category2').textContent=item['カテゴリ'];
+      document.getElementById('inv-bc-product').textContent=item['商品名'];
+      selectInvProduct(item['SKU_ID']);
+    }catch(e){showToast('❌ 検索エラー');}
+    return;
+  }
   // バーコード登録モードの場合
   if(scanModeBarcode){
     scanModeBarcode=false;
@@ -814,6 +841,16 @@ function escAttr(str){return String(str||'').replace(/\\/g,'\\\\').replace(/'/g,
 // ============================================================
 
 
+
+// ============================================================
+// 棚卸し画面：QRスキャンで直接商品へジャンプ
+// ============================================================
+var scanModeInventory = false;
+
+function startInvScan(){
+  scanModeInventory = true;
+  startScan();
+}
 
 // ============================================================
 // マスタ画面：バーコード番号スキャン登録
@@ -1254,7 +1291,12 @@ function renderInvSizes(cat,name){
 function selectInvProduct(skuId){
   var stock=inventoryStock.find(function(r){return r.SKU_ID===skuId;});
   var masterItem=master.find(function(p){return p['SKU_ID']===skuId;});
-  if(!stock||!masterItem) return;
+  if(!masterItem) return;
+  // stockがない場合（在庫0）はダミーを作成
+  if(!stock){
+    stock={SKU_ID:skuId,商品名:masterItem['商品名'],サイズ:String(masterItem['サイズ']),単位:masterItem['単位'],在庫数:0};
+    inventoryStock.push(stock);
+  }
   currentInvProduct=Object.assign({},stock,{カテゴリ:masterItem['カテゴリ']});
   invQty='';
   document.getElementById('inv-system-qty').textContent=stock['在庫数'];
