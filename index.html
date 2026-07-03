@@ -1470,7 +1470,7 @@ function initCategoryDragDrop(){
     list.addEventListener('touchmove',onMove,{passive:false});list.addEventListener('touchend',onEnd);
   },{passive:true});
 }
-}
+  
 function createNewCategory(){
   var name=document.getElementById('new-category-name').value.trim();
   if(!name){showToast('カテゴリ名を入力してください');return;}
