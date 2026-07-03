@@ -1398,8 +1398,15 @@ function applyCategoryOrder(cats){
 }
 async function saveCategoryOrderToServer(arr){
   categoryOrder=arr;
-  try{await fetch(API,{method:'POST',body:JSON.stringify({action:'saveCategoryOrder',order:arr})});}
-  catch(e){showToast('⚠️ 順番の保存に失敗しました');}
+  for(var _i=0;_i<3;_i++){
+    try{
+      var _r=await fetch(API,{method:'POST',body:JSON.stringify({action:'saveCategoryOrder',order:arr})});
+      var _j=await _r.json();
+      if(_j.success) return;
+    }catch(e){}
+    await new Promise(function(r){setTimeout(r,1500);});
+  }
+  showToast('⚠️ 順番の保存に失敗しました');
 }
 function renderCategoryManageList(){
   var cats=applyCategoryOrder(getAllCategories());
@@ -1418,39 +1425,48 @@ function renderCategoryManageList(){
 function initCategoryDragDrop(){
   var list=document.getElementById('category-manage-list');
   if(!list) return;
-  var dragging=null,ghost=null,lastOver=null;
+  var dragging=null,ghost=null,lastOver=null,ghostH=0,rafId=null;
   function getItems(){return Array.from(list.querySelectorAll('.cat-manage-item'));}
+  function getTargetFromPoint(clientX,clientY){
+    var items=getItems();
+    for(var i=0;i<items.length;i++){
+      var r=items[i].getBoundingClientRect();
+      if(clientY>=r.top&&clientY<=r.bottom&&clientX>=r.left&&clientX<=r.right) return items[i];
+    }
+    return null;
+  }
   function startDrag(item,clientY){
     dragging=item;
     var rect=item.getBoundingClientRect();
+    ghostH=rect.height;
     ghost=item.cloneNode(true);
-    ghost.style.cssText='position:fixed;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;z-index:1000;opacity:.85;pointer-events:none;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.25);background:var(--surface);';
+    ghost.style.cssText='position:fixed;left:'+rect.left+'px;top:'+(clientY-ghostH/2)+'px;width:'+rect.width+'px;z-index:1000;opacity:.85;pointer-events:none;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.25);background:var(--surface);';
     document.body.appendChild(ghost);
     item.style.opacity='.2';
   }
   function moveDrag(clientX,clientY){
     if(!ghost||!dragging) return;
-    ghost.style.top=(clientY-dragging.getBoundingClientRect().height/2)+'px';
-    ghost.style.display='none';
-    var el=document.elementFromPoint(clientX,clientY);
-    ghost.style.display='';
-    var over=el?el.closest('.cat-manage-item'):null;
-    if(lastOver&&lastOver!==over){lastOver.style.outline='';lastOver=null;}
-    if(over&&over!==dragging){over.style.outline='2px solid var(--primary)';lastOver=over;}
+    if(rafId) cancelAnimationFrame(rafId);
+    rafId=requestAnimationFrame(function(){
+      rafId=null;
+      ghost.style.top=(clientY-ghostH/2)+'px';
+      var over=getTargetFromPoint(clientX,clientY);
+      if(lastOver&&lastOver!==over){lastOver.style.outline='';lastOver=null;}
+      if(over&&over!==dragging){over.style.outline='2px solid var(--primary)';lastOver=over;}
+    });
   }
   function endDrag(clientX,clientY){
     if(!dragging||!ghost) return;
-    ghost.style.display='none';
-    var el=document.elementFromPoint(clientX,clientY);
-    ghost.style.display='';
-    var target=el?el.closest('.cat-manage-item'):null;
+    if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+    var target=getTargetFromPoint(clientX,clientY);
     if(target&&target!==dragging){
       var items=getItems(),srcIdx=items.indexOf(dragging),dstIdx=items.indexOf(target);
       var order=items.map(function(i){return i.dataset.cat;});
       order.splice(srcIdx,1);order.splice(dstIdx,0,dragging.dataset.cat);
       saveCategoryOrderToServer(order);
     }
-    ghost.remove();ghost=null;dragging.style.opacity='';dragging=null;lastOver=null;
+    if(lastOver){lastOver.style.outline='';lastOver=null;}
+    ghost.remove();ghost=null;dragging.style.opacity='';dragging=null;
     renderCategoryManageList();
   }
   list.addEventListener('mousedown',function(e){
