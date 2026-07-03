@@ -599,7 +599,7 @@ function startSession(){
   closeModal();
   sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
   if(session.mode==='棚卸し') showScreen('inv-category');
-  else showScreen('operation');
+  else showScreen('category');
 }
 function startOperation(mode){session.mode=mode;openModal();}
 
