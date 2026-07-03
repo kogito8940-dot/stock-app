@@ -316,7 +316,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     </div>
   </div>
   <div id="screen-category" class="screen">
-    <div class="section-title">カテゴリ</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div class="section-title" style="margin:0 0 0 16px;">カテゴリ</div>
+      <button onclick="startScan()" style="background:#0891b2;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;margin-right:4px;"><i class="ti ti-scan" style="margin-right:4px;"></i>QRスキャン</button>
+    </div>
     <div id="category-list"><div class="loading">読み込み中...</div></div>
   </div>
   <div id="screen-product" class="screen">
