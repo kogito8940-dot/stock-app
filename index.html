@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>在庫管理</title>
+<title>å¨åº«ç®¡ç</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
@@ -43,11 +43,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 .form-select:focus,.form-input:focus{border-color:var(--primary)}
 .form-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:600;cursor:pointer;margin-top:10px;letter-spacing:-.01em;}
 .form-btn:active{background:var(--primary-dark)}
-.tile-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
-.tile{background:var(--surface);border-radius:16px;padding:20px 12px 16px;text-align:center;border:1px solid var(--border);cursor:pointer;transition:transform .1s;}
+.tile-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:5px;}
+.tile{background:var(--surface);border-radius:8px;padding:14px 12px 12px;text-align:left;border:1px solid var(--border);cursor:pointer;transition:transform .1s;}
 .tile:active{transform:scale(.96)}
 .tile-icon{font-size:40px;color:var(--primary);margin-bottom:12px;line-height:1;display:block;}
+.tile-icon-circle{width:40px;height:40px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:10px;}
+.tile-icon-circle i{font-size:20px;color:var(--primary);}
+.tile-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
 .tile-label{font-size:16px;font-weight:700;color:var(--text);}
+.tile-arrow{font-size:20px;color:var(--text3);}
+.tile-desc{font-size:11px;color:var(--text2);line-height:1.4;}
+.tile-warn-new{background:#fff7ed !important;border:1.5px solid #fca5a5 !important;}
+.tile-warn-new .tile-icon-circle{background:#fed7aa;}
+.tile-warn-new .tile-icon-circle i{color:var(--warning);}
+.tile-warn-new .tile-label{color:var(--warning);}
+.tile-warn-new .tile-arrow{color:var(--warning);}
+.tile-warn-new .tile-desc{color:#9a3412;}
+.home-header{padding:16px 16px 12px;display:flex;align-items:center;gap:14px;flex-shrink:0;}
+.home-header-icon{width:40px;height:40px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.home-header-icon i{font-size:20px;color:#fff;}
+.home-header-title{font-size:22px;font-weight:700;color:var(--text);line-height:1.1;}
+.home-header-subtitle{font-size:13px;color:#b0b8d0;font-family:Georgia,serif;font-style:italic;}
+.app-shell.on-home{background:#eef0fc;}
+.app-shell.on-home .header{display:none;}
 .scan-area{background:linear-gradient(160deg,#1a1a2e,#16213e);border-radius:var(--radius);height:175px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;cursor:pointer;margin-bottom:14px;position:relative;overflow:hidden}
 .scan-corner{position:absolute;width:24px;height:24px;border-color:#4fc3f7;border-style:solid;border-width:0}
 .scan-corner.tl{top:16px;left:16px;border-top-width:3px;border-left-width:3px;border-radius:4px 0 0 0}
@@ -117,44 +135,44 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 <div id="modal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <div class="modal-title" style="margin-bottom:0;" id="modal-title">作業設定</div>
-      <button onclick="closeModal()" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--text3);line-height:1;padding:0 0 0 8px;">✕</button>
+      <div class="modal-title" style="margin-bottom:0;" id="modal-title">ä½æ¥­è¨­å®</div>
+      <button onclick="closeModal()" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--text3);line-height:1;padding:0 0 0 8px;">â</button>
     </div>
     <div class="form-group">
-      <label class="form-label">担当者名</label>
-      <input id="inp-staff" class="form-input" type="text" placeholder="名前を入力">
+      <label class="form-label">æå½èå</label>
+      <input id="inp-staff" class="form-input" type="text" placeholder="ååãå¥å">
     </div>
     <div class="form-group">
-      <label class="form-label" id="warehouse-label">倉庫</label>
+      <label class="form-label" id="warehouse-label">ååº«</label>
       <select id="sel-warehouse" class="form-select"></select>
     </div>
     <div class="form-group hidden" id="dest-group">
-      <label class="form-label">移動先倉庫</label>
+      <label class="form-label">ç§»ååååº«</label>
       <select id="sel-dest" class="form-select"></select>
     </div>
     <div class="form-group hidden" id="reason-group">
-      <label class="form-label">出庫理由</label>
+      <label class="form-label">åºåº«çç±</label>
       <select id="sel-reason" class="form-select">
-        <option>出庫（販売）</option><option>出庫（使用）</option><option>出庫（廃棄）</option>
+        <option>åºåº«ï¼è²©å£²ï¼</option><option>åºåº«ï¼ä½¿ç¨ï¼</option><option>åºåº«ï¼å»æ£ï¼</option>
       </select>
     </div>
     <div class="form-group hidden" id="immediate-move-group">
       <div style="display:flex;align-items:center;gap:10px;padding:12px;background:#f0f6ff;border-radius:12px;border:1.5px solid var(--border);cursor:pointer;" onclick="toggleImmediateMove()">
         <div id="immediate-move-check" style="width:20px;height:20px;border:2px solid var(--border);border-radius:4px;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;"></div>
-        <div style="font-size:14px;color:var(--text);">入庫後すぐ別倉庫へ移動する</div>
+        <div style="font-size:14px;color:var(--text);">å¥åº«å¾ããå¥ååº«ã¸ç§»åãã</div>
       </div>
       <div id="immediate-dest-group" class="hidden" style="margin-top:10px;">
-        <label class="form-label">移動先倉庫</label>
+        <label class="form-label">ç§»ååååº«</label>
         <select id="sel-immediate-dest" class="form-select"></select>
         <div style="background:#f0f6ff;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--text2);line-height:1.8;">
-          記録されるログ：<br>
-          <span style="color:var(--success);font-weight:600;">① 入庫</span>　入庫倉庫 +N<br>
-          <span style="color:var(--primary);font-weight:600;">② 移動（出）</span>　入庫倉庫 -N<br>
-          <span style="color:var(--primary);font-weight:600;">③ 移動（入）</span>　移動先倉庫 +N
+          è¨é²ãããã­ã°ï¼<br>
+          <span style="color:var(--success);font-weight:600;">â  å¥åº«</span>ãå¥åº«ååº« +N<br>
+          <span style="color:var(--primary);font-weight:600;">â¡ ç§»åï¼åºï¼</span>ãå¥åº«ååº« -N<br>
+          <span style="color:var(--primary);font-weight:600;">â¢ ç§»åï¼å¥ï¼</span>ãç§»ååååº« +N
         </div>
       </div>
     </div>
-    <button class="form-btn" id="modal-start-btn">作業開始</button>
+    <button class="form-btn" id="modal-start-btn">ä½æ¥­éå§</button>
   </div>
 </div>
 
@@ -163,53 +181,53 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 <div id="addMasterModal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div class="modal-title" style="margin-bottom:0">新規商品登録</div>
-      <button onclick="closeAddMasterModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3)">✕</button>
+      <div class="modal-title" style="margin-bottom:0">æ°è¦ååç»é²</div>
+      <button onclick="closeAddMasterModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3)">â</button>
     </div>
-    <div class="form-group"><label class="form-label">カテゴリ *</label><select id="add-category" class="form-select" onchange="updateSkuPreview()"></select></div>
-    <div class="form-group"><label class="form-label">商品名 *</label><input id="add-name" class="form-input" type="text" placeholder="例: AC100 Base" oninput="updateSkuPreview()"></div>
-    <div class="form-group"><label class="form-label">サイズ *</label><input id="add-size" class="form-input" type="text" placeholder="例: 25kg" oninput="updateSkuPreview()"></div>
+    <div class="form-group"><label class="form-label">ã«ãã´ãª *</label><select id="add-category" class="form-select" onchange="updateSkuPreview()"></select></div>
+    <div class="form-group"><label class="form-label">ååå *</label><input id="add-name" class="form-input" type="text" placeholder="ä¾: AC100 Base" oninput="updateSkuPreview()"></div>
+    <div class="form-group"><label class="form-label">ãµã¤ãº *</label><input id="add-size" class="form-input" type="text" placeholder="ä¾: 25kg" oninput="updateSkuPreview()"></div>
     <div style="display:flex;gap:8px">
-      <div class="form-group" style="flex:1"><label class="form-label">単位 *</label><select id="add-unit" class="form-select"><option>袋</option><option>缶</option><option>個</option><option>本</option><option>枚</option><option>kg</option><option>L</option></select></div>
-      <div class="form-group" style="flex:1"><label class="form-label">商品区分 *</label><select id="add-type" class="form-select"><option>輸入品</option><option>小分け品</option><option>仕入品</option></select></div>
+      <div class="form-group" style="flex:1"><label class="form-label">å$½ *</label><select id="add-unit" class="form-select"><option>è¢</option><option>ç¼¶</option><option>å</option><option>æ¬</option><option>æ</option><option>kg</option><option>L</option></select></div>
+      <div class="form-group" style="flex:1"><label class="form-label">åååºå *</label><select id="add-type" class="form-select"><option>è¼¸å¥å</option><option>å°åãå</option><option>ä»å¥å</option></select></div>
     </div>
-    <div class="form-group"><label class="form-label">バーコード</label><select id="add-barcode" class="form-select"><option>QR</option><option>JAN</option><option>なし</option></select></div>
-    <div class="form-group"><label class="form-label">備考</label><input id="add-note" class="form-input" type="text" placeholder="任意"></div>
-    <div class="form-group"><label class="form-label">バーコード番号（JAN等）</label><input id="add-barcode-number" class="form-input" type="text" placeholder="例: 4901234567890"></div>
-    <div class="form-group"><label class="form-label">倉庫別 最低／最大在庫数</label><div id="add-minstock-warehouses" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"></div></div>
-    <div style="background:#f0f6ff;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text2)">生成されるSKU_ID：<br><span id="sku-preview" style="font-family:monospace;font-weight:700;color:var(--primary);font-size:13px"></span></div>
-    <button class="form-btn" id="add-master-btn" onclick="submitAddMaster()">登録する</button>
+    <div class="form-group"><label class="form-label">ãã¼ã³ã¼ã</label><select id="add-barcode" class="form-select"><option>QR</option><option>JAN</option><option>ãªã</option></select></div>
+    <div class="form-group"><label class="form-label">åè</label><input id="add-note" class="form-input" type="text" placeholder="ä»»æ"></div>
+    <div class="form-group"><label class="form-label">ãã¼ã³ã¼ãçªå·ï¼JANç­ï¼</label><input id="add-barcode-number" class="form-input" type="text" placeholder="ä¾: 4901234567890"></div>
+    <div class="form-group"><label class="form-label">ååº«å¥ æä½ï¼æå¤§å¨åº«æ°</label><div id="add-minstock-warehouses" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"></div></div>
+    <div style="background:#f0f6ff;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text2)">çæãããSKU_IDï¼<br><span id="sku-preview" style="font-family:monospace;font-weight:700;color:var(--primary);font-size:13px"></span></div>
+    <button class="form-btn" id="add-master-btn" onclick="submitAddMaster()">ç»é²ãã</button>
   </div>
 </div>
 
 <div id="editMasterModal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div class="modal-title" style="margin-bottom:0">商品編集</div>
-      <button onclick="closeEditMasterModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3)">✕</button>
+      <div class="modal-title" style="margin-bottom:0">ååç·¨é</div>
+      <button onclick="closeEditMasterModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3)">â</button>
     </div>
-    <div style="background:#f0f6ff;border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)">SKU_ID：<span id="edit-sku-display" style="font-family:monospace;font-weight:700;color:var(--primary)"></span></div>
-    <div class="form-group"><label class="form-label">カテゴリ *</label><select id="edit-category" class="form-select"></select></div>
-    <div class="form-group"><label class="form-label">商品名 *</label><input id="edit-name" class="form-input" type="text"></div>
-    <div class="form-group"><label class="form-label">サイズ *</label><input id="edit-size" class="form-input" type="text"></div>
+    <div style="background:#f0f6ff;border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)">SKU_IDï¼<span id="edit-sku-display" style="font-family:monospace;font-weight:700;color:var(--primary)"></span></div>
+    <div class="form-group"><label class="form-label">ã«ãã´ãª *</label><select id="edit-category" class="form-select"></select></div>
+    <div class="form-group"><label class="form-label">ååå *</label><input id="edit-name" class="form-input" type="text"></div>
+    <div class="form-group"><label class="form-label">ãµã¤ãº *</label><input id="edit-size" class="form-input" type="text"></div>
     <div style="display:flex;gap:8px">
-      <div class="form-group" style="flex:1"><label class="form-label">単位 *</label><select id="edit-unit" class="form-select"><option>袋</option><option>缶</option><option>個</option><option>本</option><option>枚</option><option>kg</option><option>L</option></select></div>
-      <div class="form-group" style="flex:1"><label class="form-label">商品区分 *</label><select id="edit-type" class="form-select"><option>輸入品</option><option>小分け品</option><option>仕入品</option></select></div>
+      <div class="form-group" style="flex:1"><label class="form-label">å$½ *</label><select id="edit-unit" class="form-select"><option>è¢</option><option>ç¼¶</option><option>å</option><option>æ¬</option><option>æ</option><option>kg</option><option>L</option></select></div>
+      <div class="form-group" style="flex:1"><label class="form-label">åååºå *</label><select id="edit-type" class="form-select"><option>è¼¸å¥å</option><option>å°åãå</option><option>ä»å¥å</option></select></div>
     </div>
-    <div class="form-group"><label class="form-label">バーコード</label><select id="edit-barcode" class="form-select"><option>QR</option><option>JAN</option><option>なし</option></select></div>
-    <div class="form-group"><label class="form-label">備考</label><input id="edit-note" class="form-input" type="text"></div>
-    <div class="form-group"><label class="form-label">バーコード番号（JAN等）</label><input id="edit-barcode-number" class="form-input" type="text" placeholder="例: 4901234567890"></div>
-    <div class="form-group"><label class="form-label">倉庫別 最低／最大在庫数</label><div id="edit-minstock-warehouses" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"></div></div>
-    <button class="form-btn" id="edit-master-btn" onclick="submitEditMaster()">更新する</button>
+    <div class="form-group"><label class="form-label">ãã¼ã³ã¼ã</label><select id="edit-barcode" class="form-select"><option>QR</option><option>JAN</option><option>ãªã</option></select></div>
+    <div class="form-group"><label class="form-label">åè</label><input id="edit-note" class="form-input" type="text"></div>
+    <div class="form-group"><label class="form-label">ãã¼ã³ã¼ãçªå·ï¼JANç­ï¼</label><input id="edit-barcode-number" class="form-input" type="text" placeholder="ä¾: 4901234567890"></div>
+    <div class="form-group"><label class="form-label">ååº«å¥ æä½ï¼æå¤§å¨åº«æ°</label><div id="edit-minstock-warehouses" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"></div></div>
+    <button class="form-btn" id="edit-master-btn" onclick="submitEditMaster()">æ´æ°ãã</button>
   </div>
 </div>
 
   <div id="masterPwModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:28px 20px;">
     <div style="text-align:center;margin-bottom:20px;">
-      <div style="font-size:36px;margin-bottom:8px;">🔒</div>
-      <div style="font-size:18px;font-weight:700;color:var(--text);">マスタ管理</div>
-      <div style="font-size:13px;color:var(--text2);margin-top:4px;">4桁のPINを入力してください</div>
+      <div style="font-size:36px;margin-bottom:8px;">ð</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text);">ãã¹ã¿ç®¡ç</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px;">4æ¡ã®PINãå¥åãã¦ãã ãã</div>
     </div>
     <div style="display:flex;justify-content:center;gap:20px;margin-bottom:8px;">
       <div id="pin-dot-0" style="width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:.15s;"></div>
@@ -229,27 +247,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       <div class="numpad-btn" onclick="pinInput('2')">2</div>
       <div class="numpad-btn" onclick="pinInput('3')">3</div>
       <div class="numpad-btn zero" onclick="pinInput('0')">0</div>
-      <div class="numpad-btn del" onclick="pinDel()">⌫</div>
+      <div class="numpad-btn del" onclick="pinDel()">â«</div>
     </div>
-    <button onclick="closeMasterPwModal()" style="width:100%;background:none;border:none;color:var(--text3);font-size:13px;padding:12px;cursor:pointer;margin-top:6px;">キャンセル</button>
+    <button onclick="closeMasterPwModal()" style="width:100%;background:none;border:none;color:var(--text3);font-size:13px;padding:12px;cursor:pointer;margin-top:6px;">ã­ã£ã³ã»ã«</button>
   </div>
 </div>
 
 <div id="cancelLogModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px;">
-    <div class="modal-title" style="font-size:17px;">取消の確認</div>
+    <div class="modal-title" style="font-size:17px;">åæ¶ã®ç¢ºèª</div>
     <p id="cancel-log-body" style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;"></p>
     <div style="display:flex;gap:10px;">
-      <button onclick="closeCancelLogModal()" style="flex:1;padding:13px;border:1.5px solid var(--border);background:#fff;border-radius:12px;font-size:14px;cursor:pointer;">キャンセル</button>
-      <button id="cancel-log-confirm-btn" onclick="confirmCancelLog()" style="flex:1;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;color:#fff;background:var(--danger);">取消する</button>
+      <button onclick="closeCancelLogModal()" style="flex:1;padding:13px;border:1.5px solid var(--border);background:#fff;border-radius:12px;font-size:14px;cursor:pointer;">ã­ã£ã³ã»ã«</button>
+      <button id="cancel-log-confirm-btn" onclick="confirmCancelLog()" style="flex:1;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;color:#fff;background:var(--danger);">åæ¶ãã</button>
     </div>
   </div>
 </div>
 
 <div id="scanModal" style="display:none;position:fixed;inset:0;background:#000;z-index:300;flex-direction:column;">
   <div style="background:#000;padding:14px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
-    <button onclick="stopScan()" style="background:none;border:none;color:#fff;font-size:28px;cursor:pointer;line-height:1;padding:0;">‹</button>
-    <div style="font-size:16px;font-weight:600;color:#fff;flex:1;">バーコードをスキャン</div>
+    <button onclick="stopScan()" style="background:none;border:none;color:#fff;font-size:28px;cursor:pointer;line-height:1;padding:0;">â¹</button>
+    <div style="font-size:16px;font-weight:600;color:#fff;flex:1;">ãã¼ã³ã¼ããã¹ã­ã£ã³</div>
   </div>
   <div style="flex:1;position:relative;overflow:hidden;">
     <video id="scanVideo" style="width:100%;height:100%;object-fit:cover;" playsinline></video>
@@ -264,7 +282,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     </div>
   </div>
   <div style="background:#111;padding:16px;text-align:center;flex-shrink:0;">
-    <div id="scanStatus" style="font-size:14px;color:#9ca3af;">QRコードまたはバーコードを枠内に合わせてください</div>
+    <div id="scanStatus" style="font-size:14px;color:#9ca3af;">QRã³ã¼ãã¾ãã¯ãã¼ã³ã¼ããæ åã«åããã¦ãã ãã</div>
   </div>
 </div>
 
@@ -273,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
     <div class="modal-title" id="toggle-title"></div>
     <p id="toggle-body" style="font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6"></p>
     <div style="display:flex;gap:10px">
-      <button onclick="closeToggleMasterModal()" style="flex:1;padding:13px;border:1.5px solid var(--border);background:#fff;border-radius:12px;font-size:14px;cursor:pointer">キャンセル</button>
+      <button onclick="closeToggleMasterModal()" style="flex:1;padding:13px;border:1.5px solid var(--border);background:#fff;border-radius:12px;font-size:14px;cursor:pointer">ã­ã£ã³ã»ã«</button>
       <button id="toggle-confirm-btn" onclick="confirmToggleMaster()" style="flex:1;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;color:#fff"></button>
     </div>
   </div>
@@ -282,89 +300,95 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 <div id="categoryManageModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:380px;margin:auto;padding:24px 20px;max-height:80vh;overflow-y:auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" style="margin-bottom:0;">カテゴリ管理</div>
-      <button onclick="closeCategoryManageModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3);">✕</button>
+      <div class="modal-title" style="margin-bottom:0;">ã«ãã´ãªç®¡ç</div>
+      <button onclick="closeCategoryManageModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3);">â</button>
     </div>
     <div id="category-manage-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
     <div style="border-top:1px solid var(--border);padding-top:14px;">
-      <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px;">新しいカテゴリを作成</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px;">æ°ããã«ãã´ãªãä½æ</div>
       <div style="display:flex;gap:8px;">
-        <input type="text" id="new-category-name" placeholder="カテゴリ名を入力" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;">
-        <button onclick="createNewCategory()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">追加</button>
+        <input type="text" id="new-category-name" placeholder="ã«ãã´ãªåãå¥å" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;">
+        <button onclick="createNewCategory()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">è¿½å </button>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5;">※新規カテゴリは商品登録画面のカテゴリ選択肢に追加されます。</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5;">â»æ°è¦ã«ãã´ãªã¯ååç»é²ç»é¢ã®ã«ãã´ãªé¸æè¢ã«è¿½å ããã¾ãã</div>
     </div>
   </div>
 </div>
 
 <div id="categoryRenameModal" class="modal-overlay">
   <div class="modal" style="border-radius:24px;max-width:320px;margin:auto;padding:24px 20px;">
-    <div class="modal-title" style="font-size:17px;">カテゴリ名を変更</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">変更前：<span id="rename-old-name" style="font-weight:700;color:var(--text);"></span></p>
+    <div class="modal-title" style="font-size:17px;">ã«ãã´ãªåãå¤æ´</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">å¤æ´åï¼<span id="rename-old-name" style="font-weight:700;color:var(--text);"></span></p>
     <input type="text" id="rename-new-name" style="width:100%;padding:11px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;margin-bottom:8px;">
-    <p style="font-size:11px;color:var(--text3);margin-bottom:18px;line-height:1.5;">該当する全商品（<span id="rename-count"></span>件）のカテゴリが一括で変更されます。</p>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:18px;line-height:1.5;">è©²å½ããå¨ååï¼<span id="rename-count"></span>ä»¶ï¼ã®ã«ãã´ãªãä¸æ¬ã§å¤æ´ããã¾ãã</p>
     <div style="display:flex;gap:10px;">
-      <button onclick="closeCategoryRenameModal()" style="flex:1;padding:13px;border:1.5px solid var(--border);background:#fff;border-radius:12px;font-size:14px;cursor:pointer;">キャンセル</button>
-      <button id="rename-confirm-btn" onclick="confirmRenameCategory()" style="flex:1;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;color:#fff;background:var(--primary);">変更する</button>
+      <button onclick="closeCategoryRenameModal()" style="flex:1;padding:13px;border:1.5px solid var(--border);background:#fff;border-radius:12px;font-size:14px;cursor:pointer;">ã­ã£ã³ã»ã«</button>
+      <button id="rename-confirm-btn" onclick="confirmRenameCategory()" style="flex:1;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;color:#fff;background:var(--primary);">å¤æ´ãã</button>
     </div>
   </div>
 </div>
 
 <div class="header">
-  <button class="back-btn hidden" id="back-btn" onclick="goBack()">‹</button>
-  <div class="header-title" id="header-title">在庫管理</div>
+  <button class="back-btn hidden" id="back-btn" onclick="goBack()">â¹</button>
+  <div class="header-title" id="header-title">å¨åº«ç®¡ç</div>
   <span class="header-badge hidden" id="header-sub" style="font-size:13px;padding:5px 12px;"></span>
-  <span class="hidden" id="header-change" onclick="openModal()" style="font-size:12px;color:var(--primary);text-decoration:underline;cursor:pointer;white-space:nowrap;margin-left:4px;">変更</span>
+  <span class="hidden" id="header-change" onclick="openModal()" style="font-size:12px;color:var(--primary);text-decoration:underline;cursor:pointer;white-space:nowrap;margin-left:4px;">å¤æ´</span>
   <span class="hidden" id="header-staff" style="font-size:17px;color:var(--text2);white-space:nowrap;margin-left:auto;font-weight:300;"></span>
   <span id="cb-limited" style="font-size:19px !important;font-weight:400;color:#9ca3af;white-space:nowrap;margin-left:auto;flex-shrink:0;display:none;font-family:Georgia,'Times New Roman',serif !important;letter-spacing:.02em;font-style:italic !important;">C&amp;B Limited Inventory App</span>
 </div>
 
 <div class="main">
   <div id="screen-home" class="screen active">
-    <div class="tile-grid">
-      <div class="tile" onclick="startOperation('入庫')"><i class="ti ti-package tile-icon"></i><div class="tile-label">入庫</div></div>
-      <div class="tile" onclick="startOperation('出庫')"><i class="ti ti-truck tile-icon"></i><div class="tile-label">出庫</div></div>
-      <div class="tile" onclick="startOperation('移動')"><i class="ti ti-arrows-exchange tile-icon"></i><div class="tile-label">倉庫間移動</div></div>
-      <div class="tile" onclick="showScreen('stock')"><i class="ti ti-chart-bar tile-icon"></i><div class="tile-label">在庫確認</div></div>
-      <div class="tile" onclick="startOperation('棚卸し')"><i class="ti ti-clipboard-list tile-icon"></i><div class="tile-label">棚卸し</div></div>
-      <div class="tile" onclick="showScreen('replenish')" style="border:1.5px solid #fca5a5;"><i class="ti ti-bell tile-icon" style="color:#ea580c;"></i><div class="tile-label" style="color:#ea580c;">補充確認</div></div>
+    <div class="home-header">
+      <div class="home-header-icon"><i class="ti ti-package"></i></div>
+      <div>
+        <div class="home-header-title">å¨åº«ç®¡ç</div>
+        <div class="home-header-subtitle">C&amp;B Limited Inventory App</div>
+      </div>
     </div>
-
+    <div class="tile-grid">
+      <div class="tile" onclick="startOperation('å¥åº«')"><div class="tile-icon-circle"><i class="ti ti-package"></i></div><div class="tile-title-row"><span class="tile-label">å¥åº«</span><span class="tile-arrow">âº</span></div><div class="tile-desc">ååã®å¥åº«å¦çãè¡ãã¾ã</div></div>
+      <div class="tile" onclick="startOperation('åºåº«')"><div class="tile-icon-circle"><i class="ti ti-truck"></i></div><div class="tile-title-row"><span class="tile-label">åºåº«</span><span class="tile-arrow">âº</span></div><div class="tile-desc">ååã®åºåº«å¦çãè¡ãã¾ã</div></div>
+      <div class="tile" onclick="startOperation('ç§»å')"><div class="tile-icon-circle"><i class="ti ti-arrows-exchange"></i></div><div class="tile-title-row"><span class="tile-label">ååº«éç§»å</span><span class="tile-arrow">âº</span></div><div class="tile-desc">ååº«éã®å¨åº«ç§»åãè¡ãã¾ã</div></div>
+      <div class="tile" onclick="showScreen('stock')"><div class="tile-icon-circle"><i class="ti ti-chart-bar"></i></div><div class="tile-title-row"><span class="tile-label">å¨åº«ç¢ºèª</span><span class="tile-arrow">âº</span></div><div class="tile-desc">å¨åº«ç¶æ³ã®ç¢ºèªãè¡ãã¾ã</div></div>
+      <div class="tile" onclick="startOperation('æ£å¸ã')"><div class="tile-icon-circle"><i class="ti ti-clipboard-list"></i></div><div class="tile-title-row"><span class="tile-label">æ£å¸ã</span><span class="tile-arrow">âº</span></div><div class="tile-desc">æ£å¸ãä½æ¥­ãè¡ãã¾ã</div></div>
+      <div class="tile tile-warn-new" onclick="showScreen('replenish')"><div class="tile-icon-circle"><i class="ti ti-bell"></i></div><div class="tile-title-row"><span class="tile-label">è£åç¢ºèª</span><span class="tile-arrow">âº</span></div><div class="tile-desc">å¨åº«ã®è£åç¶æ³ãç¢ºèªãã¾ã</div></div>
+    </div>
   </div>
   <div id="screen-operation" class="screen">
     <div class="scan-area" onclick="startScan()">
       <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
       <div class="scan-corner bl"></div><div class="scan-corner br"></div>
-      <div class="scan-icon">▦</div>
-      <div class="scan-text">バーコードをスキャン</div>
-      <div class="scan-sub">タップしてカメラを起動</div>
+      <div class="scan-icon">â¦</div>
+      <div class="scan-text">ãã¼ã³ã¼ããã¹ã­ã£ã³</div>
+      <div class="scan-sub">ã¿ãããã¦ã«ã¡ã©ãèµ·å</div>
       <div class="scan-line"></div>
     </div>
-    <div class="or-divider">または</div>
-    <button class="form-btn" style="margin-bottom:14px" onclick="showScreen('category')">手動で商品を選択</button>
+    <div class="or-divider">ã¾ãã¯</div>
+    <button class="form-btn" style="margin-bottom:14px" onclick="showScreen('category')">æåã§ååãé¸æ</button>
     <div class="card">
-      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px">この作業での記録</div>
-      <div id="history-list"><div style="font-size:12px;color:var(--text3)">まだ記録がありません</div></div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px">ãã®ä½æ¥­ã§ã®è¨é²</div>
+      <div id="history-list"><div style="font-size:12px;color:var(--text3)">ã¾ã è¨é²ãããã¾ãã</div></div>
     </div>
   </div>
   <div id="screen-category" class="screen">
-    <div class="section-title">カテゴリ</div>
-    <div id="category-list"><div class="loading">読み込み中...</div></div>
+    <div class="section-title">ã«ãã´ãª</div>
+    <div id="category-list"><div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div></div>
   </div>
   <div id="screen-product" class="screen">
     <div class="breadcrumb">
-      <span class="breadcrumb-item" onclick="showScreen('category')">カテゴリ</span>
-      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-item" onclick="showScreen('category')">ã«ãã´ãª</span>
+      <span class="breadcrumb-sep">âº</span>
       <span id="bc-category" style="color:var(--text);font-weight:700;font-size:16px"></span>
     </div>
     <div id="product-list"></div>
   </div>
   <div id="screen-size" class="screen">
     <div class="breadcrumb">
-      <span class="breadcrumb-item" onclick="showScreen('category')">カテゴリ</span>
-      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-item" onclick="showScreen('category')">ã«ãã´ãª</span>
+      <span class="breadcrumb-sep">âº</span>
       <span class="breadcrumb-item" onclick="showScreen('product')" id="bc-category2"></span>
-      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-sep">âº</span>
       <span id="bc-product" style="color:var(--text);font-weight:700;font-size:16px"></span>
     </div>
     <div id="size-list"></div>
@@ -379,53 +403,53 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       <div class="numpad-btn" onclick="numInput('7')">7</div><div class="numpad-btn" onclick="numInput('8')">8</div><div class="numpad-btn" onclick="numInput('9')">9</div>
       <div class="numpad-btn" onclick="numInput('4')">4</div><div class="numpad-btn" onclick="numInput('5')">5</div><div class="numpad-btn" onclick="numInput('6')">6</div>
       <div class="numpad-btn" onclick="numInput('1')">1</div><div class="numpad-btn" onclick="numInput('2')">2</div><div class="numpad-btn" onclick="numInput('3')">3</div>
-      <div class="numpad-btn zero" onclick="numInput('0')">0</div><div class="numpad-btn del" onclick="numDel()">⌫</div>
+      <div class="numpad-btn zero" onclick="numInput('0')">0</div><div class="numpad-btn del" onclick="numDel()">â«</div>
     </div>
-    <button class="record-btn" id="record-btn" onclick="recordLog()">記録する</button>
-    <button class="back-link" onclick="goBack()">← 商品選択に戻る</button>
+    <button class="record-btn" id="record-btn" onclick="recordLog()">è¨é²ãã</button>
+    <button class="back-link" onclick="goBack()">â ååé¸æã«æ»ã</button>
   </div>
   <div id="screen-stock" class="screen">
     <div style="padding-bottom:10px;display:flex;flex-direction:column;gap:8px;">
       <div id="stock-warehouse-tabs" style="display:flex;gap:6px;overflow-x:auto;"></div>
       <div style="display:flex;justify-content:flex-end;">
-        <button onclick="printStockList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;"><i class="ti ti-printer" style="margin-right:4px;"></i>PDF出力</button>
+        <button onclick="printStockList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;"><i class="ti ti-printer" style="margin-right:4px;"></i>PDFåºå</button>
       </div>
     </div>
-    <div class="section-title">カテゴリ</div>
-    <div id="stock-category-list"><div class="loading">読み込み中...</div></div>
+    <div class="section-title">ã«ãã´ãª</div>
+    <div id="stock-category-list"><div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div></div>
   </div>
   <div id="screen-stock-items" class="screen">
     <div class="breadcrumb">
-      <span class="breadcrumb-item" onclick="showScreen('stock')">カテゴリ</span>
-      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-item" onclick="showScreen('stock')">ã«ãã´ãª</span>
+      <span class="breadcrumb-sep">âº</span>
       <span id="stock-bc-category" style="color:var(--text);font-weight:700;font-size:16px"></span>
     </div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-      <button onclick="printStockList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-printer" style="margin-right:4px;"></i>PDF出力</button>
+      <button onclick="printStockList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-printer" style="margin-right:4px;"></i>PDFåºå</button>
     </div>
-    <div id="stock-list"><div class="loading">読み込み中...</div></div>
+    <div id="stock-list"><div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div></div>
   </div>
   <div id="screen-inv-category" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <div class="section-title" style="margin:0 0 0 16px;">カテゴリ</div>
-      <button onclick="printInventoryList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-printer" style="margin-right:4px;"></i>棚卸表PDF出力</button>
+      <div class="section-title" style="margin:0 0 0 16px;">ã«ãã´ãª</div>
+      <button onclick="printInventoryList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-printer" style="margin-right:4px;"></i>æ£å¸è¡¨PDFåºå</button>
     </div>
-    <div id="inv-category-list"><div class="loading">読み込み中...</div></div>
+    <div id="inv-category-list"><div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div></div>
   </div>
   <div id="screen-inv-product" class="screen">
     <div class="breadcrumb">
-      <span class="breadcrumb-item" onclick="showScreen('inv-category')">カテゴリ</span>
-      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-item" onclick="showScreen('inv-category')">ã«ãã´ãª</span>
+      <span class="breadcrumb-sep">âº</span>
       <span id="inv-bc-category" style="color:var(--text);font-weight:700;font-size:16px"></span>
     </div>
     <div id="inv-product-list"></div>
   </div>
   <div id="screen-inv-size" class="screen">
     <div class="breadcrumb">
-      <span class="breadcrumb-item" onclick="showScreen('inv-category')">カテゴリ</span>
-      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-item" onclick="showScreen('inv-category')">ã«ãã´ãª</span>
+      <span class="breadcrumb-sep">âº</span>
       <span class="breadcrumb-item" onclick="showScreen('inv-product')" id="inv-bc-category2"></span>
-      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-sep">âº</span>
       <span id="inv-bc-product" style="color:var(--text);font-weight:700;font-size:16px"></span>
     </div>
     <div id="inv-size-list"></div>
@@ -433,12 +457,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   <div id="screen-inventoryQty" class="screen">
     <div id="inv-product-confirm" class="product-confirm" style="border-color:#f9ab00;background:#fffbea;"></div>
     <div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:10px;border:1.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:13px;color:var(--text2);">システム在庫数</span>
+      <span style="font-size:13px;color:var(--text2);">ã·ã¹ãã å¨åº«æ°</span>
       <span style="font-size:24px;font-weight:700;color:var(--primary);" id="inv-system-qty">-</span>
       <span style="font-size:13px;color:var(--text2);" id="inv-system-unit"></span>
     </div>
     <div class="qty-display" style="border-color:#f9ab00;">
-      <span style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px;">実際の在庫数</span>
+      <span style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px;">å®éã®å¨åº«æ°</span>
       <span class="qty-num" id="inv-qty-display">0</span>
       <span class="qty-unit" id="inv-qty-unit"></span>
     </div>
@@ -447,64 +471,64 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       <div class="numpad-btn" onclick="invNumInput('7')">7</div><div class="numpad-btn" onclick="invNumInput('8')">8</div><div class="numpad-btn" onclick="invNumInput('9')">9</div>
       <div class="numpad-btn" onclick="invNumInput('4')">4</div><div class="numpad-btn" onclick="invNumInput('5')">5</div><div class="numpad-btn" onclick="invNumInput('6')">6</div>
       <div class="numpad-btn" onclick="invNumInput('1')">1</div><div class="numpad-btn" onclick="invNumInput('2')">2</div><div class="numpad-btn" onclick="invNumInput('3')">3</div>
-      <div class="numpad-btn zero" onclick="invNumInput('0')">0</div><div class="numpad-btn del" onclick="invNumDel()">⌫</div>
+      <div class="numpad-btn zero" onclick="invNumInput('0')">0</div><div class="numpad-btn del" onclick="invNumDel()">â«</div>
     </div>
-    <button class="record-btn" id="inv-record-btn" onclick="recordInventory()" style="background:#f9ab00;">棚卸し修正を記録する</button>
-    <button class="back-link" onclick="goBack()">← 商品一覧に戻る</button>
+    <button class="record-btn" id="inv-record-btn" onclick="recordInventory()" style="background:#f9ab00;">æ£å¸ãä¿®æ­£ãè¨é²ãã</button>
+    <button class="back-link" onclick="goBack()">â ååä¸è¦§ã«æ»ã</button>
   </div>
   <div id="screen-history" class="screen">
     <div style="padding:10px 12px 6px;display:flex;flex-direction:column;gap:8px;">
       <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;">
-        <div class="filter-btn active" id="hist-date-today" onclick="setHistDateFilter('today',this)">今日</div>
-        <div class="filter-btn" id="hist-date-week" onclick="setHistDateFilter('week',this)">今週</div>
-        <div class="filter-btn" id="hist-date-month" onclick="setHistDateFilter('month',this)">今月</div>
-        <div class="filter-btn" id="hist-date-all" onclick="setHistDateFilter('all',this)">すべて</div>
+        <div class="filter-btn active" id="hist-date-today" onclick="setHistDateFilter('today',this)">ä»æ¥</div>
+        <div class="filter-btn" id="hist-date-week" onclick="setHistDateFilter('week',this)">ä»é±</div>
+        <div class="filter-btn" id="hist-date-month" onclick="setHistDateFilter('month',this)">ä»æ</div>
+        <div class="filter-btn" id="hist-date-all" onclick="setHistDateFilter('all',this)">ãã¹ã¦</div>
       </div>
       <div style="display:flex;gap:8px;">
         <select id="hist-type-filter" onchange="renderHistoryList()" style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);font-size:13px;background:var(--surface);">
-          <option value="">全操作種別</option>
-          <option>入庫</option><option>出庫（販売）</option><option>出庫（使用）</option><option>出庫（廃棄）</option>
-          <option>移動（出）</option><option>移動（入）</option><option>棚卸し修正</option>
+          <option value="">å¨æä½ç¨®å¥</option>
+          <option>å¥åº«</option><option>åºåº«ï¼è²©å£²ï¼</option><option>åºåº«ï¼ä½¿ç¨ï¼</option><option>åºåº«ï¼å»æ£ï¼</option>
+          <option>ç§»åï¼åºï¼</option><option>ç§»åï¼å¥ï¼</option><option>æ£å¸ãä¿®æ­£</option>
         </select>
         <select id="hist-warehouse-filter" onchange="renderHistoryList()" style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);font-size:13px;background:var(--surface);">
-          <option value="">全倉庫</option>
+          <option value="">å¨ååº«</option>
         </select>
       </div>
     </div>
     <div style="padding:0 14px 6px;display:flex;align-items:center;gap:6px;">
       <input type="checkbox" id="hist-show-cancel" onchange="renderHistoryList()">
-      <label for="hist-show-cancel" style="font-size:12px;color:var(--text2);">取消ログも表示する</label>
+      <label for="hist-show-cancel" style="font-size:12px;color:var(--text2);">åæ¶ã­ã°ãè¡¨ç¤ºãã</label>
     </div>
     <div id="hist-count" style="padding:4px 14px 6px;font-size:12px;color:var(--text3);"></div>
-    <div id="history-log-list" style="padding:0 12px 80px;"><div class="loading">読み込み中...</div></div>
+    <div id="history-log-list" style="padding:0 12px 80px;"><div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div></div>
   </div>
   <div id="screen-replenish" class="screen">
     <div style="padding:10px 12px 6px;display:flex;flex-direction:column;gap:8px;">
       <div id="replenish-warehouse-tabs" style="display:flex;gap:6px;overflow-x:auto;"></div>
       <div style="display:flex;justify-content:flex-end;">
-        <button onclick="printReplenishList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;"><i class="ti ti-printer" style="margin-right:4px;"></i>PDF出力</button>
+        <button onclick="printReplenishList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;"><i class="ti ti-printer" style="margin-right:4px;"></i>PDFåºå</button>
       </div>
     </div>
-    <div id="replenish-list"><div class="loading">読み込み中...</div></div>
+    <div id="replenish-list"><div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div></div>
   </div>
   <div id="screen-master" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;">
-      <div style="font-size:15px;font-weight:700;color:var(--text2)">商品マスタ管理</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text2)">ååãã¹ã¿ç®¡ç</div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
-        <button onclick="openCategoryManageModal()" style="background:#fff;color:var(--primary);border:1.5px solid var(--primary);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">カテゴリ</button>
-        <button onclick="openAddMasterModal()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">＋ 新規</button>
+        <button onclick="openCategoryManageModal()" style="background:#fff;color:var(--primary);border:1.5px solid var(--primary);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">ã«ãã´ãª</button>
+        <button onclick="openAddMasterModal()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">ï¼ æ°è¦</button>
       </div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:8px">
-      <select id="masterCatFilter" onchange="renderMasterList()" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--surface)"><option value="">全カテゴリ</option></select>
-      <input type="text" id="masterSearch" placeholder="商品名・SKU検索" oninput="renderMasterList()" style="flex:2;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;">
+      <select id="masterCatFilter" onchange="renderMasterList()" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--surface)"><option value="">å¨ã«ãã´ãª</option></select>
+      <input type="text" id="masterSearch" placeholder="åååã»SKUæ¤ç´¢" oninput="renderMasterList()" style="flex:2;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;">
     </div>
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
       <input type="checkbox" id="masterShowInactive" onchange="renderMasterList()">
-      <label for="masterShowInactive" style="font-size:13px;color:var(--text2)">廃番も表示する</label>
+      <label for="masterShowInactive" style="font-size:13px;color:var(--text2)">å»çªãè¡¨ç¤ºãã</label>
       <span id="masterCount" style="margin-left:auto;font-size:12px;color:var(--text3)"></span>
     </div>
-    <div id="master-list"><div class="loading">読み込み中...</div></div>
+    <div id="master-list"><div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div></div>
   </div>
 </div>
 
@@ -512,21 +536,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 <img class="toast-mascot" id="toast-mascot" src="https://drive.google.com/thumbnail?id=1bew7wxVLBX7zgGQAiNshUNpjO-QixLGT&sz=w800" alt="">
 
 <div class="bnav">
-  <div class="bnav-item active" onclick="showScreen('home')" id="nav-home" style="min-width:60px;"><i class="ti ti-home bnav-icon"></i>ホーム</div>
+  <div class="bnav-item active" onclick="showScreen('home')" id="nav-home" style="min-width:60px;"><i class="ti ti-home bnav-icon"></i>ãã¼ã </div>
   <div id="nav-session" style="flex:1;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:4px 6px 8px;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;" onclick="handleNavScan()">
     <i class="ti ti-scan bnav-icon" style="color:#0891b2;"></i>
-    <span style="font-size:10px;color:#0891b2;font-weight:600;">スキャン</span>
+    <span style="font-size:10px;color:#0891b2;font-weight:600;">ã¹ã­ã£ã³</span>
   </div>
-  <div class="bnav-item" onclick="showScreen('history')" id="nav-history" style="min-width:60px;"><i class="ti ti-history bnav-icon"></i>履歴</div>
-  <div class="bnav-item" onclick="masterUnlocked?showScreen('master'):openMasterPwModal()" id="nav-master" style="min-width:60px;"><i class="ti ti-layout-grid bnav-icon"></i>マスタ</div>
+  <div class="bnav-item" onclick="showScreen('history')" id="nav-history" style="min-width:60px;"><i class="ti ti-history bnav-icon"></i>å±¥æ­´</div>
+  <div class="bnav-item" onclick="masterUnlocked?showScreen('master'):openMasterPwModal()" id="nav-master" style="min-width:60px;"><i class="ti ti-layout-grid bnav-icon"></i>ãã¹ã¿</div>
 </div>
-  <!-- フッターの裏から生えてくるキャラ画像 -->
+  <!-- ããã¿ã¼ã®è£ããçãã¦ããã­ã£ã©ç»å -->
   <img src="https://drive.google.com/thumbnail?id=1chiSItZQrcVpr42zmEa3d5_EiJslSlKT&sz=w800"
     id="home-chara"
     alt=""
     style="position:absolute;bottom:25px;right:-80px;width:360px;pointer-events:none;display:none;z-index:50;object-fit:contain;object-position:right bottom;">
 
 </div>
+
 <script>
 const API='https://script.google.com/macros/s/AKfycbz2K9_frpjl7gXnl4jMcqSNIt4Yupx-SYcVJHiM6Wtb0gFsRlgmNLlBy06Xz7TnOPgx/exec';
 var masterPassword='1234';
@@ -534,7 +559,7 @@ var masterUnlocked=false;
 var pinCurrent='';
 let master=[],summary=[],warehouses=[],minStockData=[],masterAll=[],categoryOrder=[],session={warehouse:'',dest:'',staff:'',mode:'',reason:'',immediateDest:''},currentQty='',currentProduct=null,currentCategory='',currentProductName='',sessionHistory=[],recordedSizes=[],screenStack=[];
 
-async function loadData(){
+amync function loadData(){
   try{
     const [m,s,w,ms,ma,co]=await Promise.all([
       fetch(API+'?action=getMaster').then(r=>r.json()),
@@ -555,20 +580,20 @@ async function loadData(){
     if(curScreen==='stock') renderStockCategories();
     if(curScreen==='stock-items') renderStock();
     if(curScreen==='replenish') renderReplenish();
-  }catch(e){showToast('データ読み込みエラー');}
+  }catch(e){showToast('ãã¼ã¿èª­ã¿è¾¼ã¿ã¨ã©ã¼');}
 }
 
 function buildWarehouseSelects(){
-  var opts=warehouses.map(function(w){return '<option>'+w['倉庫名']+'</option>';}).join('');
+  var opts=warehouses.map(function(w){return '<option>'+w['ååº«å']+'</option>';}).join('');
   ['sel-warehouse','sel-dest','sel-immediate-dest'].forEach(function(id){
     var el=document.getElementById(id);
     if(el) el.innerHTML=opts;
   });
-  // 移動のデフォルト: 移動元=山科倉庫、移動先=事務所
+  // ç§»åã®ããã©ã«ã: ç§»åå=å±±ç§ååº«ãç§»åå=äºåæ
   var selW=document.getElementById('sel-warehouse');
   var selD=document.getElementById('sel-dest');
-  if(selW) for(var i=0;i<selW.options.length;i++){if(selW.options[i].value==='山科倉庫'||selW.options[i].text==='山科倉庫'){selW.selectedIndex=i;break;}}
-  if(selD) for(var i=0;i<selD.options.length;i++){if(selD.options[i].value==='事務所'||selD.options[i].text==='事務所'){selD.selectedIndex=i;break;}}
+  if(selW) for(var i=0;i<selW.options.length;i++){if(selW.options[i].value==='å±±ç§ååº«'||selW.options[i].text==='å±±ç§ååº«'){selW.selectedIndex=i;break;}}
+  if(selD) for(var i=0;i<selD.options.length;i++){if(selD.options[i].value==='äºåæ'||selD.options[i].text==='äºåæ'){selD.selectedIndex=i;break;}}
 }
 
 window.onload=function(){
@@ -576,21 +601,22 @@ window.onload=function(){
   var savedStaff=localStorage.getItem('staff_name');
   if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
   loadData();
-  // 初期ホーム画面でキャラとC&B Limitedを表示
+  // åæãã¼ã ç»é¢ã§ã­ã£ã©ã¨C&B Limitedãè¡¨ç¤º
   var chara=document.getElementById('home-chara');
   if(chara) chara.style.display='block';
   var cb=document.getElementById('cb-limited');
   if(cb) cb.style.display='';
+  document.querySelector('.app-shell').classList.add('on-home');
 };
 
 function openModal(){
   var mode=session.mode;
-  document.getElementById('modal-title').textContent=mode==='入庫'?'入庫 作業設定':mode==='出庫'?'出庫 作業設定':mode==='移動'?'移動 作業設定':'作業設定';
-  document.getElementById('warehouse-label').textContent=mode==='移動'?'移動元倉庫':mode==='棚卸し'?'棚卸し倉庫':'倉庫';
-  document.getElementById('dest-group').classList.toggle('hidden',mode!=='移動');
-  document.getElementById('reason-group').classList.toggle('hidden',mode!=='出庫');
-  document.getElementById('immediate-move-group').classList.toggle('hidden',mode!=='入庫');
-  if(mode==='入庫'){
+  document.getElementById('modal-title').textContent=mode==='å¥åº«'?'å¥åº« ä½æ¥­è¨­å®':mode==='åºåº«'?'åºåº« ä½æ¥­è¨­å®':mode==='ç§»å'?'ç§»å ä½æ¥­è¨­å®':'ä½æ¥­è¨­å®';
+  document.getElementById('warehouse-label').textContent=mode==='ç§»å'?'ç§»ååååº«':mode==='æ£å¸ã'?'æ£å¸ãååº«':'ååº«';
+  document.getElementById('dest-group').classList.toggle('hidden',mode!=='ç§»å');
+  document.getElementById('reason-group').classList.toggle('hidden',mode!=='åºåº«');
+  document.getElementById('immediate-move-group').classList.toggle('hidden',mode!=='å¥åº«');
+  if(mode==='å¥åº«'){
     document.getElementById('immediate-move-check').innerHTML='';
     document.getElementById('immediate-move-check').style.borderColor='var(--border)';
     document.getElementById('immediate-move-check').style.background='#fff';
@@ -606,25 +632,25 @@ function closeModal(){document.getElementById('modal').classList.remove('show');
 function startSession(){
   var w=document.getElementById('sel-warehouse').value;
   var s=document.getElementById('inp-staff').value.trim();
-  if(!s){alert('担当者名を入力してください');return;}
-  if(session.mode==='移動'){
+  if(!s){alert('æå½èåãå¥åãã¦ãã ãã');return;}
+  if(session.mode==='ç§»å'){
     var d=document.getElementById('sel-dest').value;
-    if(w===d){alert('移動元と移動先が同じ倉庫です');return;}
+    if(w===d){alert('ç§»ååã¨ç§»ååãåãååº«ã§ã');return;}
     session.dest=d;
   }
-  if(session.mode==='出庫') session.reason=document.getElementById('sel-reason').value;
-  if(session.mode==='入庫'){
+  if(session.mode==='åºåº«') session.reason=document.getElementById('sel-reason').value;
+  if(session.mode==='å¥åº«'){
     var immDest=document.getElementById('immediate-dest-group').classList.contains('hidden')?'':document.getElementById('sel-immediate-dest').value;
-    if(immDest&&immDest===w){showToast('入庫倉庫と移動先倉庫が同じです');return;}
+    if(immDest&&immDest===w){showToast('å¥åº«ååº«ã¨ç§»ååååº«ãåãã§ã');return;}
     session.immediateDest=immDest;
   }
   session.warehouse=w;session.staff=s;
   localStorage.setItem('staff_name',s);
-  var colors={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8',棚卸し:'#f9ab00'};
+  var colors={å¥åº«:'#34a853',åºåº«:'#ea4335',ç§»å:'#1a73e8',æ£å¸ã:'#f9ab00'};
   var sub=document.getElementById('header-sub');
   var warehouseLabel=w;
-  if(session.mode==='移動') warehouseLabel=w+'→'+session.dest;
-  else if(session.mode==='入庫'&&session.immediateDest) warehouseLabel=w+'→'+session.immediateDest;
+  if(session.mode==='ç§»å') warehouseLabel=w+'â'+session.dest;
+  else if(session.mode==='å¥åº«'&&session.immediateDest) warehouseLabel=w+'â'+session.immediateDest;
   sub.textContent=session.mode+'-'+warehouseLabel;
   sub.style.background=colors[session.mode]||'var(--primary)';
   sub.classList.remove('hidden');
@@ -634,7 +660,7 @@ function startSession(){
   if(hs){hs.textContent=s;hs.classList.remove('hidden');}
   closeModal();
   sessionHistory=[];recordedSizes=[];screenStack=[];renderHistory();
-  if(session.mode==='棚卸し') showScreen('inv-category');
+  if(session.mode==='æ£å¸ã') showScreen('inv-category');
   else showScreen('category');
 }
 function startOperation(mode){session.mode=mode;openModal();}
@@ -642,7 +668,7 @@ function startOperation(mode){session.mode=mode;openModal();}
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   document.getElementById('screen-'+name).classList.add('active');
-  var titles={home:'在庫管理',operation:'入出庫',category:'商品選択',product:'商品選択',size:'サイズ選択',qty:'数量入力',stock:'在庫確認',master:'商品マスタ','stock-items':'在庫確認',replenish:'補充確認',history:'履歴','inv-category':'棚卸し','inv-product':'棚卸し','inv-size':'棚卸し',inventoryQty:'棚卸し 数量入力'};
+  var titles={home:'å¨åº«ç®¡ç',operation:'å¥åºåº«',category:'ååé¸æ',product:'ååé¸æ',size:'ãµã¤ãºé¸æ',qty:'æ°éå¥å',stock:'å¨åº«ç¢ºèª',master:'ååãã¹ã¿','stock-items':'å¨åº«ç¢ºèª',replenish:'è£åç¢ºèª',history:'å±¥æ­´','inv-category':'æ£å¸ã','inv-product':'æ£å¸ã','inv-size':'æ£å¸ã',inventoryQty:'æ£å¸ã æ°éå¥å'};
   document.getElementById('header-title').textContent=titles[name]||'';
   document.querySelectorAll('.bnav-item').forEach(function(i){i.classList.remove('active');});
   var chara=document.getElementById('home-chara');
@@ -650,6 +676,7 @@ function showScreen(name){
   if(name==='home'){
     if(chara) chara.style.display='block';
     if(cb) cb.style.display='';
+    document.querySelector('.app-shell').classList.add('on-home');
     document.getElementById('nav-home').classList.add('active');
     document.getElementById('header-sub').classList.add('hidden');
     document.getElementById('header-change').classList.add('hidden');
@@ -661,6 +688,7 @@ function showScreen(name){
   }else{
     if(chara) chara.style.display='none';
     if(cb) cb.style.display='none';
+    document.querySelector('.app-shell').classList.remove('on-home');
     document.getElementById('back-btn').classList.remove('hidden');
   }
   if(name==='master'){document.getElementById('nav-master').classList.add('active');loadMasterAll();}
@@ -680,7 +708,7 @@ function startScan(){
   var modal=document.getElementById('scanModal');
   modal.style.display='flex';modal.style.flexDirection='column';
   scanActive=true;
-  document.getElementById('scanStatus').textContent='カメラを起動中...';
+  document.getElementById('scanStatus').textContent='ã«ã¡ã©ãèµ·åä¸­...';
   navigator.mediaDevices.getUserMedia({
     video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}
   }).then(function(stream){
@@ -689,11 +717,11 @@ function startScan(){
     video.srcObject=stream;
     video.play();
     video.addEventListener('loadedmetadata',function(){
-      document.getElementById('scanStatus').textContent='QRコードまたはバーコードを枠内に合わせてください';
+      document.getElementById('scanStatus').textContent='QRã³ã¼ãã¾ãã¯ãã¼ã³ã¼ããæ åã«åããã¦ãã ãã';
       scanFrame();
     });
   }).catch(function(e){
-    document.getElementById('scanStatus').textContent='カメラの起動に失敗しました: '+e.message;
+    document.getElementById('scanStatus').textContent='ã«ã¡ã©ã®èµ·åã«å¤±æãã¾ãã: '+e.message;
   });
 }
 
@@ -722,70 +750,70 @@ function stopScan(){
 }
 async function onScanSuccess(code){
   stopScan();
-  // 棚卸しスキャンモードの場合
+  // æ£å¸ãã¹ã­ã£ã³ã¢ã¼ãã®å ´å
   if(scanModeInventory){
     scanModeInventory=false;
-    showToast('読み取り: '+code);
+    showToast('èª­ã¿åã: '+code);
     try{
       var res=await fetch(API+'?action=findByBarcode&code='+encodeURIComponent(code));
       var json=await res.json();
-      if(!json.success){showToast('❌ 商品が見つかりません');return;}
+      if(!json.success){showToast('â ååãè¦ã¤ããã¾ãã');return;}
       var item=json.data;
-      // 棚卸し用：商品情報をセットして数量入力画面へ
+      // æ£å¸ãç¨ï¼ååæå ±ãã»ãããã¦æ°éå¥åç»é¢ã¸
       var stock=inventoryStock.find(function(r){return r.SKU_ID===item['SKU_ID'];});
       if(!stock){
-        // inventoryStockにない場合はダミーで作成
-        stock={SKU_ID:item['SKU_ID'],商品名:item['商品名'],サイズ:String(item['サイズ']),単位:item['単位'],在庫数:0};
+        // inventoryStockã«ãªãå ´åã¯ããã¼ã§ä½æ
+        stock={SKU_ID:item['SKU_ID'],ååå:item['ååå'],ãµã¤ãº:String(item['ãµã¤ãº']),åä½:item['åä½'],å¨åº«æ°:0};
       }
-      invCurrentCategory=item['カテゴリ'];
-      invCurrentProductName=item['商品名'];
-      document.getElementById('inv-bc-category').textContent=item['カテゴリ'];
-      document.getElementById('inv-bc-category2').textContent=item['カテゴリ'];
-      document.getElementById('inv-bc-product').textContent=item['商品名'];
+      invCurrentCategory=item['ã«ãã´ãª'];
+      invCurrentProductName=item['ååå'];
+      document.getElementById('inv-bc-category').textContent=item['ã«ãã´ãª'];
+      document.getElementById('inv-bc-category2').textContent=item['ã«ãã´ãª'];
+      document.getElementById('inv-bc-product').textContent=item['ååå'];
       selectInvProduct(item['SKU_ID']);
-    }catch(e){showToast('❌ 検索エラー');}
+    }catch(e){showToast('â æ¤ç´¢ã¨ã©ã¼');}
     return;
   }
-  // バーコード登録モードの場合
+  // ãã¼ã³ã¼ãç»é²ã¢ã¼ãã®å ´å
   if(scanModeBarcode){
     scanModeBarcode=false;
-    if(!barcodeScanTargetSku){showToast('❌ 対象SKUが不明です');return;}
-    showToast('読み取り: '+code);
+    if(!barcodeScanTargetSku){showToast('â å¯¾è±¡SKUãä¸æã§ã');return;}
+    showToast('èª­ã¿åã: '+code);
     try{
-      var res=await fetch(API,{method:'POST',body:JSON.stringify({action:'updateBarcode',SKU_ID:barcodeScanTargetSku,バーコード番号:code})});
+      var res=await fetch(API,{method:'POST',body:JSON.stringify({action:'updateBarcode',SKU_ID:barcodeScanTargetSku,ãã¼ã³ã¼ãçªå·:code})});
       var json=await res.json();
       if(json.success){
-        showToast('✅ バーコード番号を登録しました');
+        showToast('â ãã¼ã³ã¼ãçªå·ãç»é²ãã¾ãã');
         barcodeScanTargetSku=null;
         await loadMasterAll();
       }else{
-        showToast('❌ 登録失敗: '+(json.message||''));
+        showToast('â ç»é²å¤±æ: '+(json.message||''));
       }
-    }catch(e){showToast('❌ 通信エラー');}
+    }catch(e){showToast('â éä¿¡ã¨ã©ã¼');}
     return;
   }
-  // 通常の入出庫スキャンモード
-  showToast('読み取り: '+code);
+  // éå¸¸ã®å¥åºåº«ã¹ã­ã£ã³ã¢ã¼ã
+  showToast('èª­ã¿åã: '+code);
   try{
     var res=await fetch(API+'?action=findByBarcode&code='+encodeURIComponent(code));
     var json=await res.json();
-    if(!json.success){showToast('❌ 商品が見つかりません');return;}
+    if(!json.success){showToast('â ååãè¦ã¤ããã¾ãã');return;}
     var item=json.data;
-    currentCategory=item['カテゴリ'];currentProductName=item['商品名'];recordedSizes=[];
-    document.getElementById('bc-category').textContent=item['カテゴリ'];
-    document.getElementById('bc-category2').textContent=item['カテゴリ'];
-    document.getElementById('bc-product').textContent=item['商品名'];
-    selectSku(item['SKU_ID'],item['商品名'],String(item['サイズ']),item['単位']);
-  }catch(e){showToast('❌ 検索エラー');}
+    currentCategory=item['ã«ãã´ãª'];currentProductName=item['ååå'];recordedSizes=[];
+    document.getElementById('bc-category').textContent=item['ã«ãã´ãª'];
+    document.getElementById('bc-category2').textContent=item['ã«ãã´ãª'];
+    document.getElementById('bc-product').textContent=item['ååå'];
+    selectSku(item['SKU_ID'],item['ååå'],String(item['ãµã¤ãº']),item['åä½']);
+  }catch(e){showToast('â æ¤ç´¢ã¨ã©ã¼');}
 }
 
 function renderCategories(){
-  if(master.length===0){document.getElementById('category-list').innerHTML='<div class="loading">読み込み中...</div>';return;}
+  if(master.length===0){document.getElementById('category-list').innerHTML='<div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div>';return;}
   var cats=[];
-  master.forEach(function(p){if(cats.indexOf(p['カテゴリ'])===-1)cats.push(p['カテゴリ']);});
+  master.forEach(function(p){if(cats.indexOf(p['ã«ãã´ãª'])===-1)cats.push(p['ã«ãã´ãª']);});
   cats=applyCategoryOrder(cats);
   document.getElementById('category-list').innerHTML=cats.map(function(c){
-    return '<div class="list-item" onclick="selectCategory(\''+c+'\')"><div class="list-item-name">'+c+'</div><div class="list-item-arrow">›</div></div>';
+    return '<div class="list-item" onclick="selectCategory(\''+c+'\')"><div class="list-item-name">'+c+'</div><div class="list-item-arrow">âº</div></div>';
   }).join('');
 }
 function selectCategory(cat){
@@ -801,10 +829,10 @@ function jaSort(a,b){
 }
 function renderProducts(cat){
   var names=[];
-  master.filter(function(p){return p['カテゴリ']===cat;}).forEach(function(p){if(names.indexOf(p['商品名'])===-1)names.push(p['商品名']);});
+  master.filter(function(p){return p['ã«ãã´ãª']===cat;}).forEach(function(p){if(names.indexOf(p['ååå'])===-1)names.push(p['ååå']);});
   names.sort(jaSort);
   document.getElementById('product-list').innerHTML=names.map(function(name){
-    return '<div class="list-item" onclick="selectProduct(\''+escAttr(name)+'\')"><div class="list-item-name">'+name+'</div><div class="list-item-arrow">›</div></div>';
+    return '<div class="list-item" onclick="selectProduct(\''+escAttr(name)+'\')"><div class="list-item-name">'+name+'</div><div class="list-item-arrow">âº</div></div>';
   }).join('');
 }
 function selectProduct(name){
@@ -813,26 +841,26 @@ function selectProduct(name){
   renderSizes(currentCategory,name);showScreen('size');
 }
 function renderSizes(cat,name){
-  var items=master.filter(function(p){return p['カテゴリ']===cat&&p['商品名']===name;});
+  var items=master.filter(function(p){return p['ã«ãã´ãª']===cat&&p['ååå']===name;});
   document.getElementById('size-list').innerHTML=items.map(function(item){
     var done=recordedSizes.indexOf(item['SKU_ID'])!==-1;
-    return '<div class="list-item" onclick="selectSku(\''+item['SKU_ID']+'\',\''+escAttr(item['商品名'])+'\',\''+escAttr(item['サイズ'])+'\',\''+item['単位']+'\')"><div class="list-item-name">'+String(item['サイズ'])+'</div>'+(done?'<span class="badge badge-done">記録済</span>':'<div class="list-item-arrow">›</div>')+'</div>';
+    return '<div class="list-item" onclick="selectSku(\''+item['SKU_ID']+'\',\''+escAttr(item['ååå'])+'\',\''+escAttr(item['ãµã¤ãº'])+'\',\''+item['åä½']+'\')"><div class="list-item-name">'+String(item['ãµã¤ãº'])+'</div>'+(done?'<span class="badge badge-done">è¨é²æ¸</span>':'<div class="list-item-arrow">âº</div>')+'</div>';
   }).join('');
 }
 function selectSku(skuId,name,size,unit){
   currentProduct={skuId:skuId,name:name,size:size,unit:unit};currentQty='';
   document.getElementById('qty-display').textContent='0';
   document.getElementById('qty-unit').textContent=unit;
-  var modeColor={入庫:'#34a853',出庫:'#ea4335',移動:'#1a73e8'};
-  var modeBg={入庫:'rgba(52,168,83,.1)',出庫:'rgba(234,67,53,.1)',移動:'rgba(26,115,232,.1)'};
+  var modeColor={å¥åº«:'#34a853',åºåº«:'#ea4335',ç§»å:'#1a73e8'};
+  var modeBg={å¥åº«:'rgba(52,168,83,.1)',åºåº«:'rgba(234,67,53,.1)',ç§»å:'rgba(26,115,232,.1)'};
   var metaHtml='<span class="product-meta-item">'+session.warehouse+'</span>';
-  if(session.mode==='移動') metaHtml+='<span class="product-meta-item" style="background:rgba(26,115,232,.1);color:#1a73e8">→ '+session.dest+'</span>';
+  if(session.mode==='ç§»å') metaHtml+='<span class="product-meta-item" style="background:rgba(26,115,232,.1);color:#1a73e8">â '+session.dest+'</span>';
   metaHtml+='<span class="product-meta-item">'+session.staff+'</span>';
   metaHtml+='<span class="product-meta-item" style="background:'+modeBg[session.mode]+';color:'+modeColor[session.mode]+'">'+session.mode+'</span>';
   document.getElementById('product-confirm').innerHTML='<div class="product-name">'+name+' '+size+'</div><div class="product-sku">'+skuId+'</div><div class="product-meta">'+metaHtml+'</div>';
-  var ml={入庫:'✓ 入庫を記録する',出庫:'✓ 出庫を記録する',移動:'✓ 移動を記録する'};
+  var ml={å¥åº«:'â å¥åº«ãè¨é²ãã',åºåº«:'â åºåº«ãè¨é²ãã',ç§»å:'â ç§»åãè¨é²ãã'};
   var btn=document.getElementById('record-btn');
-  btn.textContent=ml[session.mode]||'記録する';
+  btn.textContent=ml[session.mode]||'è¨é²ãã';
   btn.style.background=modeColor[session.mode]||'var(--primary)';
   showScreen('qty');
 }
@@ -841,29 +869,29 @@ function numDel(){currentQty=currentQty.slice(0,-1);document.getElementById('qty
 
 async function recordLog(){
   var qty=parseInt(currentQty)||0;
-  if(qty===0){showToast('数量を入力してください');return;}
-  var opMap={入庫:'入庫',出庫:session.reason||'出庫（使用）',移動:'移動（出）'};
-  var sign=session.mode==='入庫'?1:-1;
-  var payload={action:'addLog',操作種別:opMap[session.mode],SKU_ID:currentProduct.skuId,倉庫:session.warehouse,移動先倉庫:session.mode==='移動'?session.dest:'',即移動先倉庫:session.mode==='入庫'&&session.immediateDest?session.immediateDest:'',数量変動:qty*sign,単位:currentProduct.unit,担当者:session.staff};
-  var btn=document.getElementById('record-btn');btn.textContent='記録中...';
+  if(qty===0){showToast('æ°éãå¥åãã¦ãã ãã');return;}
+  var opMap={å¥åº«:'å¥åº«',åºåº«:session.reason||'åºåº«ï¼ä½¿ç¨ï¼',ç§»å:'ç§»åï¼åºï¼'};
+  var sign=session.mode==='å¥åº«'?1:-1;
+  var payload={action:'addLog',æä½ç¨®å¥:opMap[session.mode],SKU_ID:currentProduct.skuId,ååº«:session.warehouse,ç§»ååååº«:session.mode==='ç§»å'?session.dest:'',å³ç§»ååååº«:session.mode==='å¥åº«'&&session.immediateDest?session.immediateDest:'',æ°éå¤å:qty*sign,åä½:currentProduct.unit,æå½è:session.staff};
+  var btn=document.getElementById('record-btn');btn.textContent='è¨é²ä¸­...';
   try{
     await fetch(API,{method:'POST',body:JSON.stringify(payload)});
     sessionHistory.unshift({name:currentProduct.name+' '+currentProduct.size,qty:qty*sign,unit:currentProduct.unit,mode:session.mode,dest:session.dest});
     recordedSizes.push(currentProduct.skuId);
-    showToast('✓ 記録しました');currentQty='';
+    showToast('â è¨é²ãã¾ãã');currentQty='';
     renderSizes(currentCategory,currentProductName);showScreen('size');renderHistory();
   }catch(e){
-    showToast('記録に失敗しました');
-    btn.textContent={入庫:'✓ 入庫を記録する',出庫:'✓ 出庫を記録する',移動:'✓ 移動を記録する'}[session.mode]||'記録する';
+    showToast('è¨é²ã«å¤±æãã¾ãã');
+    btn.textContent={å¥åº«:'â å¥åº«ãè¨é²ãã',åºåº«:'â åºåº«ãè¨é²ãã',ç§»å:'â ç§»åãè¨é²ãã'}[session.mode]||'è¨é²ãã';
   }
 }
 function renderHistory(){
   var el=document.getElementById('history-list');
-  if(sessionHistory.length===0){el.innerHTML='<div style="font-size:12px;color:var(--text3)">まだ記録がありません</div>';return;}
+  if(sessionHistory.length===0){el.innerHTML='<div style="font-size:12px;color:var(--text3)">ã¾ã è¨é²ãããã¾ãã</div>';return;}
   el.innerHTML=sessionHistory.slice(0,5).map(function(h){
-    var isMove=h.mode==='移動',isIn=h.qty>0;
-    var bc=isMove?'move':isIn?'in':'out',bt=isMove?'移動':isIn?'入庫':'出庫',qc=isMove?'move':isIn?'plus':'minus';
-    return '<div class="history-item"><span class="history-badge '+bc+'">'+bt+'</span><div class="history-name">'+h.name+(isMove?' →'+h.dest:'')+'</div><div class="history-qty '+qc+'">'+(isIn&&!isMove?'+':'')+h.qty+'</div><div style="font-size:11px;color:var(--text3);margin-left:2px">'+h.unit+'</div></div>';
+    var isMove=h.mode==='ç§»å',isIn=h.qty>0;
+    var bc=isMove?'move':isIn?'in':'out',bt=isMove?'ç§»å':isIn?'å¥åº«':'åºåº«',qc=isMove?'move':isIn?'plus':'minus';
+    return '<div class="history-item"><span class="history-badge '+bc+'">'+bt+'</span><div class="history-name">'+h.name+(isMove?' â'+h.dest:'')+'</div><div class="history-qty '+qc+'">'+(isIn&&!isMove?'+':'')+h.qty+'</div><div style="font-size:11px;color:var(--text3);margin-left:2px">'+h.unit+'</div></div>';
   }).join('');
 }
 function updateHome(){}
@@ -891,7 +919,7 @@ function pinInput(n){
       if(pinCurrent===masterPassword){
         masterUnlocked=true;closeMasterPwModal();showScreen('master');
       }else{
-        document.getElementById('pin-error').textContent='PINが違います';
+        document.getElementById('pin-error').textContent='PINãéãã¾ã';
         pinCurrent='';updatePinDots();
       }
     },150);
@@ -909,13 +937,13 @@ function showToast(msg){
 function escAttr(str){return String(str||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\r?\n/g,' ');}
 
 // ============================================================
-// ラベル印刷機能
+// ã©ãã«å°å·æ©è½
 // ============================================================
 
 
 
 // ============================================================
-// 棚卸し画面：QRスキャンで直接商品へジャンプ
+// æ£å¸ãç»é¢ï¼QRã¹ã­ã£ã³ã§ç´æ¥ååã¸ã¸ã£ã³ã
 // ============================================================
 var scanModeInventory = false;
 
@@ -925,7 +953,7 @@ function startInvScan(){
 }
 
 function handleNavScan(){
-  // 棚卸し画面のときはinventoryモード、それ以外は通常スキャン
+  // æ£å¸ãç»é¢ã®ã¨ãã¯inventorxã¢ã¼ããããä»¥å¤ã¯éå¸¸ã¹ã­ã£ã³
   var activeScreen = screenStack.length ? screenStack[screenStack.length-1] : '';
   if(activeScreen === 'inv-category' || activeScreen === 'inv-product' || activeScreen === 'inv-size'){
     startInvScan();
@@ -935,15 +963,15 @@ function handleNavScan(){
 }
 
 // ============================================================
-// マスタ画面：バーコード番号スキャン登録
+// ãã¹ã¿ç»é¢ï¼ãã¼ã³ã¼ãçªå·ã¹ã­ã£ã³ç»é²
 // ============================================================
 var barcodeScanTargetSku = null;
 
 function openBarcodeScanForSku(skuId) {
   var item = masterAll.find(function(r){ return r['SKU_ID'] === skuId; });
-  if (!item) { showToast('商品が見つかりません'); return; }
+  if (!item) { showToast('ååãè¦ã¤ããã¾ãã'); return; }
   barcodeScanTargetSku = skuId;
-  // 既存のスキャンモーダルを流用（onScanSuccessをバーコード登録用に切り替え）
+  // æ¢å­ã®ã¹ã­ã£ã³ã¢ã¼ãã«ãæµç¨ï¼onScanSuccessããã¼ã³ã¼ãç»é²ç¨ã«åãæ¿ãï¼
   scanModeBarcode = true;
   startScan();
 }
@@ -951,87 +979,89 @@ function openBarcodeScanForSku(skuId) {
 var scanModeBarcode = false;
 
 // ============================================================
-// 在庫確認
+
+=================
+// å¨åº«ç¢ºèª
 // ============================================================
 var currentWarehouseFilter='all',currentStockCategory='';
 function renderStockWarehouseTabs(){
-  var tabHtml='<div class="filter-btn'+(currentWarehouseFilter==='all'?' active':'')+'" onclick="switchStockWarehouse(\'all\')" style="white-space:nowrap;">すべて</div>';
+  var tabHtml='<div class="filter-btn'+(currentWarehouseFilter==='all'?' active':'')+'" onclick="switchStockWarehouse(\'all\')" style="white-space:nowrap;">ãã¹ã¦</div>';
   warehouses.forEach(function(w){
-    var oc="switchStockWarehouse('"+escAttr(w['倉庫名'])+"')";
-    tabHtml+='<div class="filter-btn'+(w['倉庫名']===currentWarehouseFilter?' active':'')+'" onclick="'+oc+'" style="white-space:nowrap;">'+w['倉庫名']+'</div>';
+    var oc="switchStockWarehouse('"+escAttr(w['ååº«å'])+"')";
+    tabHtml+='<div class="filter-btn'+(w['ååº«å']===currentWarehouseFilter?' active':'')+'" onclick="'+oc+'" style="white-space:nowrap;">'+w['ååº«å']+'</div>';
   });
-  tabHtml+='<div class="filter-btn'+(currentWarehouseFilter==='import'?' active':'')+'" onclick="switchStockWarehouse(\'import\')" style="white-space:nowrap;">輸入管理用</div>';
+  tabHtml+='<div class="filter-btn'+(currentWarehouseFilter==='import'?' active':'')+'" onclick="switchStockWarehouse(\'import\')" style="white-space:nowrap;">è¼¸å¥ç®¡çç¨</div>';
   var tabsEl=document.getElementById('stock-warehouse-tabs');
   if(tabsEl) tabsEl.innerHTML=tabHtml;
 }
 function switchStockWarehouse(w){currentWarehouseFilter=w;renderStockWarehouseTabs();renderStock();}
 function renderStockCategories(){
-  if(summary.length===0){document.getElementById('stock-category-list').innerHTML='<div class="loading">読み込み中...</div>';return;}
+  if(summary.length===0){document.getElementById('stock-category-list').innerHTML='<div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div>';return;}
   renderStockWarehouseTabs();
   var valid=summary.filter(function(item){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
-    if(!m||!(m['有効']===true||m['有効']==='TRUE'))return false;
-    if(currentWarehouseFilter==='創造社倉庫'&&m['商品区分']==='小分け品')return false;
-    if(currentWarehouseFilter==='import'&&m['商品区分']!=='輸入品')return false;
+    if(!m||!(m['æå¹']===true||m['æå¹']==='TRUE'))return false;
+    if(currentWarehouseFilter==='åµé ç¤¾ååº«'&&m['åååºå']==='å°åãå')return false;
+    if(currentWarehouseFilter==='import'&&m['åååºå']!=='è¼¸å¥å')return false;
     return true;
   });
   var cats=[];
-  valid.forEach(function(item){var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});var cat=m?m['カテゴリ']:'未分類';if(cats.indexOf(cat)===-1)cats.push(cat);});
+  valid.forEach(function(item){var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});var cat=m?m['ã«ãã´ãª']:'æªåé¡';if(cats.indexOf(cat)===-1)cats.push(cat);});
   cats=applyCategoryOrder(cats);
   var html='';
   cats.forEach(function(c){
-    var count=valid.filter(function(item){var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});return(m?m['カテゴリ']:'未分類')===c;}).length;
-    html+='<div class="list-item" onclick="selectStockCategory(\''+escAttr(c)+'\')"><div class="list-item-name">'+c+'</div><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--text3);">'+count+'品</span><div class="list-item-arrow">›</div></div></div>';
+    var count=valid.filter(function(item){var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});return(m?m['ã«ãã´ãª']:'æªåé¡')===c;}).length;
+    html+='<div class="list-item" onclick="selectStockCategory(\''+escAttr(c)+'\')"><div class="list-item-name">'+c+'</div><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--text3);">'+count+'å</span><div class="list-item-arrow">âº</div></div></div>';
   });
   document.getElementById('stock-category-list').innerHTML=html;
 }
 function selectStockCategory(cat){currentStockCategory=cat;document.getElementById('stock-bc-category').textContent=cat;showScreen('stock-items');}
 function renderStock(){
   var el=document.getElementById('stock-list');
-  if(summary.length===0){el.innerHTML='<div class="loading">読み込み中...</div>';return;}
+  if(summary.length===0){el.innerHTML='<div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div>';return;}
   var filtered=summary.filter(function(item){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
-    if(!m||!(m['有効']===true||m['有効']==='TRUE'))return false;
-    if(currentWarehouseFilter==='創造社倉庫'&&m['商品区分']==='小分け品')return false;
-    if(currentWarehouseFilter==='import'&&m['商品区分']!=='輸入品')return false;
+    if(!m||!(m['æå¹']===true||m['æå¹']==='TRUE'))return false;
+    if(currentWarehouseFilter==='åµé ç¤¾ååº«'&&m['åååºå']==='å°åãå')return false;
+    if(currentWarehouseFilter==='import'&&m['åååºå']!=='è¼¸å¥å')return false;
     if(!currentStockCategory) return true;
-    return (m['カテゴリ']||'未分類')===currentStockCategory;
+    return (m['ã«ãã´ãª']||'æªåé¡')===currentStockCategory;
   });
-  if(filtered.length===0){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">該当なし</div>';return;}
+  if(filtered.length===0){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">è©²å½ãªã</div>';return;}
   var html='';
   filtered.forEach(function(item){
-    var y=parseFloat(item['山科倉庫_在庫'])||0,s=parseFloat(item['創造社倉庫_在庫'])||0,o=parseFloat(item['事務所_在庫'])||0;
-    var q=(currentWarehouseFilter==='all'||currentWarehouseFilter==='import')?y+s+o:currentWarehouseFilter==='山科倉庫'?y:currentWarehouseFilter==='創造社倉庫'?s:o;
-    var st=item['ステータス']||'正常',bc=st==='欠品'?'badge-ng':st==='要補充'?'badge-warn':'badge-ok';
-    html+='<div class="list-item" style="cursor:default"><div style="flex:1"><div class="list-item-name">'+(item['商品名']||'')+' '+(item['サイズ']||'')+'</div></div><div style="text-align:right"><div style="font-size:20px;font-weight:700">'+q+'</div><span class="badge '+bc+'">'+st+'</span></div></div>';
+    var y=parseFloat(item['å±±ç§ååº«_å¨åº«'])||0,s=parseFloat(item['åµé ç¤¾ååº«_å¨åº«'])||0,o=parseFloat(item['äºåæ_å¨åº«'])||0;
+    var q=(currentWarehouseFilter==='all'||currentWarehouseFilter==='import')?y+s+o:currentWarehouseFilter==='å±±ç§ååº«'?y:currentWarehouseFilter==='åµé ç¤¾ååº«'?s:o;
+    var st=item['ã¹ãã¼ã¿ã¹']||'æ­£å¸¸',bc=st==='æ¬ å'?'badge-ng':st==='è¦è£å'?'badge-warn':'badge-ok';
+    html+='<div class="list-item" style="cursor:default"><div style="flex:1"><div class="list-item-name">'+(item['ååå']||'')+' '+(item['ãµã¤ãº']||'')+'</div></div><div style="text-align:right"><div style="font-size:20px;font-weight:700">'+q+'</div><span class="badge '+bc+'">'+st+'</span></div></div>';
   });
   el.innerHTML=html;
 }
 function printStockList(){
   var wFilter=currentWarehouseFilter;
-  var wLabel=wFilter==='all'?'すべて':wFilter==='import'?'輸入管理用（全倉庫合計・輸入品のみ）':wFilter;
+  var wLabel=wFilter==='all'?'ãã¹ã¦':wFilter==='import'?'è¼¸å¥ç®¡çç¨ï¼å¨ååº«åè¨ã»è¼¸å¥åã®ã¿ï¼':wFilter;
   var now=new Date();
   var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
   var grouped={};
   summary.forEach(function(item){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
-    if(!m||!(m['有効']===true||m['有効']==='TRUE')) return;
-    if(wFilter==='創造社倉庫'&&m['商品区分']==='小分け品') return;
-    if(wFilter==='import'&&m['商品区分']!=='輸入品') return;
-    if(currentStockCategory&&(m['カテゴリ']||'未分類')!==currentStockCategory) return;
-    var cat=m['カテゴリ']||'未分類';
+    if(!m||!(m['æå¹']===true||m['æå¹']==='TRUE')) return;
+    if(wFilter==='åµé ç¤¾ååº«'&&m['åååºå']==='å°åãå') return;
+    if(wFilter==='import'&&m['åååºå']!=='è¼¸å¥å') return;
+    if(currentStockCategory&&(m['ã«ãã´ãª']||'æªåé¡')!==currentStockCategory) return;
+    var cat=m['ã«ãã´ãª']||'æªåé¡';
     if(!grouped[cat]) grouped[cat]=[];
-    var y=parseFloat(item['山科倉庫_在庫'])||0,s=parseFloat(item['創造社倉庫_在庫'])||0,o=parseFloat(item['事務所_在庫'])||0;
-    var q=(wFilter==='all'||wFilter==='import')?y+s+o:wFilter==='山科倉庫'?y:wFilter==='創造社倉庫'?s:o;
-    grouped[cat].push({商品名:item['商品名'],サイズ:String(item['サイズ']),単位:item['単位'],在庫数:q,ステータス:item['ステータス']||'正常'});
+    var y=parseFloat(item['å±±ç§ååº«_å¨åº«'])||0,s=parseFloat(item['åµé ç¤¾ååº«_å¨åº«'])||0,o=parseFloat(item['äºåæ_å¨åº«'])||0;
+    var q=(wFilter==='all'||wFilter==='import')?y+s+o:wFilter==='å±±ç§ååº«'?y:wFilter==='åµé ç¤¾ååº«'?s:o;
+    grouped[cat].push({ååå:item['ååå'],ãµã¤ãº:String(item['ãµã¤ãº']),åä½:item['åä½'],å¨åº«æ°:q,ã¹ãã¼ã¿ã¹:item['ã¹ãã¼ã¿ã¹']||'æ­£å¸¸'});
   });
-  Object.keys(grouped).forEach(function(cat){grouped[cat].sort(function(a,b){return jaSort(a['商品名'],b['商品名']);});});
-  var sc={'欠品':{bg:'#fee2e2',fg:'#991b1b'},'要補充':{bg:'#fef3c7',fg:'#92400e'},'正常':{bg:'#dcfce7',fg:'#166534'}};
-  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>在庫確認リスト - '+wLabel+'</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;font-size:12px;}h1{font-size:16px;margin-bottom:4px;}.meta{font-size:11px;color:#666;margin-bottom:16px;}.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}.notice{font-size:11px;color:#92400e;background:#fef3c7;padding:6px 10px;border-radius:4px;margin-bottom:12px;}table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}th{background:#f3f4f6;padding:7px 8px;text-align:left;border-bottom:2px solid #d1d5db;font-weight:600;font-size:11px;color:#6b7280;}td{padding:7px 8px;border-bottom:1px solid #e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}tr:nth-child(even){background:#f9fafb;}.qty-col{text-align:right;width:13%;}.status-col{text-align:center;width:16%;}.status-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-weight:700;font-size:10px;}@media print{body{padding:8px;}@page{margin:10mm;margin-top:3cm;size:A4;}.category,.notice,.status-badge{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><h1>在庫確認リスト</h1><div class="meta">倉庫：'+wLabel+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>'+(wFilter==='創造社倉庫'?'<div class="notice">※小分け品はリストから除外されています</div>':'')+(wFilter==='import'?'<div class="notice">※商品区分「輸入品」のみを表示しています（全倉庫合計）</div>':'');
+  Object.keys(grouped).forEach(function(cat){grouped[cat].sort(function(a,b){return jaSort(a['ååå'],b['ååå']);});});
+  var sc={'æ¬ å':{bg:'#fee2e2',fg:'#991b1b'},'è¦è£å':{bg:'#fef3c7',fg:'#92400e'},'æ­£å¸¸':{bg:'#dcfce7',fg:'#166534'}};
+  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>å¨åº«ç¢ºèªãªã¹ã - '+wLabel+'</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;font-size:12px;}h1{font-size:16px;margin-bottom:4px;}.meta{font-size:11px;color:#666;margin-bottom:16px;}.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}.notice{font-size:11px;color:#92400e;background:#fef3c7;padding:6px 10px;border-radius:4px;margin-bottom:12px;}table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}th{background:#f3f4f6;padding:7px 8px;text-align:left;border-bottom:2px solid #d1d5db;font-weight:600;font-size:11px;color:#6b7280;}td{padding:7px 8px;border-bottom:1px solid #e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}tr:nth-child(even){background:#f9fafb;}.qty-col{text-align:right;width:13%;}.status-col{text-align:center;width:16%;}.status-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-weight:700;font-size:10px;}@media print{body{padding:8px;}@page{margin:10mm;margin-top:3cm;size:A4;}.category,.notice,.status-badge{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><h1>å¨åº«ç¢ºèªãªã¹ã</h1><div class="meta">ååº«ï¼'+wLabel+'ãï¼ãåºåæ¥æï¼'+dateStr+'ãï¼ãæå½ï¼'+(session.staff||'')+'</div>'+(wFilter==='åµé ç¤¾ååº«'?'<div class="notice">â»å°åãåã¯ãªã¹ãããé¤å¤ããã¦ãã¾ã</div>':'')+(wFilter==='import'?'<div class="notice">â»åååºåãè¼¸å¥åãã®ã¿ãè¡¨ç¤ºãã¦ãã¾ãï¼å¨ååº«åè¨ï¼</div>':'');
   Object.keys(grouped).sort(jaSort).forEach(function(cat){
     var items=grouped[cat];
-    html+='<div class="category">'+cat+'</div><table><colgroup><col style="width:34%"><col style="width:18%"><col style="width:9%"><col style="width:13%"><col style="width:16%"></colgroup><tr><th>商品名</th><th>サイズ</th><th style="text-align:center;">単位</th><th class="qty-col">在庫数</th><th class="status-col">ステータス</th></tr>';
-    items.forEach(function(item){var c=sc[item['ステータス']]||sc['正常'];html+='<tr><td>'+item['商品名']+'</td><td>'+item['サイズ']+'</td><td style="text-align:center;">'+item['単位']+'</td><td class="qty-col">'+item['在庫数']+'</td><td class="status-col"><span class="status-badge" style="background:'+c.bg+';color:'+c.fg+';">'+item['ステータス']+'</span></td></tr>';});
+    html+='<div class="category">'+cat+'</div><table><colgroup><col style="width:34%"><col style="width:18%"><col style="width:9%"><col style="width:13%"><col style="width:16%"></colgroup><tr><th>ååå</th><th>ãµã¤ãº</th><th style="text-align:center;">åä½</th><th class="qty-col">å¨åº«æ°</th><th class="status-col">ã¹ãã¼ã¿ã¹</th></tr>';
+    items.forEach(function(item){var c=sc[item['ã¹ãã¼ã¿ã¹']]||sc['æ­£å¸¸'];html+='<tr><td>'+item['ååå']+'</td><td>'+item['ãµã¤ãº']+'</td><td style="text-align:center;">'+item['åä½']+'</td><td class="qty-col">'+item['å¨åº«æ°']+'</td><td class="status-col"><span class="status-badge" style="background:'+c.bg+';color:'+c.fg+';">'+item['ã¹ãã¼ã¿ã¹']+'</span></td></tr>';});
     html+='</table>';
   });
   html+='</body></html>';
@@ -1039,20 +1069,20 @@ function printStockList(){
 }
 
 // ============================================================
-// 履歴画面
+// å±¥æ­´ç»é¢
 // ============================================================
 var historyLogs=[],histDateFilter='today',cancelTarget=null,cancelGroupTarget=null;
 async function loadHistoryLogs(){
-  document.getElementById('history-log-list').innerHTML='<div class="loading">読み込み中...</div>';
+  document.getElementById('history-log-list').innerHTML='<div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div>';
   try{
     const res=await fetch(API+'?action=getLogs');
     const json=await res.json();
     historyLogs=json.data||[];
     var sel=document.getElementById('hist-warehouse-filter');
-    sel.innerHTML='<option value="">全倉庫</option>';
-    warehouses.forEach(function(w){var opt=document.createElement('option');opt.value=w['倉庫名'];opt.textContent=w['倉庫名'];sel.appendChild(opt);});
+    sel.innerHTML='<option value="">å¨ååº«</option>';
+    warehouses.forEach(function(w){var opt=document.createElement('option');opt.value=w['ååº«å'];opt.textContent=w['ååº«å'];sel.appendChild(opt);});
     renderHistoryList();
-  }catch(e){document.getElementById('history-log-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--danger)">読み込み失敗</div>';}
+  }catch(e){document.getElementById('history-log-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--danger)">èª­ã¿è¾¼ã¿å¤±æ</div>';}
 }
 function setHistDateFilter(filter,btn){
   histDateFilter=filter;
@@ -1061,8 +1091,8 @@ function setHistDateFilter(filter,btn){
   renderHistoryList();
 }
 function parseJSTDate(str){
-  // 'yyyy/MM/dd HH:mm' または 'yyyy/MM/dd HH:mm:ss' を
-  // ローカル時刻（日本時間）として正しくパースする
+  // 'yyyy/MM/dd HH:mm' ã¾ãã¯ 'yyyy/MM/dd HH:mm:ss' ã
+  // ã­ã¼ã«ã«æå»ï¼æ¥æ¬æéï¼ã¨ãã¦æ­£ãããã¼ã¹ãã
   if(!str) return new Date(NaN);
   var m=String(str).match(/(\d{4})[\/-](\d{2})[\/-](\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
   if(m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]),parseInt(m[4]),parseInt(m[5]),parseInt(m[6]||0));
@@ -1074,33 +1104,33 @@ function renderHistoryList(){
   var showCancel=document.getElementById('hist-show-cancel').checked;
   var now=new Date();
   var filtered=historyLogs.filter(function(r){
-    if(!showCancel&&r['操作種別']&&r['操作種別'].indexOf('取消')===0) return false;
-    var d=parseJSTDate(r['日時']);
+    if(!showCancel&&r['æä½ç¨®å¥']&&r['æä½ç¨®å¥'].indexOf('åæ¶')===0) return false;
+    var d=parseJSTDate(r['æ¥æ']);
     if(histDateFilter==='today'){if(d.toDateString()!==now.toDateString()) return false;}
     else if(histDateFilter==='week'){var wa=new Date(now);wa.setDate(wa.getDate()-7);if(d<wa) return false;}
     else if(histDateFilter==='month'){var ma=new Date(now);ma.setMonth(ma.getMonth()-1);if(d<ma) return false;}
-    if(typeFilter&&r['操作種別']!==typeFilter) return false;
-    if(warehouseFilter&&r['倉庫']!==warehouseFilter) return false;
+    if(typeFilter&&r['æä½ç¨®å¥']!==typeFilter) return false;
+    if(warehouseFilter&&r['ååº«']!==warehouseFilter) return false;
     return true;
   });
-  document.getElementById('hist-count').textContent=filtered.length+'件';
-  if(filtered.length===0){document.getElementById('history-log-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);">該当する履歴がありません</div>';return;}
+  document.getElementById('hist-count').textContent=filtered.length+'ä»¶';
+  if(filtered.length===0){document.getElementById('history-log-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);">è©²å½ããå±¥æ­´ãããã¾ãã</div>';return;}
   var cancelledIds={};
   historyLogs.forEach(function(r){
-    var m=(r['備考']||'').match(/取消（元LOG_ID:\s*([^）]+)）/);
+    var m=(r['åè']||'').match(/åæ¶ï¼åLOG_ID:\s*([^ï¼]+)ï¼/);
     if(m) cancelledIds[m[1].trim()]=true;
   });
   var groups=[],groupIndexMap={};
   filtered.forEach(function(r){
-    var isCancelRow=r['操作種別']&&r['操作種別'].indexOf('取消')===0;
-    var gid=r['グループID']&&String(r['グループID']).trim();
+    var isCancelRow=r['æä½ç¨®å¥']&&r['æä½ç¨®å¥'].indexOf('åæ¶')===0;
+    var gid=r['ã°ã«ã¼ãID']&&String(r['ã°ã«ã¼ãID']).trim();
     if(gid&&!isCancelRow){
       if(groupIndexMap[gid]===undefined){groupIndexMap[gid]=groups.length;groups.push({groupId:gid,items:[r]});}
       else{groups[groupIndexMap[gid]].items.push(r);}
     }else{groups.push({groupId:null,items:[r]});}
   });
-  var typeColors={'入庫':'#dcfce7','出庫（販売）':'#fee2e2','出庫（使用）':'#fee2e2','出庫（廃棄）':'#fee2e2','移動（出）':'#ede9fe','移動（入）':'#ede9fe','棚卸し修正':'#fef9c3'};
-  var typeTextColors={'入庫':'#166534','出庫（販売）':'#991b1b','出庫（使用）':'#991b1b','出庫（廃棄）':'#991b1b','移動（出）':'#4c1d95','移動（入）':'#4c1d95','棚卸し修正':'#713f12'};
+  var typeColors={'å¥åº«':'#dcfce7','åºåº«ï¼è²©å£²ï¼':'#fee2e2','åºåº«ï¼ä½¿ç¨ï¼':'#fee2e2','åºåº«ï¼å»æ£ï¼':'#fee2e2','ç§»åï¼åºï¼':'#ede9fe','ç§»åï¼å¥ï¼':'#ede9fe','æ£å¸ãä¿®æ­£':'#fef9c3'};
+  var typeTextColors={'å¥åº«':'#166534','åºåº«ï¼è²©å£²ï¼':'#991b1b','åºåº«ï¼ä½¿ç¨ï¼':'#991b1b','åºåº«ï¼å»æ£ï¼':'#991b1b','ç§»åï¼åºï¼':'#4c1d95','ç§»åï¼å¥ï¼':'#4c1d95','æ£å¸ãä¿®æ­£':'#713f12'};
   var html='';
   groups.forEach(function(g){
     if(g.groupId) html+=renderGroupCard(g,cancelledIds);
@@ -1109,75 +1139,75 @@ function renderHistoryList(){
   document.getElementById('history-log-list').innerHTML=html;
 }
 function renderSingleCard(r,cancelledIds,typeColors,typeTextColors){
-  var isCancelled=r['操作種別']&&r['操作種別'].indexOf('取消')===0;
+  var isCancelled=r['æä½ç¨®å¥']&&r['æä½ç¨®å¥'].indexOf('åæ¶')===0;
   var alreadyCancelled=cancelledIds[r['LOG_ID']]===true;
   var canCancel=!isCancelled&&!alreadyCancelled&&r['LOG_ID'];
-  var qty=parseFloat(r['数量変動'])||0;
+  var qty=parseFloat(r['æ°éå¤å'])||0;
   var qtyColor=qty>0?'var(--success)':qty<0?'var(--danger)':'var(--text2)';
   var qtyStr=(qty>0?'+':'')+qty;
-  var bg=typeColors[r['操作種別']]||'#f3f4f6';
-  var tc=typeTextColors[r['操作種別']]||'#374151';
+  var bg=typeColors[r['æä½ç¨®å¥']]||'#f3f4f6';
+  var tc=typeTextColors[r['æä½ç¨®å¥']]||'#374151';
   var fadeOut=isCancelled||alreadyCancelled;
   if(isCancelled){bg='#f3f4f6';tc='#6b7280';}
   var noteHtml='';
-  if(r['操作種別']==='棚卸し修正'&&r['備考']) noteHtml='<div style="font-size:11px;color:var(--text3);margin-top:4px;margin-bottom:10px;">'+r['備考']+'</div>';
+  if(r['æä½ç¨®å¥']==='æ£å¸ãä¿®æ­£'&&r['åè']) noteHtml='<div style="font-size:11px;color:var(--text3);margin-top:4px;margin-bottom:10px;">'+r['åè']+'</div>';
   else noteHtml='<div style="margin-bottom:10px;"></div>';
   return '<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);'+(fadeOut?'opacity:.55;':'')+'">'+
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
-      '<span style="background:'+bg+';color:'+tc+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0;">'+r['操作種別']+'</span>'+
-      '<span style="font-size:11px;color:var(--text3);margin-left:auto;">担当：'+(r['担当者']||'')+'</span>'+
-      '<span style="font-size:11px;color:var(--text3);flex-shrink:0;">'+r['日時']+'</span>'+
+      '<span style="background:'+bg+';color:'+tc+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0;">'+r['æä½ç¨®å¥']+'</span>'+
+      '<span style="font-size:11px;color:var(--text3);margin-left:auto;">æå½ï¼'+(r['æå½è']||'')+'</span>'+
+      '<span style="font-size:11px;color:var(--text3);flex-shrink:0;">'+r['æ¥æ']+'</span>'+
     '</div>'+
-    '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">'+(r['商品名（自動）']||r['商品名']||'')+' '+(r['サイズ（自動）']||r['サイズ']||'')+'</div>'+
+    '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">'+(r['åååï¼èªåï¼']||r['ååå']||'')+' '+(r['ãµã¤ãºï¼èªåï¼']||r['ãµã¤ãº']||'')+'</div>'+
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'+
-      '<span style="font-size:13px;font-weight:700;color:var(--text2);">'+r['倉庫']+'</span>'+
-      '<span style="font-size:16px;font-weight:700;margin-left:auto;color:'+qtyColor+';">'+qtyStr+' '+r['単位']+'</span>'+
+      '<span style="font-size:13px;font-weight:700;color:var(--text2);">'+r['ååº«']+'</span>'+
+      '<span style="font-size:16px;font-weight:700;margin-left:auto;color:'+qtyColor+';">'+qtyStr+' '+r['åä½']+'</span>'+
     '</div>'+
     noteHtml+
     (canCancel?
-      '<button data-log-id="'+escAttr(r['LOG_ID']||'')+'" data-sku-id="'+escAttr(r['SKU_ID']||'')+'" data-type="'+escAttr(r['操作種別']||'')+'" data-warehouse="'+escAttr(r['倉庫']||'')+'" data-dest="'+escAttr(r['移動先倉庫']||'')+'" data-staff="'+escAttr(r['担当者']||'')+'" data-qty="'+(r['数量変動']||0)+'" onclick="handleCancelBtn(this)" style="width:100%;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;text-align:center;">取消する</button>':
-      (alreadyCancelled?'<div style="width:100%;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">取消済み</div>':''))+
+      '<button data-log-id="'+escAttr(r['LOG_ID']||'')+'" data-sku-id="'+escAttr(r['SKU_ID']||'')+'" data-type="'+escAttr(r['æä½ç¨®å¥']||'')+'" data-warehouse="'+escAttr(r['ååº«']||'')+'" data-dest="'+escAttr(r['ç§»ååååº«']||'')+'" data-staff="'+escAttr(r['æå½è']||'')+'" data-qty="'+(r['æ°éå¤å']||0)+'" onclick="handleCancelBtn(this)" style="width:100%;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;text-align:center;">åæ¶ãã</button>':
+      (alreadyCancelled?'<div style="width:100%;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">åæ¶æ¸ã¿</div>':''))+
   '</div>';
 }
 function renderGroupCard(g,cancelledIds){
   var items=g.items;
-  var hasIn=items.some(function(r){return r['操作種別']==='入庫';});
-  var groupLabel=hasIn?'入庫 → 即移動':'倉庫間移動';
+  var hasIn=items.some(function(r){return r['æä½ç¨®å¥']==='å¥åº«';});
+  var groupLabel=hasIn?'å¥åº« â å³ç§»å':'ååº«éç§»å';
   var groupBg=hasIn?'#e0f2fe':'#ede9fe';
   var groupTc=hasIn?'#075985':'#4c1d95';
   var groupBorder=hasIn?'#075985':'#4c1d95';
   var rep=items[0];
-  var productName=(rep['商品名（自動）']||rep['商品名']||'')+' '+(rep['サイズ（自動）']||rep['サイズ']||'');
-  var inRow=items.find(function(r){return r['操作種別']==='入庫';});
-  var outRow=items.find(function(r){return r['操作種別']==='移動（出）';});
-  var inRow2=items.find(function(r){return r['操作種別']==='移動（入）';});
-  var fromWarehouse=inRow?inRow['倉庫']:outRow?outRow['倉庫']:'';
-  var toWarehouse=outRow?outRow['移動先倉庫']:inRow2?inRow2['倉庫']:'';
-  var finalQty=Math.abs(inRow2?Number(inRow2['数量変動'])||0:Number(items[items.length-1]['数量変動'])||0);
-  var finalUnit=inRow2?inRow2['単位']||'':items[items.length-1]['単位']||'';
+  var productName=(rep['åååï¼èªåï¼']||rep['ååå']||'')+' '+(rep['ãµã¤ãºï¼èªåï¼']||rep['ãµã¤ãº']||'');
+  var inRow=items.find(function(r){return r['æä½ç¨®å¥']==='å¥åº«';});
+  var outRow=items.find(function(r){return r['æä½ç¨®å¥']==='ç§»åï¼åºï¼';});
+  var inRow2=items.find(function(r){return r['æä½ç¨®å¥']==='ç§»åï¼å¥ï¼';});
+  var fromWarehouse=inRow?inRow['ååº«']:outRow?outRow['ååº«']:'';
+  var toWarehouse=outRow?outRow['ç§»ååååº«']:inRow2?inRow2['ååº«']:'';
+  var finalQty=Math.abs(inRow2?Number(inRow2['æ°éå¤å'])||0:Number(items[items.length-1]['æ°éå¤å'])||0);
+  var finalUnit=inRow2?inRow2['åä½']||'':items[items.length-1]['åä½']||'';
   var alreadyCancelled=items.some(function(r){return cancelledIds[r['LOG_ID']]===true;});
 
-  // フローpill
+  // ãã­ã¼pill
   var flowHtml='<div style="display:flex;align-items:center;gap:5px;margin-bottom:8px;flex-wrap:wrap;">';
   if(hasIn){
-    // 入庫→即移動: 入庫倉庫+N → 入庫倉庫-N → 到着倉庫+N
+    // å¥åº«âå³ç§»å: å¥åº«ååº«+N â å¥åº«ååº«-N â å°çååº«+N
     flowHtml+=
       '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#dcfce7;color:#166534;">'+fromWarehouse+' +'+finalQty+finalUnit+'</span>'+
-      '<span style="color:var(--text3);font-size:11px;">→</span>'+
-      '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#fee2e2;color:#991b1b;">'+fromWarehouse+' −'+finalQty+finalUnit+'</span>'+
-      '<span style="color:var(--text3);font-size:11px;">→</span>'+
+      '<span style="color:var(--text3);font-size:11px;">â</span>'+
+      '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#fee2e2;color:#991b1b;">'+fromWarehouse+' â'+finalQty+finalUnit+'</span>'+
+      '<span style="color:var(--text3);font-size:11px;">â</span>'+
       '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#dcfce7;color:#166534;">'+toWarehouse+' +'+finalQty+finalUnit+'</span>';
   }else{
-    // 倉庫間移動: 移動元-N → 移動先+N
+    // ååº«éç§»å: ç§»åå-N â ç§»åå+N
     flowHtml+=
-      '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#fee2e2;color:#991b1b;">'+fromWarehouse+' −'+finalQty+finalUnit+'</span>'+
-      '<span style="color:var(--text3);font-size:11px;">→</span>'+
+      '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#fee2e2;color:#991b1b;">'+fromWarehouse+' â'+finalQty+finalUnit+'</span>'+
+      '<span style="color:var(--text3);font-size:11px;">â</span>'+
       '<span style="padding:2px 8px;border-radius:8px;font-weight:600;font-size:11px;background:#dcfce7;color:#166534;">'+toWarehouse+' +'+finalQty+finalUnit+'</span>';
   }
   flowHtml+='</div>';
 
-  // 結果ボックス
-  var resultLabel=hasIn?'最終到着倉庫':'到着倉庫';
+  // çµæããã¯ã¹
+  var resultLabel=hasIn?'æçµå°çååº«':'å°çååº«';
   var resultHtml=
     '<div style="background:#f0fdf4;border:1.5px solid var(--success);border-radius:10px;padding:7px 12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'+
       '<div>'+
@@ -1190,558 +1220,24 @@ function renderGroupCard(g,cancelledIds){
   return '<div style="background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1.5px solid '+groupBorder+';'+(alreadyCancelled?'opacity:.55;':'')+'">'+
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
       '<span style="background:'+groupBg+';color:'+groupTc+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0;">'+groupLabel+'</span>'+
-      '<span style="font-size:11px;color:var(--text3);margin-left:auto;">担当：'+(rep['担当者']||'')+'</span>'+
-      '<span style="font-size:11px;color:var(--text3);flex-shrink:0;">'+rep['日時']+'</span>'+
+      '<span style="font-size:11px;color:var(--text3);margin-left:auto;">æå½ï¼'+(rep['æå½è']||'')+'</span>'+
+      '<span style="font-size:11px;color:var(--text3);flex-shrink:0;">'+rep['æ¥æ']+'</span>'+
     '</div>'+
     '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">'+productName+'</div>'+
     flowHtml+
     resultHtml+
     (alreadyCancelled?
-      '<div style="width:100%;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">取消済み</div>':
-      '<button data-group-id="'+escAttr(g.groupId)+'" onclick="handleCancelGroupBtn(this)" style="width:100%;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;text-align:center;">取消する</button>')+
+      '<div style="width:100%;padding:8px;text-align:center;color:var(--text3);background:#f9fafb;border-radius:10px;font-size:12px;">åæ¶æ¸ã¿</div>':
+      '<button data-group-id="'+escAttr(g.groupId)+'" onclick="handleCancelGroupBtn(this)" style="width:100%;padding:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;border-radius:10px;font-size:13px;cursor:pointer;text-align:center;">åæ¶ãã</button>')+
   '</div>';
 }
 function handleCancelBtn(btn){openCancelLogModal(btn.dataset.logId,btn.dataset.skuId,btn.dataset.type,btn.dataset.warehouse,btn.dataset.dest,btn.dataset.staff,Number(btn.dataset.qty));}
 function handleCancelGroupBtn(btn){openCancelLogGroupModal(btn.dataset.groupId);}
 function openCancelLogModal(logId,skuId,type,warehouse,dest,staff,qty){
   cancelGroupTarget=null;
-  cancelTarget={LOG_ID:logId,SKU_ID:skuId,操作種別:type,倉庫:warehouse,移動先倉庫:dest,担当者:staff,数量変動:qty};
-  document.getElementById('cancel-log-body').textContent=type+' '+(qty>0?'+':'')+qty+' の記録を取消しますか？取消ログが追記されて在庫が元に戻ります。';
+  cancelTarget={LOG_ID:logId,SKU_ID:skuId,æä½ç¨®å¥:type,ååº«:warehouse,ç§»ååååº«:dest,æå½è:staff,æ°éå¤å:qty};
+  document.getElementById('cancel-log-body').textContent=type+' '+(qty>0?'+':'')+qty+' ã®è¨é²ãåæ¶ãã¾ããï¼åæ¶ã­ã°ãè¿½è¨ããã¦å¨åº«ãåã«æ»ãã¾ãã';
   document.getElementById('cancelLogModal').classList.add('show');
 }
 function openCancelLogGroupModal(groupId){
-  cancelTarget=null;cancelGroupTarget=groupId;
-  document.getElementById('cancel-log-body').textContent='この一連の操作（入庫・移動）をまとめて取消しますか？関連するすべての記録が取消され、在庫が元に戻ります。';
-  document.getElementById('cancelLogModal').classList.add('show');
-}
-function closeCancelLogModal(){
-  document.getElementById('cancelLogModal').classList.remove('show');
-  cancelTarget=null;cancelGroupTarget=null;
-}
-async function confirmCancelLog(){
-  if(!cancelTarget&&!cancelGroupTarget) return;
-  var btn=document.getElementById('cancel-log-confirm-btn');
-  btn.disabled=true;btn.textContent='取消中...';
-  try{
-    if(cancelGroupTarget){
-      const res=await fetch(API,{method:'POST',body:JSON.stringify({action:'cancelLogGroup',グループID:cancelGroupTarget})});
-      const json=await res.json();
-      if(!json.success) throw new Error(json.message);
-      showToast('✅ 取消しました（'+json.count+'件）');
-    }else{
-      const res=await fetch(API,{method:'POST',body:JSON.stringify(Object.assign({action:'cancelLog'},cancelTarget))});
-      const json=await res.json();
-      if(!json.success) throw new Error(json.message);
-      showToast('✅ 取消しました');
-    }
-    closeCancelLogModal();
-    await loadHistoryLogs();
-  }catch(e){showToast('❌ 取消失敗: '+e.message);}
-  finally{btn.disabled=false;btn.textContent='取消する';}
-}
-
-// ============================================================
-// 補充確認
-// ============================================================
-function printReplenishList(){
-  var wName=currentReplenishWarehouse;
-  var stockKey={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'}[wName]||(wName+'_在庫');
-  var reorder=[],needPurchase=[];
-  summary.forEach(function(item){
-    var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
-    if(!m||!(m['有効']===true||m['有効']==='TRUE'))return;
-    var stock=parseFloat(item[stockKey])||0;
-    var ms=minStockData.find(function(r){return r['SKU_ID']===item['SKU_ID']&&r['倉庫名']===wName;});
-    var minStock=ms?parseFloat(ms['最低在庫数'])||0:0,maxStock=ms?parseFloat(ms['最大在庫数'])||0:0;
-    if(minStock===0) return;
-    var needQty=maxStock>0?Math.max(maxStock-stock,0):Math.max(minStock-stock,0);
-    if(m['商品区分']==='小分け品'&&stock<minStock) reorder.push({item:item,stock:stock,minStock:minStock,maxStock:maxStock,needQty:needQty});
-    else if(m['商品区分']==='仕入品'&&stock===0) needPurchase.push({item:item,stock:stock,minStock:minStock,maxStock:maxStock,needQty:needQty});
-  });
-  var now=new Date();
-  var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
-  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>補充確認リスト - '+wName+'</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;}h1{font-size:18px;margin-bottom:4px;}.meta{font-size:12px;color:#666;margin-bottom:16px;}h2{font-size:14px;margin:20px 0 8px;padding:4px 10px;border-radius:4px;}.reorder-title{background:#fef3c7;color:#92400e;}.shortage-title{background:#fee2e2;color:#991b1b;}table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px;}th{background:#f3f4f6;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-weight:600;}td{padding:8px 10px;border:1px solid #e5e7eb;}tr:nth-child(even){background:#f0f4ff;}.shortage-num{color:#dc2626;font-weight:700;}.empty{text-align:center;padding:20px;color:#9ca3af;font-size:13px;}@media print{body{padding:10px;}@page{margin:15mm;margin-top:3cm;}}</style></head><body><h1>補充確認リスト</h1><div class="meta">倉庫：'+wName+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>';
-  if(reorder.length>0){html+='<h2 class="reorder-title">⚠️ 要補充（'+reorder.length+'件）</h2><table><tr><th>商品名</th><th>サイズ</th><th>現在庫</th><th>最低在庫</th><th>最大在庫</th><th>不足数</th><th>確認</th></tr>';reorder.forEach(function(d){html+='<tr><td>'+(d.item['商品名']||'')+'</td><td>'+(d.item['サイズ']||'')+'</td><td>'+d.stock+' '+(d.item['単位']||'')+'</td><td>'+d.minStock+' '+(d.item['単位']||'')+'</td><td>'+(d.maxStock>0?d.maxStock+' '+(d.item['単位']||''):'-')+'</td><td class="shortage-num">'+d.needQty+' '+(d.item['単位']||'')+'</td><td style="width:60px;"></td></tr>';});html+='</table>';}
-  if(needPurchase.length>0){html+='<h2 class="shortage-title">🚨 要仕入品（'+needPurchase.length+'件）</h2><table><tr><th>商品名</th><th>サイズ</th><th>現在庫</th><th>最低在庫</th><th>最大在庫</th><th>不足数</th><th>確認</th></tr>';needPurchase.forEach(function(d){html+='<tr><td>'+(d.item['商品名']||'')+'</td><td>'+(d.item['サイズ']||'')+'</td><td>'+d.stock+' '+(d.item['単位']||'')+'</td><td>'+d.minStock+' '+(d.item['単位']||'')+'</td><td>'+(d.maxStock>0?d.maxStock+' '+(d.item['単位']||''):'-')+'</td><td class="shortage-num">'+d.needQty+' '+(d.item['単位']||'')+'</td><td style="width:60px;"></td></tr>';});html+='</table>';}
-  if(reorder.length===0&&needPurchase.length===0) html+='<div class="empty">補充が必要な商品はありません</div>';
-  html+='</body></html>';
-  var win=window.open('','_blank');win.document.write(html);win.document.close();win.print();
-}
-var currentReplenishWarehouse='';
-function renderReplenish(){
-  if(warehouses.length===0||minStockData.length===0||summary.length===0||masterAll.length===0){document.getElementById('replenish-list').innerHTML='<div class="loading">読み込み中...</div>';return;}
-  if(!currentReplenishWarehouse&&warehouses.length>0) currentReplenishWarehouse=warehouses[0]['倉庫名'];
-  var tabHtml='<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;">';
-  warehouses.forEach(function(w){
-    var oc="switchReplenishWarehouse('"+escAttr(w['倉庫名'])+"')";
-    tabHtml+='<div class="filter-btn'+(w['倉庫名']===currentReplenishWarehouse?' active':'')+'" onclick="'+oc+'" style="white-space:nowrap;">'+w['倉庫名']+'</div>';
-  });
-  tabHtml+='</div>';
-  document.getElementById('replenish-warehouse-tabs').innerHTML=tabHtml;
-  renderReplenishList();
-}
-function switchReplenishWarehouse(n){currentReplenishWarehouse=n;renderReplenish();}
-function renderReplenishList(){
-  var wName=currentReplenishWarehouse;
-  var stockKey={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'}[wName]||(wName+'_在庫');
-  var reorder=[],needPurchase=[];
-  summary.forEach(function(item){
-    var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
-    if(!m||!(m['有効']===true||m['有効']==='TRUE'))return;
-    var stock=parseFloat(item[stockKey])||0;
-    var ms=minStockData.find(function(r){return r['SKU_ID']===item['SKU_ID']&&r['倉庫名']===wName;});
-    var minStock=ms?parseFloat(ms['最低在庫数'])||0:0,maxStock=ms?parseFloat(ms['最大在庫数'])||0:0;
-    if(minStock===0) return;
-    var needQty=maxStock>0?Math.max(maxStock-stock,0):Math.max(minStock-stock,0);
-    if(m['商品区分']==='小分け品'&&stock<minStock) reorder.push({item:item,stock:stock,minStock:minStock,maxStock:maxStock,needQty:needQty});
-    else if(m['商品区分']==='仕入品'&&stock===0) needPurchase.push({item:item,stock:stock,minStock:minStock,maxStock:maxStock,needQty:needQty});
-  });
-  if(reorder.length===0&&needPurchase.length===0){document.getElementById('replenish-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);">✅ 補充が必要な商品はありません</div>';return;}
-  var html='';
-  if(reorder.length>0){
-    html+='<div style="font-size:12px;font-weight:700;color:var(--warning);margin:12px 0 6px;">要補充 '+reorder.length+'件</div>';
-    reorder.forEach(function(d){var ml=d.maxStock>0?'最大'+d.maxStock:'最大（未設定）';html+='<div class="list-item" style="cursor:default;border-color:#fef7e0;"><div style="flex:1"><div class="list-item-name">'+(d.item['商品名']||'')+' '+(d.item['サイズ']||'')+'</div><div style="font-size:11px;color:var(--text3);font-family:monospace;">'+d.item['SKU_ID']+'</div></div><div style="text-align:right;"><div style="font-size:11px;color:var(--text3);">要補充数</div><div style="font-size:20px;font-weight:700;color:var(--warning);">'+d.needQty+'</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;">'+ml+'　現在'+d.stock+'</div></div></div>';});
-  }
-  if(needPurchase.length>0){
-    html+='<div style="font-size:12px;font-weight:700;color:var(--danger);margin:14px 0 6px;">要仕入品 '+needPurchase.length+'件</div>';
-    needPurchase.forEach(function(d){var ml=d.maxStock>0?'最大'+d.maxStock:'最大（未設定）';html+='<div class="list-item" style="cursor:default;border-color:#fce8e6;"><div style="flex:1"><div class="list-item-name">'+(d.item['商品名']||'')+' '+(d.item['サイズ']||'')+'</div><div style="font-size:11px;color:var(--text3);font-family:monospace;">'+d.item['SKU_ID']+'</div></div><div style="text-align:right;"><div style="font-size:11px;color:var(--text3);">要補充数</div><div style="font-size:20px;font-weight:700;color:var(--danger);">'+d.needQty+'</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;">'+ml+'　現在'+d.stock+'</div></div></div>';});
-  }
-  document.getElementById('replenish-list').innerHTML=html;
-}
-
-// ============================================================
-// 棚卸し
-// ============================================================
-let inventoryStock=[],currentInvProduct=null,invQty='',invCurrentCategory='',invCurrentProductName='',invRecordedSizes=[];
-async function loadInventoryStock(){
-  try{
-    const res=await fetch(API+'?action=getStockByWarehouse&倉庫='+encodeURIComponent(session.warehouse));
-    const json=await res.json();
-    inventoryStock=json.data||[];
-    renderInvCategories();
-  }catch(e){document.getElementById('inv-category-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--danger)">読み込み失敗</div>';}
-}
-function printInventoryList(){
-  var wName=session.warehouse;
-  var stockKey={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'}[wName]||(wName+'_在庫');
-  var now=new Date();
-  var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
-  var grouped={};
-  master.forEach(function(p){
-    if(wName==='創造社倉庫'&&p['商品区分']==='小分け品') return;
-    var ms=minStockData.find(function(r){return r['SKU_ID']===p['SKU_ID']&&r['倉庫名']===wName;});
-    if((ms?parseFloat(ms['最低在庫数'])||0:0)===0&&p['商品区分']==='小分け品') return;
-    var cat=p['カテゴリ']||'未分類';
-    if(!grouped[cat]) grouped[cat]=[];
-    var si=summary.find(function(s){return s['SKU_ID']===p['SKU_ID'];});
-    grouped[cat].push({商品名:p['商品名'],サイズ:String(p['サイズ']),単位:p['単位'],SKU_ID:p['SKU_ID'],在庫数:si?parseFloat(si[stockKey])||0:0});
-  });
-  Object.keys(grouped).forEach(function(cat){grouped[cat].sort(function(a,b){return jaSort(a['商品名'],b['商品名']);});});
-  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>棚卸しリスト - '+wName+'</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;font-size:12px;}h1{font-size:16px;margin-bottom:4px;}.meta{font-size:11px;color:#666;margin-bottom:16px;}.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}.notice{font-size:11px;color:#92400e;background:#fef3c7;padding:6px 10px;border-radius:4px;margin-bottom:12px;}table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}th{background:#f3f4f6;padding:7px 8px;text-align:left;border-bottom:2px solid #d1d5db;font-weight:600;font-size:11px;color:#6b7280;}td{padding:7px 8px;border-bottom:1px solid #e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}tr:nth-child(even){background:#f9fafb;}.check-col{text-align:center;border-left:1px solid #d1d5db;width:28%;}.total-col{text-align:center;border-left:2px solid #9ca3af;background:#fefce8;width:10%;}.qty-col{text-align:right;width:11%;}@media print{body{padding:8px;}@page{margin:10mm;margin-top:3cm;size:A4;}.category,.notice{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><h1>棚卸しリスト</h1><div class="meta">倉庫：'+wName+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>'+(wName==='創造社倉庫'?'<div class="notice">※小分け品はリストから除外されています</div>':'');
-  Object.keys(grouped).sort().forEach(function(cat){
-    html+='<div class="category">'+cat+'</div><table><colgroup><col style="width:27%"><col style="width:17%"><col style="width:7%"><col style="width:11%"><col style="width:24%"><col style="width:10%"></colgroup><tr><th>商品名</th><th>サイズ</th><th style="text-align:center;">単位</th><th class="qty-col">データ在庫</th><th class="check-col">実数記入</th><th class="total-col">集計</th></tr>';
-    grouped[cat].forEach(function(item){html+='<tr><td>'+item['商品名']+'</td><td>'+item['サイズ']+'</td><td style="text-align:center;">'+item['単位']+'</td><td class="qty-col">'+item['在庫数']+'</td><td class="check-col"></td><td class="total-col"></td></tr>';});
-    html+='</table>';
-  });
-  html+='</body></html>';
-  var win=window.open('','_blank');win.document.write(html);win.document.close();win.print();
-}
-function renderInvCategories(){
-  var cats=[];
-  master.forEach(function(p){if(session.warehouse==='創造社倉庫'&&p['商品区分']==='小分け品') return;if(cats.indexOf(p['カテゴリ'])===-1) cats.push(p['カテゴリ']);});
-  cats=applyCategoryOrder(cats);
-  document.getElementById('inv-category-list').innerHTML=cats.map(function(c){return '<div class="list-item" onclick="invSelectCategory(\''+escAttr(c)+'\')"><div class="list-item-name">'+c+'</div><div class="list-item-arrow">›</div></div>';}).join('');
-}
-function invSelectCategory(cat){invCurrentCategory=cat;document.getElementById('inv-bc-category').textContent=cat;document.getElementById('inv-bc-category2').textContent=cat;renderInvProducts(cat);showScreen('inv-product');}
-function renderInvProducts(cat){
-  var names=[];
-  master.filter(function(p){return p['カテゴリ']===cat&&!(session.warehouse==='創造社倉庫'&&p['商品区分']==='小分け品');}).forEach(function(p){if(names.indexOf(p['商品名'])===-1)names.push(p['商品名']);});
-  document.getElementById('inv-product-list').innerHTML=names.map(function(name){return '<div class="list-item" onclick="invSelectProduct(\''+escAttr(name)+'\')"><div class="list-item-name">'+name+'</div><div class="list-item-arrow">›</div></div>';}).join('');
-}
-function invSelectProduct(name){invCurrentProductName=name;invRecordedSizes=[];document.getElementById('inv-bc-product').textContent=name;renderInvSizes(invCurrentCategory,name);showScreen('inv-size');}
-function renderInvSizes(cat,name){
-  var items=master.filter(function(p){return p['カテゴリ']===cat&&p['商品名']===name&&!(session.warehouse==='創造社倉庫'&&p['商品区分']==='小分け品');});
-  var html='';
-  items.forEach(function(item){
-    var stock=inventoryStock.find(function(s){return s.SKU_ID===item['SKU_ID'];});
-    var sysQty=stock?stock['在庫数']:0;
-    var done=invRecordedSizes.indexOf(item['SKU_ID'])!==-1;
-    html+='<div class="list-item" onclick="selectInvProduct(\''+escAttr(item['SKU_ID'])+'\')"><div style="flex:1"><div class="list-item-name">'+String(item['サイズ'])+'</div><div style="font-size:12px;color:var(--text2);">システム在庫: '+sysQty+item['単位']+'</div></div>'+(done?'<span class="badge badge-done">記録済</span>':'<div class="list-item-arrow">›</div>')+'</div>';
-  });
-  document.getElementById('inv-size-list').innerHTML=html;
-}
-function selectInvProduct(skuId){
-  var stock=inventoryStock.find(function(r){return r.SKU_ID===skuId;});
-  var masterItem=master.find(function(p){return p['SKU_ID']===skuId;});
-  if(!masterItem) return;
-  // stockがない場合（在庫0）はダミーを作成
-  if(!stock){
-    stock={SKU_ID:skuId,商品名:masterItem['商品名'],サイズ:String(masterItem['サイズ']),単位:masterItem['単位'],在庫数:0};
-    inventoryStock.push(stock);
-  }
-  currentInvProduct=Object.assign({},stock,{カテゴリ:masterItem['カテゴリ']});
-  invQty='';
-  document.getElementById('inv-system-qty').textContent=stock['在庫数'];
-  document.getElementById('inv-system-unit').textContent=stock['単位'];
-  document.getElementById('inv-qty-display').textContent='0';
-  document.getElementById('inv-qty-unit').textContent=stock['単位'];
-  document.getElementById('inv-diff-display').textContent='';
-  document.getElementById('inv-diff-display').style.background='';
-  document.getElementById('inv-record-btn').disabled=true;
-  document.getElementById('inv-record-btn').style.opacity='0.4';
-  document.getElementById('inv-product-confirm').innerHTML='<div class="product-name">'+stock['商品名']+' '+stock['サイズ']+'</div><div class="product-sku">'+stock['SKU_ID']+'</div><div class="product-meta"><span class="product-meta-item" style="background:rgba(249,171,0,.1);color:#b06000">'+session.warehouse+'</span><span class="product-meta-item" style="background:rgba(249,171,0,.1);color:#b06000">'+session.staff+'</span><span class="product-meta-item" style="background:rgba(249,171,0,.1);color:#b06000">棚卸し</span></div>';
-  showScreen('inventoryQty');
-}
-function invNumInput(n){if(invQty.length>=5) return;invQty+=n;var num=parseInt(invQty)||0;document.getElementById('inv-qty-display').textContent=num;updateInvDiff(num);}
-function invNumDel(){invQty=invQty.slice(0,-1);var num=invQty?parseInt(invQty):0;document.getElementById('inv-qty-display').textContent=num;updateInvDiff(num);}
-function updateInvDiff(actual){
-  if(!currentInvProduct) return;
-  var system=parseFloat(currentInvProduct['在庫数'])||0,diff=actual-system;
-  var el=document.getElementById('inv-diff-display'),btn=document.getElementById('inv-record-btn');
-  if(diff===0){el.textContent='差分なし（記録不要）';el.style.background='#e6f4ea';el.style.color='#137333';btn.style.opacity='0.4';btn.disabled=true;}
-  else{el.textContent='差分: '+(diff>0?'+':'')+diff+currentInvProduct['単位']+'（棚卸し修正を記録します）';el.style.background=diff>0?'#e8f0fe':'#fce8e6';el.style.color=diff>0?'#1a73e8':'#c5221f';btn.style.opacity='1';btn.disabled=false;}
-}
-async function recordInventory(){
-  if(!currentInvProduct) return;
-  var actual=parseInt(invQty)||0,system=parseFloat(currentInvProduct['在庫数'])||0,diff=actual-system;
-  if(diff===0){showToast('差分がないため記録不要です');return;}
-  var btn=document.getElementById('inv-record-btn');btn.disabled=true;btn.textContent='記録中...';
-  try{
-    await fetch(API,{method:'POST',body:JSON.stringify({action:'addLog',操作種別:'棚卸し修正',SKU_ID:currentInvProduct['SKU_ID'],倉庫:session.warehouse,移動先倉庫:'',数量変動:diff,単位:currentInvProduct['単位'],担当者:session.staff,備考:'棚卸し（実数:'+actual+' システム:'+system+'）'})});
-    showToast('✅ 棚卸し修正を記録しました');
-    invRecordedSizes.push(currentInvProduct['SKU_ID']);
-    var s=inventoryStock.find(function(r){return r.SKU_ID===currentInvProduct['SKU_ID'];});
-    if(s) s['在庫数']=actual;
-    invQty='';renderInvSizes(invCurrentCategory,invCurrentProductName);showScreen('inv-size');
-  }catch(e){showToast('❌ 記録失敗');}
-  finally{btn.disabled=false;btn.textContent='棚卸し修正を記録する';btn.style.opacity='1';}
-}
-function toggleImmediateMove(){
-  var check=document.getElementById('immediate-move-check');
-  var destGroup=document.getElementById('immediate-dest-group');
-  var isChecked=check.innerHTML!=='';
-  if(isChecked){check.innerHTML='';check.style.borderColor='var(--border)';check.style.background='#fff';destGroup.classList.add('hidden');session.immediateDest='';}
-  else{check.innerHTML='<span style="color:#fff;font-size:13px;">✓</span>';check.style.borderColor='var(--primary)';check.style.background='var(--primary)';destGroup.classList.remove('hidden');}
-}
-
-// ============================================================
-// 商品マスタ管理
-// ============================================================
-let toggleTarget=null,pendingCategories=[];
-function getAllCategories(){
-  var cats=[];
-  masterAll.forEach(function(p){var c=p['カテゴリ'];if(c&&cats.indexOf(c)===-1)cats.push(c);});
-  pendingCategories.forEach(function(c){if(cats.indexOf(c)===-1)cats.push(c);});
-  cats.sort(jaSort);return cats;
-}
-async function loadMasterAll(){
-  try{
-    const res=await fetch(API+'?action=getMasterAll');
-    const json=await res.json();
-    masterAll=json.data||json;
-    var savedFilter=document.getElementById('masterCatFilter')?document.getElementById('masterCatFilter').value:'';
-    populateCategorySelects();
-    if(savedFilter&&document.getElementById('masterCatFilter')) document.getElementById('masterCatFilter').value=savedFilter;
-    renderMasterList();
-  }catch(e){document.getElementById('master-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--danger)">読み込み失敗</div>';}
-}
-function populateCategorySelects(){
-  var cats=getAllCategories();
-  ['masterCatFilter','add-category'].forEach(function(id){
-    var sel=document.getElementById(id),isFilter=id==='masterCatFilter';
-    sel.innerHTML=isFilter?'<option value="">全カテゴリ</option>':'<option value="">選択してください</option>';
-    cats.forEach(function(c){var opt=document.createElement('option');opt.value=c;opt.textContent=c;sel.appendChild(opt);});
-  });
-}
-function openCategoryManageModal(){renderCategoryManageList();document.getElementById('new-category-name').value='';document.getElementById('categoryManageModal').classList.add('show');}
-function closeCategoryManageModal(){document.getElementById('categoryManageModal').classList.remove('show');}
-function applyCategoryOrder(cats){
-  if(!categoryOrder.length) return cats;
-  return cats.slice().sort(function(a,b){
-    var ia=categoryOrder.indexOf(a),ib=categoryOrder.indexOf(b);
-    if(ia===-1&&ib===-1) return jaSort(a,b);
-    if(ia===-1) return 1;if(ib===-1) return -1;
-    return ia-ib;
-  });
-}
-async function saveCategoryOrderToServer(arr){
-  categoryOrder=arr;
-  for(var _i=0;_i<3;_i++){
-    try{
-      var _r=await fetch(API,{method:'POST',body:JSON.stringify({action:'saveCategoryOrder',order:arr})});
-      var _j=await _r.json();
-      if(_j.success) return;
-    }catch(e){}
-    await new Promise(function(r){setTimeout(r,1500);});
-  }
-  showToast('⚠️ 順番の保存に失敗しました');
-}
-function renderCategoryManageList(){
-  var cats=applyCategoryOrder(getAllCategories());
-  var html=cats.length===0?'<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">カテゴリがまだありません</div>':'';
-  cats.forEach(function(c){
-    var count=masterAll.filter(function(p){return p['カテゴリ']===c;}).length;
-    html+='<div class="cat-manage-item" data-cat="'+escAttr(c)+'" style="display:flex;align-items:center;gap:6px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);">'+
-      '<span class="drag-handle" style="font-size:22px;color:var(--text3);cursor:grab;user-select:none;flex-shrink:0;padding:0 4px;line-height:1;">⠿</span>'+
-      '<div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text);">'+c+'</div><div style="font-size:11px;color:var(--text3);">'+(count===0&&pendingCategories.indexOf(c)!==-1?'商品未登録（新規作成）':count+'品')+'</div></div>'+
-      '<button onclick="openCategoryRenameModal(\''+escAttr(c)+'\')" style="background:#fff;color:var(--primary);border:1.5px solid var(--primary);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">名前を変更</button>'+
-    '</div>';
-  });
-  document.getElementById('category-manage-list').innerHTML=html;
-  initCategoryDragDrop();
-}
-function initCategoryDragDrop(){
-  var list=document.getElementById('category-manage-list');
-  if(!list) return;
-  var dragging=null,ghost=null,lastOver=null,ghostH=0,rafId=null;
-  function getItems(){return Array.from(list.querySelectorAll('.cat-manage-item'));}
-  function getTargetFromPoint(clientX,clientY){
-    var items=getItems();
-    for(var i=0;i<items.length;i++){
-      var r=items[i].getBoundingClientRect();
-      if(clientY>=r.top&&clientY<=r.bottom&&clientX>=r.left&&clientX<=r.right) return items[i];
-    }
-    return null;
-  }
-  function startDrag(item,clientY){
-    dragging=item;
-    var rect=item.getBoundingClientRect();
-    ghostH=rect.height;
-    ghost=item.cloneNode(true);
-    ghost.style.cssText='position:fixed;left:'+rect.left+'px;top:'+(clientY-ghostH/2)+'px;width:'+rect.width+'px;z-index:1000;opacity:.85;pointer-events:none;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.25);background:var(--surface);';
-    document.body.appendChild(ghost);
-    item.style.opacity='.2';
-  }
-  function moveDrag(clientX,clientY){
-    if(!ghost||!dragging) return;
-    if(rafId) cancelAnimationFrame(rafId);
-    rafId=requestAnimationFrame(function(){
-      rafId=null;
-      ghost.style.top=(clientY-ghostH/2)+'px';
-      var over=getTargetFromPoint(clientX,clientY);
-      if(lastOver&&lastOver!==over){lastOver.style.outline='';lastOver=null;}
-      if(over&&over!==dragging){over.style.outline='2px solid var(--primary)';lastOver=over;}
-    });
-  }
-  function endDrag(clientX,clientY){
-    if(!dragging||!ghost) return;
-    if(rafId){cancelAnimationFrame(rafId);rafId=null;}
-    var target=getTargetFromPoint(clientX,clientY);
-    if(target&&target!==dragging){
-      var items=getItems(),srcIdx=items.indexOf(dragging),dstIdx=items.indexOf(target);
-      var order=items.map(function(i){return i.dataset.cat;});
-      order.splice(srcIdx,1);order.splice(dstIdx,0,dragging.dataset.cat);
-      saveCategoryOrderToServer(order);
-    }
-    if(lastOver){lastOver.style.outline='';lastOver=null;}
-    ghost.remove();ghost=null;dragging.style.opacity='';dragging=null;
-    renderCategoryManageList();
-  }
-  list.addEventListener('mousedown',function(e){
-    if(!e.target.closest('.drag-handle')) return;
-    var item=e.target.closest('.cat-manage-item');if(!item) return;
-    e.preventDefault();startDrag(item,e.clientY);
-    function onMove(ev){moveDrag(ev.clientX,ev.clientY);}
-    function onUp(ev){endDrag(ev.clientX,ev.clientY);document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
-    document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
-  });
-  list.addEventListener('touchstart',function(e){
-    if(!e.target.closest('.drag-handle')) return;
-    var item=e.target.closest('.cat-manage-item');if(!item) return;
-    var t=e.touches[0];startDrag(item,t.clientY);
-    function onMove(ev){ev.preventDefault();var tt=ev.touches[0];moveDrag(tt.clientX,tt.clientY);}
-    function onEnd(ev){var tt=ev.changedTouches[0];endDrag(tt.clientX,tt.clientY);list.removeEventListener('touchmove',onMove);list.removeEventListener('touchend',onEnd);}
-    list.addEventListener('touchmove',onMove,{passive:false});list.addEventListener('touchend',onEnd);
-  },{passive:true});
-}
-  
-function createNewCategory(){
-  var name=document.getElementById('new-category-name').value.trim();
-  if(!name){showToast('カテゴリ名を入力してください');return;}
-  if(getAllCategories().indexOf(name)!==-1){showToast('そのカテゴリ名はすでに存在します');return;}
-  pendingCategories.push(name);document.getElementById('new-category-name').value='';
-  populateCategorySelects();renderCategoryManageList();showToast('✅ カテゴリ「'+name+'」を作成しました');
-}
-var renameTargetCategory=null;
-function openCategoryRenameModal(oldName){
-  renameTargetCategory=oldName;
-  var count=masterAll.filter(function(p){return p['カテゴリ']===oldName;}).length;
-  document.getElementById('rename-old-name').textContent=oldName;
-  document.getElementById('rename-count').textContent=count;
-  document.getElementById('rename-new-name').value=oldName;
-  document.getElementById('categoryRenameModal').classList.add('show');
-}
-function closeCategoryRenameModal(){document.getElementById('categoryRenameModal').classList.remove('show');renameTargetCategory=null;}
-async function confirmRenameCategory(){
-  if(!renameTargetCategory) return;
-  var newName=document.getElementById('rename-new-name').value.trim();
-  if(!newName){showToast('新しいカテゴリ名を入力してください');return;}
-  if(newName===renameTargetCategory){closeCategoryRenameModal();return;}
-  var btn=document.getElementById('rename-confirm-btn');btn.disabled=true;btn.textContent='変更中...';
-  try{
-    var count=masterAll.filter(function(p){return p['カテゴリ']===renameTargetCategory;}).length;
-    if(count>0){
-      const res=await fetch(API,{method:'POST',body:JSON.stringify({action:'renameCategory',oldName:renameTargetCategory,newName:newName})});
-      const json=await res.json();
-      if(!json.success) throw new Error(json.message||'変更に失敗しました');
-    }
-    var pIdx=pendingCategories.indexOf(renameTargetCategory);
-    if(pIdx!==-1) pendingCategories[pIdx]=newName;
-    showToast('✅ カテゴリ名を変更しました');
-    closeCategoryRenameModal();await loadMasterAll();await loadData();renderCategoryManageList();
-  }catch(e){showToast('❌ 変更失敗：'+e.message);}
-  finally{btn.disabled=false;btn.textContent='変更する';}
-}
-function renderMasterList(){
-  var cat=document.getElementById('masterCatFilter').value;
-  var kw=document.getElementById('masterSearch').value.trim().toLowerCase();
-  var showInactive=document.getElementById('masterShowInactive').checked;
-  var filtered=masterAll.filter(function(r){
-    if(!showInactive&&!r['有効']) return false;
-    if(cat&&r['カテゴリ']!==cat) return false;
-    if(kw){var hay=(r['商品名']+r['サイズ']+r['SKU_ID']+(r['備考']||'')).toLowerCase();if(hay.indexOf(kw)===-1) return false;}
-    return true;
-  });
-  filtered.sort(function(a,b){return jaSort(a['商品名'],b['商品名']);});
-  document.getElementById('masterCount').textContent=filtered.length+'件';
-  if(filtered.length===0){document.getElementById('master-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">該当なし</div>';return;}
-  var grouped={};
-  filtered.forEach(function(r){var c=r['カテゴリ']||'未分類';if(!grouped[c])grouped[c]=[];grouped[c].push(r);});
-  var html='';
-  applyCategoryOrder(Object.keys(grouped)).forEach(function(cat){
-    html+='<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;margin:14px 0 6px;text-transform:uppercase">'+cat+'</div>';
-    grouped[cat].forEach(function(r){
-      var inactive=!r['有効'];
-      var ss=r['SKU_ID'];
-      var ns=escAttr(r['商品名']),sz=escAttr(r['サイズ']);
-      html+='<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid '+(inactive?'#fde68a':'var(--border)')+';opacity:'+(inactive?'.65':'1')+';display:flex;align-items:center;gap:6px">'+
-        '<div style="flex:1;min-width:0">'+
-          '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+
-            '<span style="font-size:15px;font-weight:700;color:'+(inactive?'var(--text3)':'var(--text)')+'">'+r['商品名']+'</span>'+
-            '<span style="font-size:13px;color:var(--text2)">'+r['サイズ']+'</span>'+
-            (inactive?'<span class="badge" style="background:#fef3c7;color:#92400e">廃番</span>':'')+
-          '</div>'+
-          '<div style="font-size:11px;color:var(--text3);font-family:monospace;margin-top:2px">'+r['SKU_ID']+'</div>'+
-          '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+r['商品区分']+(r['備考']?'／'+r['備考']:'')+
-          '　<span style="color:var(--text3);">'+(r['バーコード種別']||'QR')+'</span></div>'+
-        '</div>'+
-        
-        '<button onclick="openBarcodeScanForSku(\''+ss+'\')" style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid #0891b2;color:#0891b2;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="バーコード登録"><i class=\"ti ti-scan\"></i></button>'+
-        '<button onclick="openEditMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--primary);color:var(--primary);background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">編集</button>'+
-        '<button onclick="openDupeMasterModal(\''+ss+'\')" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #6b7280;color:#6b7280;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">複製</button>'+
-        (inactive?
-          '<button onclick="openToggleMasterModal(\''+ss+'\',\''+ns+'\',\''+sz+'\',true)" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--success);color:var(--success);background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">復元</button>':
-          '<button onclick="openToggleMasterModal(\''+ss+'\',\''+ns+'\',\''+sz+'\',false)" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--danger);color:var(--danger);background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">廃番</button>')+
-      '</div>';
-    });
-  });
-  document.getElementById('master-list').innerHTML=html;
-}
-function openDupeMasterModal(skuId){
-  var item=masterAll.find(function(r){return r['SKU_ID']===skuId;});if(!item) return;
-  openAddMasterModal();
-  var catSel=document.getElementById('add-category');
-  for(var i=0;i<catSel.options.length;i++){if(catSel.options[i].value===item['カテゴリ']){catSel.selectedIndex=i;break;}}
-  document.getElementById('add-name').value=item['商品名']||'';
-  document.getElementById('add-size').value='';
-  var unitSel=document.getElementById('add-unit');for(var i=0;i<unitSel.options.length;i++){if(unitSel.options[i].value===item['単位']){unitSel.selectedIndex=i;break;}}
-  var typeSel=document.getElementById('add-type');for(var i=0;i<typeSel.options.length;i++){if(typeSel.options[i].value===item['商品区分']){typeSel.selectedIndex=i;break;}}
-  document.getElementById('add-note').value=item['備考']||'';
-  showToast('サイズを変更して登録してください');
-}
-function openAddMasterModal(){
-  var minStockDiv=document.getElementById('add-minstock-warehouses');
-  if(minStockDiv){
-    minStockDiv.innerHTML='';
-    warehouses.forEach(function(w){
-      var row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px;';
-      row.innerHTML='<span style="flex:1;font-size:13px;color:var(--text2)">'+w['倉庫名']+'</span><span style="font-size:11px;color:var(--text3);">最低</span><input type="number" min="0" value="0" data-warehouse-id="'+w['倉庫ID']+'" data-warehouse-name="'+w['倉庫名']+'" data-field="min" style="width:64px;padding:8px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;text-align:right;"><span style="font-size:11px;color:var(--text3);">最大</span><input type="number" min="0" value="0" data-warehouse-id="'+w['倉庫ID']+'" data-warehouse-name="'+w['倉庫名']+'" data-field="max" style="width:64px;padding:8px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;text-align:right;">';
-      minStockDiv.appendChild(row);
-    });
-  }
-  document.getElementById('addMasterModal').classList.add('show');updateSkuPreview();
-}
-function closeAddMasterModal(){document.getElementById('addMasterModal').classList.remove('show');}
-function updateSkuPreview(){document.getElementById('sku-preview').textContent='自動採番（SKU-XXXXX）';}
-let editTarget=null;
-function openEditMasterModal(skuId){
-  var item=masterAll.find(function(r){return r['SKU_ID']===skuId;});
-  if(!item){showToast('商品が見つかりません');return;}
-  editTarget=skuId;
-  document.getElementById('edit-sku-display').textContent=skuId;
-  var sel=document.getElementById('edit-category');sel.innerHTML='';
-  getAllCategories().forEach(function(c){var opt=document.createElement('option');opt.value=c;opt.textContent=c;if(c===item['カテゴリ'])opt.selected=true;sel.appendChild(opt);});
-  document.getElementById('edit-name').value=item['商品名']||'';
-  document.getElementById('edit-size').value=String(item['サイズ']||'');
-  document.getElementById('edit-unit').value=item['単位']||'袋';
-  document.getElementById('edit-type').value=item['商品区分']||'仕入品';
-  document.getElementById('edit-barcode').value=item['バーコード種別']||'QR';
-  document.getElementById('edit-note').value=item['備考']||'';
-  document.getElementById('edit-barcode-number').value=item['バーコード番号']||'';
-  var minStockDiv=document.getElementById('edit-minstock-warehouses');minStockDiv.innerHTML='';
-  warehouses.forEach(function(w){
-    var ms=minStockData.find(function(r){return r['SKU_ID']===skuId&&r['倉庫ID']===w['倉庫ID'];});
-    var minVal=ms?ms['最低在庫数']:0,maxVal=ms?(ms['最大在庫数']||0):0;
-    var row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px;';
-    row.innerHTML='<span style="flex:1;font-size:13px;color:var(--text2)">'+w['倉庫名']+'</span><span style="font-size:11px;color:var(--text3);">最低</span><input type="number" min="0" value="'+minVal+'" data-warehouse-id="'+w['倉庫ID']+'" data-sku-id="'+skuId+'" data-field="min" style="width:64px;padding:8px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;text-align:right;"><span style="font-size:11px;color:var(--text3);">最大</span><input type="number" min="0" value="'+maxVal+'" data-warehouse-id="'+w['倉庫ID']+'" data-sku-id="'+skuId+'" data-field="max" style="width:64px;padding:8px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;text-align:right;">';
-    minStockDiv.appendChild(row);
-  });
-  document.getElementById('editMasterModal').classList.add('show');
-}
-function closeEditMasterModal(){document.getElementById('editMasterModal').classList.remove('show');editTarget=null;}
-async function submitEditMaster(){
-  if(!editTarget) return;
-  var cat=document.getElementById('edit-category').value,name=document.getElementById('edit-name').value.trim(),size=document.getElementById('edit-size').value.trim();
-  if(!cat||!name||!size){showToast('カテゴリ・商品名・サイズは必須です');return;}
-  var btn=document.getElementById('edit-master-btn');btn.disabled=true;btn.textContent='更新中...';
-  try{
-    const res=await fetch(API,{method:'POST',body:JSON.stringify({action:'updateMaster',SKU_ID:editTarget,カテゴリ:cat,商品名:name,サイズ:size,単位:document.getElementById('edit-unit').value,商品区分:document.getElementById('edit-type').value,バーコード種別:document.getElementById('edit-barcode').value,備考:document.getElementById('edit-note').value.trim(),バーコード番号:document.getElementById('edit-barcode-number').value.trim()})});
-    const json=await res.json();if(!json.success) throw new Error(json.message);
-    showToast('✅ 更新しました');
-    var inputs=document.querySelectorAll('#edit-minstock-warehouses input'),byWarehouse={};
-    for(var i=0;i<inputs.length;i++){var inp=inputs[i],wId=inp.dataset.warehouseId;if(!byWarehouse[wId]) byWarehouse[wId]={SKU_ID:inp.dataset.skuId,倉庫ID:wId};byWarehouse[wId][inp.dataset.field==='max'?'最大在庫数':'最低在庫数']=Number(inp.value)||0;}
-    for(var wId in byWarehouse) await fetch(API,{method:'POST',body:JSON.stringify(Object.assign({action:'updateMinStock'},byWarehouse[wId]))});
-    var msRes=await fetch(API+'?action=getMinStockMaster');var msJson=await msRes.json();minStockData=msJson.data||[];
-    closeEditMasterModal();await loadMasterAll();await loadData();
-  }catch(e){showToast('❌ 更新失敗：'+e.message);}
-  finally{btn.disabled=false;btn.textContent='更新する';}
-}
-async function submitAddMaster(){
-  var cat=document.getElementById('add-category').value,name=document.getElementById('add-name').value.trim(),size=document.getElementById('add-size').value.trim();
-  if(!cat||!name||!size){showToast('カテゴリ・商品名・サイズは必須です');return;}
-  var btn=document.getElementById('add-master-btn');btn.disabled=true;btn.textContent='登録中...';
-  try{
-    const res=await fetch(API,{method:'POST',body:JSON.stringify({action:'addMaster',カテゴリ:cat,商品名:name,サイズ:size,単位:document.getElementById('add-unit').value,商品区分:document.getElementById('add-type').value,バーコード種別:document.getElementById('add-barcode').value,備考:document.getElementById('add-note').value.trim(),バーコード番号:document.getElementById('add-barcode-number').value.trim()})});
-    const json=await res.json();if(!json.success) throw new Error(json.message);
-    showToast('✅ 登録しました：'+json.skuId);
-    var inputs=document.querySelectorAll('#add-minstock-warehouses input'),byWarehouse={};
-    for(var i=0;i<inputs.length;i++){var inp=inputs[i],wId=inp.dataset.warehouseId;if(!byWarehouse[wId]) byWarehouse[wId]={SKU_ID:json.skuId,倉庫ID:wId};byWarehouse[wId][inp.dataset.field==='max'?'最大在庫数':'最低在庫数']=Number(inp.value)||0;}
-    for(var wId in byWarehouse){var v=byWarehouse[wId];if((v['最低在庫数']||0)>0||(v['最大在庫数']||0)>0) await fetch(API,{method:'POST',body:JSON.stringify(Object.assign({action:'updateMinStock'},v))});}
-    var msRes=await fetch(API+'?action=getMinStockMaster');var msJson=await msRes.json();minStockData=msJson.data||[];
-    closeAddMasterModal();['add-name','add-size','add-note'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('add-category').value='';
-    await loadMasterAll();await loadData();
-  }catch(e){showToast('❌ 登録失敗：'+e.message);}
-  finally{btn.disabled=false;btn.textContent='登録する';}
-}
-function openToggleMasterModal(skuId,name,size,restore){
-  toggleTarget={skuId:skuId,restore:restore};
-  document.getElementById('toggle-title').textContent=restore?'復元の確認':'廃番にする確認';
-  document.getElementById('toggle-body').textContent='「'+name+' '+size+'」を'+(restore?'復元（有効に戻す）':'廃番（無効化）')+'しますか？';
-  var btn=document.getElementById('toggle-confirm-btn');btn.textContent=restore?'復元する':'廃番にする';btn.style.background=restore?'var(--success)':'var(--danger)';
-  document.getElementById('toggleMasterModal').classList.add('show');
-}
-function closeToggleMasterModal(){document.getElementById('toggleMasterModal').classList.remove('show');toggleTarget=null;}
-async function confirmToggleMaster(){
-  if(!toggleTarget) return;
-  var btn=document.getElementById('toggle-confirm-btn');btn.disabled=true;
-  try{
-    const res=await fetch(API,{method:'POST',body:JSON.stringify({action:'toggleMaster',SKU_ID:toggleTarget.skuId,有効:toggleTarget.restore})});
-    const json=await res.json();if(!json.success) throw new Error(json.message);
-    showToast(toggleTarget.restore?'✅ 復元しました':'✅ 廃番にしました');
-    closeToggleMasterModal();await loadMasterAll();
-  }catch(e){showToast('❌ 失敗：'+e.message);}
-  finally{btn.disabled=false;}
-}
-</script>
-</body>
-</html>
+  cancelTarget=n
