@@ -44,18 +44,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 .form-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:600;cursor:pointer;margin-top:10px;letter-spacing:-.01em;}
 .form-btn:active{background:var(--primary-dark)}
 .tile-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:5px;}
-
-.home-header{padding:16px 16px 12px;display:flex;align-items:center;gap:14px;flex-shrink:0;}
-.home-header-icon{width:40px;height:40px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.home-header-icon i{font-size:20px;color:#fff;}
-.home-header-title{font-size:22px;font-weight:700;color:var(--text);line-height:1.1;}
-.home-header-subtitle{font-size:13px;color:#b0b8d0;font-family:Georgia,serif;font-style:italic;}
-.app-shell.on-home{background:#eef0fc;}
-.app-shell.on-home .header{display:none;}
-.tile{background:var(--surface);border-radius:16px;padding:20px 12px 16px;text-align:center;border:1px solid var(--border);cursor:pointer;transition:transform .1s;}
+.tile{background:var(--surface);border-radius:16px;padding:14px;border:1px solid var(--border);cursor:pointer;transition:transform .1s;display:flex;flex-direction:column;justify-content:space-between;min-height:120px;}
 .tile:active{transform:scale(.96)}
-.tile-icon{font-size:40px;color:var(--primary);margin-bottom:12px;line-height:1;display:block;}
-.tile-label{font-size:16px;font-weight:700;color:var(--text);}
+.tile-top{display:flex;justify-content:space-between;align-items:flex-start;}.tile-icon-box{width:38px;height:38px;background:#ede9fe;border-radius:10px;display:flex;align-items:center;justify-content:center;}.tile-icon-box i{font-size:20px;color:var(--primary);}.tile-icon-box.warn{background:#fff3e0;}.tile-icon-box.warn i{color:#ea580c;}.tile-arrow{color:var(--text3);font-size:18px;line-height:1;}
+.tile-label{font-size:15px;font-weight:700;color:var(--text);}.tile-desc{font-size:11px;color:var(--text2);margin-top:3px;line-height:1.4;}
+
+.home-header{padding:18px 16px 12px;display:flex;align-items:center;gap:14px;flex-shrink:0;}
+.home-header-icon{width:48px;height:48px;background:linear-gradient(135deg,#6366f1,#4f46e5);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.home-header-icon i{font-size:24px;color:#fff;}
+.home-header-title{font-size:26px;font-weight:700;color:var(--text);line-height:1.1;}
+.home-header-subtitle{font-size:12px;color:var(--text3);margin-top:2px;}
+.app-shell.on-home{background:#f5f6ff;}
+.app-shell.on-home .header{display:none;}
 .scan-area{background:linear-gradient(160deg,#1a1a2e,#16213e);border-radius:var(--radius);height:175px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;cursor:pointer;margin-bottom:14px;position:relative;overflow:hidden}
 .scan-corner{position:absolute;width:24px;height:24px;border-color:#4fc3f7;border-style:solid;border-width:0}
 .scan-corner.tl{top:16px;left:16px;border-top-width:3px;border-left-width:3px;border-radius:4px 0 0 0}
@@ -337,12 +337,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       </div>
     </div>
     <div class="tile-grid">
-      <div class="tile" onclick="startOperation('入庫')"><i class="ti ti-package tile-icon"></i><div class="tile-label">入庫</div></div>
-      <div class="tile" onclick="startOperation('出庫')"><i class="ti ti-truck tile-icon"></i><div class="tile-label">出庫</div></div>
-      <div class="tile" onclick="startOperation('移動')"><i class="ti ti-arrows-exchange tile-icon"></i><div class="tile-label">倉庫間移動</div></div>
-      <div class="tile" onclick="showScreen('stock')"><i class="ti ti-chart-bar tile-icon"></i><div class="tile-label">在庫確認</div></div>
-      <div class="tile" onclick="startOperation('棚卸し')"><i class="ti ti-clipboard-list tile-icon"></i><div class="tile-label">棚卸し</div></div>
-      <div class="tile" onclick="showScreen('replenish')" style="border:1.5px solid #fca5a5;"><i class="ti ti-bell tile-icon" style="color:#ea580c;"></i><div class="tile-label" style="color:#ea580c;">補充確認</div></div>
+      <div class="tile" onclick="startOperation('入庫')"><div class="tile-top"><div class="tile-icon-box"><i class="ti ti-package"></i></div><span class="tile-arrow">›</span></div><div><div class="tile-label">入庫</div><div class="tile-desc">商品の入庫処理を行います</div></div></div>
+      <div class="tile" onclick="startOperation('出庫')"><div class="tile-top"><div class="tile-icon-box"><i class="ti ti-truck"></i></div><span class="tile-arrow">›</span></div><div><div class="tile-label">出庫</div><div class="tile-desc">商品の出庫処理を行います</div></div></div>
+      <div class="tile" onclick="startOperation('移動')"><div class="tile-top"><div class="tile-icon-box"><i class="ti ti-arrows-exchange"></i></div><span class="tile-arrow">›</span></div><div><div class="tile-label">倉庫間移動</div><div class="tile-desc">倉庫間の在庫移動を行います</div></div></div>
+      <div class="tile" onclick="showScreen('stock')"><div class="tile-top"><div class="tile-icon-box"><i class="ti ti-chart-bar"></i></div><span class="tile-arrow">›</span></div><div><div class="tile-label">在庫確認</div><div class="tile-desc">在庫状況の確認を行います</div></div></div>
+      <div class="tile" onclick="startOperation('棚卸し')"><div class="tile-top"><div class="tile-icon-box"><i class="ti ti-clipboard-list"></i></div><span class="tile-arrow">›</span></div><div><div class="tile-label">棚卸し</div><div class="tile-desc">棚卸し作業を行います</div></div></div>
+      <div class="tile" onclick="showScreen('replenish')" style="border:1.5px solid #fca5a5;"><div class="tile-top"><div class="tile-icon-box warn"><i class="ti ti-bell"></i></div><span class="tile-arrow" style="color:#ea580c;">›</span></div><div><div class="tile-label" style="color:#ea580c;">補充確認</div><div class="tile-desc">在庫の補充状況を確認します</div></div></div>
     </div>
 
   </div>
