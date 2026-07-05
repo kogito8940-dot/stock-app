@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.11 -->
+<!-- v3o.12 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -621,7 +621,7 @@ function buildWarehouseSelects(){
       imgs=files.filter(function(f){return f.url.indexOf('1-0AFtr1AwrKEX1kcMsMZy0aG3_90a3r8')<0;}).map(function(f){return f.url;});
       if(imgs.length)setRandom();
     }).catch(function(){});
-  function setRandom(){
+  function setRandom(){if(!document.getElementById('screen-home').classList.contains('active'))return;
     if(!imgs.length)return;
     var url=imgs[Math.floor(Math.random()*imgs.length)];
     el.style.opacity='0';
