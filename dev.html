@@ -626,7 +626,7 @@ function buildWarehouseSelects(){
     var url=imgs[Math.floor(Math.random()*imgs.length)];
     el.style.opacity='0';
     setTimeout(function(){
-      el.style.backgroundImage='url('+url+')';
+      el.style.display='block';el.style.backgroundImage='url('+url+')';
       el.style.opacity='1';
     },1600);
   }
