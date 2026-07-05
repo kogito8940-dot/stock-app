@@ -529,6 +529,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 <div class="toast" id="toast"></div>
 <img class="toast-mascot" id="toast-mascot" src="https://drive.google.com/thumbnail?id=1bew7wxVLBX7zgGQAiNshUNpjO-QixLGT&sz=w800" alt="">
 
+<input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleCameraUpload(this)">
 <div class="bnav">
   <div class="bnav-item active" onclick="showScreen('home')" id="nav-home" style="min-width:60px;"><i class="ti ti-home bnav-icon"></i>ホーム</div>
   <div id="nav-session" style="flex:1;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:4px 6px 8px;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;" onclick="handleNavScan()">
@@ -537,6 +538,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   </div>
   <div class="bnav-item" onclick="showScreen('history')" id="nav-history" style="min-width:60px;"><i class="ti ti-history bnav-icon"></i>履歴</div>
   <div class="bnav-item" onclick="masterUnlocked?showScreen('master'):openMasterPwModal()" id="nav-master" style="min-width:60px;"><i class="ti ti-layout-grid bnav-icon"></i>マスタ</div>
+  <div class="bnav-item" onclick="openCameraUpload()" id="nav-camera" style="min-width:60px;"><i class="ti ti-camera bnav-icon"></i>見せる</div>
 </div>
   <div id="chara-bg-circle"></div>
   <!-- フッターの裏から生えてくるキャラ画像 -->
@@ -548,6 +550,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 </div>
 <script>
 const API='https://script.google.com/macros/s/AKfycbz2K9_frpjl7gXnl4jMcqSNIt4Yupx-SYcVJHiM6Wtb0gFsRlgmNLlBy06Xz7TnOPgx/exec';
+async function openCameraUpload(){document.getElementById('camera-input').click();}
+async function handleCameraUpload(input){
+  var file=input.files[0];if(!file)return;
+  showToast('📤 アップロード中...');
+  var reader=new FileReader();
+  reader.onload=async function(e){
+    var base64=e.target.result.split(',')[1];
+    try{
+      var res=await fetch(API,{method:'POST',body:JSON.stringify({action:'uploadCharaBgImage',imageData:base64,mimeType:file.type})});
+      var data=await res.json();
+      if(data.success){showToast('✅ 写真を追加しました！');}
+      else{showToast('❌ アップロード失敗: '+(data.error||''));}
+    }catch(err){showToast('❌ エラー: '+err.message);}
+    input.value='';
+  };
+  reader.readAsDataURL(file);
+}
 var masterPassword='1234';
 var masterUnlocked=false;
 var pinCurrent='';
