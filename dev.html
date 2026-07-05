@@ -57,6 +57,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 .home-header-subtitle{font-size:14px;font-family:'Times New Roman',Times,serif;font-style:italic;color:#000;margin-top:7px;}
 .app-shell.on-home{background:#f5f6ff;}
 .app-shell.on-home .header{display:none;}#home-chara{display:none;}.app-shell.on-home #home-chara{display:block;}
+#chara-bg-circle{position:absolute;bottom:95px;right:155px;width:240px;height:240px;background-size:cover;background-position:center;-webkit-mask-image:radial-gradient(circle,rgba(0,0,0,.9) 20%,rgba(0,0,0,0) 70%);mask-image:radial-gradient(circle,rgba(0,0,0,.9) 20%,rgba(0,0,0,0) 70%);pointer-events:none;display:none;z-index:49;}
+.app-shell.on-home #chara-bg-circle{display:block;}
 .scan-area{background:linear-gradient(160deg,#1a1a2e,#16213e);border-radius:var(--radius);height:175px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;cursor:pointer;margin-bottom:14px;position:relative;overflow:hidden}
 .scan-corner{position:absolute;width:24px;height:24px;border-color:#4fc3f7;border-style:solid;border-width:0}
 .scan-corner.tl{top:16px;left:16px;border-top-width:3px;border-left-width:3px;border-radius:4px 0 0 0}
@@ -536,6 +538,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
   <div class="bnav-item" onclick="showScreen('history')" id="nav-history" style="min-width:60px;"><i class="ti ti-history bnav-icon"></i>履歴</div>
   <div class="bnav-item" onclick="masterUnlocked?showScreen('master'):openMasterPwModal()" id="nav-master" style="min-width:60px;"><i class="ti ti-layout-grid bnav-icon"></i>マスタ</div>
 </div>
+  <div id="chara-bg-circle"></div>
   <!-- フッターの裏から生えてくるキャラ画像 -->
   <img src="https://drive.google.com/thumbnail?id=1chiSItZQrcVpr42zmEa3d5_EiJslSlKT&sz=w800"
     id="home-chara"
@@ -587,6 +590,24 @@ function buildWarehouseSelects(){
   if(selD) for(var i=0;i<selD.options.length;i++){if(selD.options[i].value==='事務所'||selD.options[i].text==='事務所'){selD.selectedIndex=i;break;}}
 }
 
+(function initCharaBg(){
+  var el=document.getElementById('chara-bg-circle');
+  if(!el)return;
+  var imgs=[];
+  fetch('https://api.github.com/repos/kogito8940-dot/stock-app/contents/chara-bg')
+    .then(function(r){return r.ok?r.json():[];})
+    .then(function(files){
+      if(!Array.isArray(files))return;
+      imgs=files.filter(function(f){return f.type==='file'&&/\.(jpg|jpeg|png|gif|webp)$/i.test(f.name);}).map(function(f){return f.download_url;});
+      if(imgs.length)setRandom();
+    }).catch(function(){});
+  function setRandom(){
+    if(!imgs.length)return;
+    var url=imgs[Math.floor(Math.random()*imgs.length)];
+    el.style.backgroundImage='url('+url+')';
+  }
+  setInterval(function(){setRandom();},5*60*1000);
+})();
 window.onload=function(){
   document.querySelector('.app-shell').classList.add('on-home');
   document.getElementById('modal-start-btn').addEventListener('click',startSession);
