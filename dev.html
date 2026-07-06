@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.16 -->
+<!-- v3o.17 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -16,7 +16,7 @@
   --text:#111827;--text2:#6b7280;--text3:#9ca3af;
   --border:#e5e7eb;--radius:18px;
 }
-html,body{height:100%;margin:0;padding:0;}
+html,body{height:100%;margin:0;padding:0;}h
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);background:var(--bg);display:flex;flex-direction:column;}
 @media(min-width:600px){
   body{background:#444;align-items:center;justify-content:flex-start;padding:20px 0;}
@@ -1491,7 +1491,7 @@ function getAllCategories(){
   var cats=[];
   masterAll.forEach(function(p){var c=p['カテゴリ'];if(c&&cats.indexOf(c)===-1)cats.push(c);});
   pendingCategories.forEach(function(c){if(cats.indexOf(c)===-1)cats.push(c);});
-  cats.sort(jaSort);return cats;
+  return cats;
 }
 async function loadMasterAll(){
   try{
