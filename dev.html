@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.15 -->
+<!-- v3o.16 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -514,7 +514,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
       </div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:8px">
-      <select id="masterCatFilter" onchange="renderMasterList()" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--surface)"><option value="">全カテゴリ</option></select>
+      <select id="masterCatFilter" onchange="renderMasterList()" style="flex:1;min-width:0;max-width:150px;overflow:hidden;text-overflow:ellipsis;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;background:var(--surface)"><option value="">全カテゴリ</option></select>
       <input type="text" id="masterSearch" placeholder="商品名・SKU検索" oninput="renderMasterList()" style="flex:2;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;">
     </div>
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
