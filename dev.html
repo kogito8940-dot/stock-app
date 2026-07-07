@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.23 -->
+<!-- v3o.24 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -492,6 +492,10 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',-apple-system,Blink
     <div style="padding:0 14px 6px;display:flex;align-items:center;gap:6px;">
       <input type="checkbox" id="hist-show-cancel" onchange="renderHistoryList()">
       <label for="hist-show-cancel" style="font-size:12px;color:var(--text2);">取消ログも表示する</label>
+    </div>
+    <div style="padding:0 14px 6px;display:flex;align-items:center;gap:6px;">
+      <input type="checkbox" id="hist-show-cancelled" onchange="renderHistoryList()">
+      <label for="hist-show-cancelled" style="font-size:12px;color:var(--text2);">取消済みも表示</label>
     </div>
     <div id="hist-count" style="padding:4px 14px 6px;font-size:12px;color:var(--text3);"></div>
     <div id="history-log-list" style="padding:0 12px 80px;"><div class="loading">読み込み中...</div></div>
@@ -1132,9 +1136,12 @@ function renderHistoryList(){
   var typeFilter=document.getElementById('hist-type-filter').value;
   var warehouseFilter=document.getElementById('hist-warehouse-filter').value;
   var showCancel=document.getElementById('hist-show-cancel').checked;
-  var now=new Date();
+var showCancelled=document.getElementById('hist-show-cancelled').checked;
+    var now=new Date();
+  var preCancelledIds={};historyLogs.forEach(function(r){var m=(r['備考']||'').match(/取消（元LOG_ID:\s*([^）]+)）/);if(m)preCancelledIds[m[1].trim()]=true;});
   var filtered=historyLogs.filter(function(r){
     if(!showCancel&&r['操作種別']&&r['操作種別'].indexOf('取消')===0) return false;
+    if(!showCancelled&&preCancelledIds[r['LOG_ID']])return false;
     var d=parseJSTDate(r['日時']);
     if(histDateFilter==='today'){if(d.toDateString()!==now.toDateString()) return false;}
     else if(histDateFilter==='week'){var wa=new Date(now);wa.setDate(wa.getDate()-7);if(d<wa) return false;}
