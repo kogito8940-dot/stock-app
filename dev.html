@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.21 -->
+<!-- v3o.22 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1619,7 +1619,7 @@ function createNewCategory(){
   var name=document.getElementById('new-category-name').value.trim();
   if(!name){showToast('カテゴリ名を入力してください');return;}
   if(getAllCategories().indexOf(name)!==-1){showToast('そのカテゴリ名はすでに存在します');return;}
-  pendingCategories.push(name);document.getElementById('new-category-name').value='';
+  categoryOrder.push(name);saveCategoryOrderToServer(categoryOrder);pendingCategories.push(name);document.getElementById('new-category-name').value='';
   populateCategorySelects();renderCategoryManageList();showToast('✅ カテゴリ「'+name+'」を作成しました');
 }
 var renameTargetCategory=null;
