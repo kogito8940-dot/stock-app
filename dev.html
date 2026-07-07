@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<!-- v3o.24 -->
+<!-- v3o.25 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>在庫管理</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -420,6 +419,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',-apple-system,Blink
     </div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
       <button onclick="printStockList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="ti ti-printer" style="margin-right:4px;"></i>PDF出力</button>
+    </div>
+    <div id="stock-type-tabs" style="display:flex;gap:6px;padding:4px 12px 8px;overflow-x:auto;">
+      <div class="filter-btn active" id="stt-all" onclick="setStockTypeFilter('',this)">すべて</div>
+      <div class="filter-btn" id="stt-import" onclick="setStockTypeFilter('import',this)">仕入・輸入品</div>
+      <div class="filter-btn" id="stt-sub" onclick="setStockTypeFilter('sub',this)">小分け品</div>
     </div>
     <div id="stock-list"><div class="loading">読み込み中...</div></div>
   </div>
@@ -1017,7 +1021,7 @@ var scanModeBarcode = false;
 // ============================================================
 // 在庫確認
 // ============================================================
-var currentWarehouseFilter='all',currentStockCategory='';
+var currentWarehouseFilter='all',currentStockCategory='',currentStockTypeFilter='';
 function renderStockWarehouseTabs(){
   var tabHtml='<div class="filter-btn'+(currentWarehouseFilter==='all'?' active':'')+'" onclick="switchStockWarehouse(\'all\')" style="white-space:nowrap;">すべて</div>';
   warehouses.forEach(function(w){
@@ -1049,7 +1053,8 @@ function renderStockCategories(){
   });
   document.getElementById('stock-category-list').innerHTML=html;
 }
-function selectStockCategory(cat){currentStockCategory=cat;document.getElementById('stock-bc-category').textContent=cat;showScreen('stock-items');}
+function selectStockCategory(cat){currentStockCategory=cat;document.getElementById('stock-bc-category').textContent=cat;currentStockTypeFilter='';document.querySelectorAll('#stock-type-tabs .filter-btn').forEach(function(b){b.classList.remove('active');});var allBtn=document.getElementById('stt-all');if(allBtn)allBtn.classList.add('active');showScreen('stock-items');}
+function setStockTypeFilter(v,el){currentStockTypeFilter=v;document.querySelectorAll('#stock-type-tabs .filter-btn').forEach(function(b){b.classList.remove('active');});el.classList.add('active');renderStock();}
 function renderStock(){
   var el=document.getElementById('stock-list');
   if(summary.length===0){el.innerHTML='<div class="loading">読み込み中...</div>';return;}
@@ -1058,8 +1063,10 @@ function renderStock(){
     if(!m||!(m['有効']===true||m['有効']==='TRUE'))return false;
     if(currentWarehouseFilter==='創造社倉庫'&&m['商品区分']==='小分け品')return false;
     if(currentWarehouseFilter==='import'&&m['商品区分']!=='輸入品')return false;
-    if(!currentStockCategory) return true;
-    return (m['カテゴリ']||'未分類')===currentStockCategory;
+    if(currentStockCategory&&(m['カテゴリ']||'未分類')!==currentStockCategory) return false;
+    if(currentStockTypeFilter==='import'&&m['商品区分']!=='輸入品'&&m['商品区分']!=='仕入品') return false;
+    if(currentStockTypeFilter==='sub'&&m['商品区分']!=='小分け品') return false;
+    return true;
   });
   if(filtered.length===0){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">該当なし</div>';return;}
   var html='';
