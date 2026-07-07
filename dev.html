@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.22 -->
+<!-- v3o.23 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1492,6 +1492,7 @@ function getAllCategories(){
   var cats=[];
   masterAll.forEach(function(p){var c=p['カテゴリ'];if(c&&cats.indexOf(c)===-1)cats.push(c);});
   pendingCategories.forEach(function(c){if(cats.indexOf(c)===-1)cats.push(c);});
+  categoryOrder.forEach(function(c){if(c&&cats.indexOf(c)===-1)cats.push(c);});
   return cats;
 }
 async function loadMasterAll(){
