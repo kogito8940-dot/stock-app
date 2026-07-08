@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.26 -->
+<!-- v3o.26a -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1057,31 +1057,35 @@ function renderStockCategories(){
 }
 function selectStockCategory(cat){currentStockCategory=cat;document.getElementById('stock-bc-category').textContent=cat;currentStockTypeFilter='';document.querySelectorAll('#stock-type-tabs .filter-btn').forEach(function(b){b.classList.remove('active');});var allBtn=document.getElementById('stt-all');if(allBtn)allBtn.classList.add('active');showScreen('stock-items');}
 function setStockTypeFilter(v,el){currentStockTypeFilter=v;document.querySelectorAll('#stock-type-tabs .filter-btn').forEach(function(b){b.classList.remove('active');});el.classList.add('active');renderStock();}
-function showKodakeFrequency(){
-  if(!historyLogs||!historyLogs.length){showToast('入庫ログがありません');return;}
+async function showKodakeFrequency(){
+  // ログ未取得なら先にfetch
+  if(!historyLogs||!historyLogs.length){
+    showToast('ログを読み込み中...');
+    try{
+      var res=await fetch(API+'?action=getLogs');
+      var json=await res.json();
+      historyLogs=json.data||[];
+    }catch(e){showToast('ログ取得エラー');return;}
+  }
   var logs=historyLogs.filter(function(r){return r['操作種別']==='入庫';});
   if(!logs.length){showToast('入庫ログがありません');return;}
-  // Date range
   var dates=logs.map(function(r){return new Date(r['日時']);}).filter(function(d){return !isNaN(d);});
   var minDate=new Date(Math.min.apply(null,dates));
   var maxDate=new Date(Math.max.apply(null,dates));
   var months=Math.max(1,((maxDate.getFullYear()-minDate.getFullYear())*12+(maxDate.getMonth()-minDate.getMonth()))+1);
-  // Count by SKU_ID (小分け品 only)
   var counts={};
   logs.forEach(function(r){
     var sku=r['SKU_ID'];
     var prod=masterAll.find(function(m){return m['SKU_ID']===sku;});
     if(prod&&prod['商品区分']==='小分け品'){counts[sku]=(counts[sku]||0)+1;}
   });
-  // Build ranking
+  if(!Object.keys(counts).length){showToast('小分け品の入庫ログがありません');return;}
   var ranking=Object.keys(counts).map(function(sku){
     var prod=masterAll.find(function(m){return m['SKU_ID']===sku;})||{};
     return {name:(prod['商品名']||sku),size:(prod['サイズ']||''),cat:(prod['カテゴリ']||''),count:counts[sku],perMonth:(counts[sku]/months).toFixed(1)};
   }).sort(function(a,b){return b.count-a.count;});
-  // Render period
   var fmt=function(d){return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate();};
   document.getElementById('kodake-freq-period').textContent=fmt(minDate)+' 〜 '+fmt(maxDate)+'（'+months+'ヶ月）';
-  // Render list
   document.getElementById('kodake-freq-list').innerHTML=ranking.map(function(r,i){
     var col=i<3?'var(--primary)':'var(--text2)';
     return '<div style="display:flex;align-items:center;padding:10px 4px;border-bottom:1px solid var(--border);">'
@@ -1098,6 +1102,7 @@ function showKodakeFrequency(){
   }).join('');
   document.getElementById('kodake-freq-modal').style.display='flex';
 }
+
 function renderStock(){
   var el=document.getElementById('stock-list');
   if(summary.length===0){el.innerHTML='<div class="loading">読み込み中...</div>';return;}
