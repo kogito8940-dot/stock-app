@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.26c -->
+<!-- v3o.26d -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1067,15 +1067,24 @@ async function showKodakeFrequency(){
       historyLogs=json.data||[];
     }catch(e){showToast('ログ取得エラー');return;}
   }
-  var logs=historyLogs.filter(function(r){return r['操作種別']==='入庫';});
+  var cancelledIds={};
+  historyLogs.forEach(function(r){
+    var m=(r['備考']||'').match(/取消（元LOG_ID:\s*([^）]+)）/);
+    if(m)cancelledIds[m[1].trim()]=true;
+  });
+  var logs=historyLogs.filter(function(r){return r['操作種別']==='\u5165庫'&&!cancelledIds[r['LOG_ID']];});
   if(!logs.length){showToast('入庫ログがありません');return;}
-      var counts={};
-    logs.forEach(function(r){
-      var sku=r['SKU_ID'];
-      var prod=masterAll.find(function(m){return m['SKU_ID']===sku;});
-      if(prod&&prod['商品区分']==='小分け品'){counts[sku]=(counts[sku]||0)+1;}
-    });
-    if(!Object.keys(counts).length){showToast('小分け品の入庫ログがありません');return;}
+  var counts={},seenDays={};
+  logs.forEach(function(r){
+    var sku=r['SKU_ID'];
+    var prod=masterAll.find(function(m){return m['SKU_ID']===sku;});
+    if(prod&&prod['商品区分']==='小分け品'){
+      var day=String(r['日時']||'').slice(0,10);
+      var key=sku+'|'+day;
+      if(!seenDays[key]){seenDays[key]=true;counts[sku]=(counts[sku]||0)+1;}
+    }
+  });
+  if(!Object.keys(counts).length){showToast('小分け品の入庫ログがありません');return;}
     var kodakeDates=logs.filter(function(r){
       var p=masterAll.find(function(m){return m['SKU_ID']===r['SKU_ID'];});
       return p&&p['商品区分']==='小分け品';
