@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<!-- v3o.26a -->
+<!-- v3o.26b -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>在庫管理</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -1069,17 +1068,20 @@ async function showKodakeFrequency(){
   }
   var logs=historyLogs.filter(function(r){return r['操作種別']==='入庫';});
   if(!logs.length){showToast('入庫ログがありません');return;}
-  var dates=logs.map(function(r){return new Date(r['日時']);}).filter(function(d){return !isNaN(d);});
-  var minDate=new Date(Math.min.apply(null,dates));
-  var maxDate=new Date(Math.max.apply(null,dates));
-  var months=Math.max(1,((maxDate.getFullYear()-minDate.getFullYear())*12+(maxDate.getMonth()-minDate.getMonth()))+1);
-  var counts={};
-  logs.forEach(function(r){
-    var sku=r['SKU_ID'];
-    var prod=masterAll.find(function(m){return m['SKU_ID']===sku;});
-    if(prod&&prod['商品区分']==='小分け品'){counts[sku]=(counts[sku]||0)+1;}
-  });
-  if(!Object.keys(counts).length){showToast('小分け品の入庫ログがありません');return;}
+      var counts={};
+    logs.forEach(function(r){
+      var sku=r['SKU_ID'];
+      var prod=masterAll.find(function(m){return m['SKU_ID']===sku;});
+      if(prod&&prod['商品区分']==='小分け品'){counts[sku]=(counts[sku]||0)+1;}
+    });
+    if(!Object.keys(counts).length){showToast('小分け品の入庫ログがありません');return;}
+    var kodakeDates=logs.filter(function(r){
+      var p=masterAll.find(function(m){return m['SKU_ID']===r['SKU_ID'];});
+      return p&&p['商品区分']==='小分け品';
+    }).map(function(r){return new Date(r['日時']);}).filter(function(d){return !isNaN(d);});
+    var minDate=new Date(Math.min.apply(null,kodakeDates));
+    var maxDate=new Date(Math.max.apply(null,kodakeDates));
+    var months=Math.max(1,((maxDate.getFullYear()-minDate.getFullYear())*12+(maxDate.getMonth()-minDate.getMonth()))+1);
   var ranking=Object.keys(counts).map(function(sku){
     var prod=masterAll.find(function(m){return m['SKU_ID']===sku;})||{};
     return {name:(prod['商品名']||sku),size:(prod['サイズ']||''),cat:(prod['カテゴリ']||''),count:counts[sku],perMonth:(counts[sku]/months).toFixed(1)};
