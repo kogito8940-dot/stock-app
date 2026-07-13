@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.26d -->
+<!-- v3o.27 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -744,12 +744,15 @@ function showScreen(name){
 }
 function goBack(){screenStack.pop();var prev=screenStack.pop()||'home';showScreen(prev);}
 
-var scanStream=null,scanAnimFrame=null,scanActive=false;
+var scanStream=null,scanAnimFrame=null,scanActive=false,scanDetecting=false,scanBD=null;
 
 function startScan(){
   var modal=document.getElementById('scanModal');
   modal.style.display='flex';modal.style.flexDirection='column';
-  scanActive=true;
+  scanActive=true;scanBD=null;
+  if(typeof BarcodeDetector!=='undefined'){
+    try{scanBD=new BarcodeDetector({formats:['qr_code','ean_13','ean_8','code_128','code_39','upc_a','upc_e','itf','codabar','data_matrix','pdf417','aztec']});}catch(e){}
+  }
   document.getElementById('scanStatus').textContent='カメラを起動中...';
   navigator.mediaDevices.getUserMedia({
     video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}
@@ -759,7 +762,7 @@ function startScan(){
     video.srcObject=stream;
     video.play();
     video.addEventListener('loadedmetadata',function(){
-      document.getElementById('scanStatus').textContent='QRコードまたはバーコードを枠内に合わせてください';
+      document.getElementById('scanStatus').textContent='QRコードかバーコードを画面に合わせてください';
       scanFrame();
     });
   }).catch(function(e){
@@ -768,7 +771,7 @@ function startScan(){
 }
 
 function scanFrame(){
-  if(!scanActive) return;
+  if(!scanActive)return;
   var video=document.getElementById('scanVideo');
   var canvas=document.getElementById('scanCanvas');
   if(video.readyState===video.HAVE_ENOUGH_DATA){
@@ -776,17 +779,25 @@ function scanFrame(){
     canvas.height=video.videoHeight;
     var ctx=canvas.getContext('2d');
     ctx.drawImage(video,0,0,canvas.width,canvas.height);
-    var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-    var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'attemptBoth'});
-    if(code){onScanSuccess(code.data);return;}
+    if(scanBD&&!scanDetecting){
+      scanDetecting=true;
+      scanBD.detect(canvas).then(function(codes){
+        scanDetecting=false;
+        if(codes.length>0&&scanActive){onScanSuccess(codes[0].rawValue);}
+      }).catch(function(){scanDetecting=false;});
+    }else if(!scanBD){
+      var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+      var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'attemptBoth'});
+      if(code){onScanSuccess(code.data);return;}
+    }
   }
   scanAnimFrame=requestAnimationFrame(scanFrame);
 }
 
 function stopScan(){
-  scanActive=false;
-  if(scanAnimFrame) cancelAnimationFrame(scanAnimFrame);
-  if(scanStream) scanStream.getTracks().forEach(function(t){t.stop();});
+  scanActive=false;scanDetecting=false;scanBD=null;
+  if(scanAnimFrame)cancelAnimationFrame(scanAnimFrame);
+  if(scanStream)scanStream.getTracks().forEach(function(t){t.stop();});
   scanStream=null;
   document.getElementById('scanModal').style.display='none';
 }
