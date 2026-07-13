@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.26d -->
+<!-- v3o.27-scan-v2 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -262,20 +262,12 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',-apple-system,Blink
     <button onclick="stopScan()" style="background:none;border:none;color:#fff;font-size:28px;cursor:pointer;line-height:1;padding:0;">‹</button>
     <div style="font-size:16px;font-weight:600;color:#fff;flex:1;">バーコードをスキャン</div>
   </div>
-  <div style="flex:1;position:relative;overflow:hidden;">
-    <video id="scanVideo" style="width:100%;height:100%;object-fit:cover;" playsinline></video>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:20px;">
+    <input type="file" id="scanFileInput" accept="image/*" capture="environment" style="display:none;">
     <canvas id="scanCanvas" style="display:none;"></canvas>
-    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-      <div style="width:240px;height:240px;position:relative;">
-        <div style="position:absolute;top:0;left:0;width:32px;height:32px;border-top:3px solid #4ade80;border-left:3px solid #4ade80;border-radius:4px 0 0 0;"></div>
-        <div style="position:absolute;top:0;right:0;width:32px;height:32px;border-top:3px solid #4ade80;border-right:3px solid #4ade80;border-radius:0 4px 0 0;"></div>
-        <div style="position:absolute;bottom:0;left:0;width:32px;height:32px;border-bottom:3px solid #4ade80;border-left:3px solid #4ade80;border-radius:0 0 0 4px;"></div>
-        <div style="position:absolute;bottom:0;right:0;width:32px;height:32px;border-bottom:3px solid #4ade80;border-right:3px solid #4ade80;border-radius:0 0 4px 0;"></div>
-      </div>
-    </div>
-  </div>
-  <div style="background:#111;padding:16px;text-align:center;flex-shrink:0;">
-    <div id="scanStatus" style="font-size:14px;color:#9ca3af;">QRコードまたはバーコードを枠内に合わせてください</div>
+    <img id="scanPreview" style="max-width:100%;max-height:40vh;display:none;border-radius:8px;object-fit:contain;">
+    <div id="scanStatus" style="font-size:14px;color:#9ca3af;text-align:center;">カメラで撮影してください</div>
+    <button onclick="document.getElementById('scanFileInput').click()" style="background:#fff;border:none;color:#111;font-size:16px;font-weight:700;padding:16px 48px;border-radius:16px;cursor:pointer;">撮影する</button>
   </div>
 </div>
 
@@ -744,51 +736,55 @@ function showScreen(name){
 }
 function goBack(){screenStack.pop();var prev=screenStack.pop()||'home';showScreen(prev);}
 
-var scanStream=null,scanAnimFrame=null,scanActive=false;
+var scanActive=false;
 
 function startScan(){
   var modal=document.getElementById('scanModal');
   modal.style.display='flex';modal.style.flexDirection='column';
   scanActive=true;
-  document.getElementById('scanStatus').textContent='カメラを起動中...';
-  navigator.mediaDevices.getUserMedia({
-    video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}
-  }).then(function(stream){
-    scanStream=stream;
-    var video=document.getElementById('scanVideo');
-    video.srcObject=stream;
-    video.play();
-    video.addEventListener('loadedmetadata',function(){
-      document.getElementById('scanStatus').textContent='QRコードまたはバーコードを枠内に合わせてください';
-      scanFrame();
-    });
-  }).catch(function(e){
-    document.getElementById('scanStatus').textContent='カメラの起動に失敗しました: '+e.message;
-  });
+  document.getElementById('scanStatus').textContent='カメラで撮影してください';
+  document.getElementById('scanPreview').style.display='none';
+  var inp=document.getElementById('scanFileInput');
+  inp.value='';
+  inp.onchange=function(e){
+    var file=e.target.files[0];
+    if(!file)return;
+    handleScanFile(file);
+  };
+  inp.click();
 }
 
-function scanFrame(){
-  if(!scanActive) return;
-  var video=document.getElementById('scanVideo');
+async function handleScanFile(file){
+  var url=URL.createObjectURL(file);
+  var img=document.getElementById('scanPreview');
+  img.style.display='block';
+  img.src=url;
+  document.getElementById('scanStatus').textContent='デコード中...';
+  await new Promise(function(r){img.onload=r;});
   var canvas=document.getElementById('scanCanvas');
-  if(video.readyState===video.HAVE_ENOUGH_DATA){
-    canvas.width=video.videoWidth;
-    canvas.height=video.videoHeight;
-    var ctx=canvas.getContext('2d');
-    ctx.drawImage(video,0,0,canvas.width,canvas.height);
-    var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-    var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'attemptBoth'});
-    if(code){onScanSuccess(code.data);return;}
+  canvas.width=img.naturalWidth;
+  canvas.height=img.naturalHeight;
+  var ctx=canvas.getContext('2d');
+  ctx.drawImage(img,0,0);
+  URL.revokeObjectURL(url);
+  if(typeof BarcodeDetector!=='undefined'){
+    try{
+      var bd=new BarcodeDetector({formats:['qr_code','ean_13','ean_8','code_128','code_39','upc_a','upc_e','itf','codabar','data_matrix','pdf417','aztec']});
+      var codes=await bd.detect(canvas);
+      if(codes.length>0){onScanSuccess(codes[0].rawValue);return;}
+    }catch(e){}
   }
-  scanAnimFrame=requestAnimationFrame(scanFrame);
+  var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+  var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'attemptBoth'});
+  if(code){onScanSuccess(code.data);return;}
+  document.getElementById('scanStatus').textContent='読み取れませんでした。もう一度撮影してください';
+  document.getElementById('scanFileInput').value='';
 }
 
 function stopScan(){
   scanActive=false;
-  if(scanAnimFrame) cancelAnimationFrame(scanAnimFrame);
-  if(scanStream) scanStream.getTracks().forEach(function(t){t.stop();});
-  scanStream=null;
   document.getElementById('scanModal').style.display='none';
+  document.getElementById('scanPreview').style.display='none';
 }
 async function onScanSuccess(code){
   stopScan();
