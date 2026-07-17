@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.29 -->
+<!-- v3o.30 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -910,7 +910,7 @@ function selectSku(skuId,name,size,unit){
   if(session.mode==='移動') metaHtml+='<span class="product-meta-item" style="background:rgba(26,115,232,.1);color:#1a73e8">→ '+session.dest+'</span>';
   metaHtml+='<span class="product-meta-item">'+session.staff+'</span>';
   metaHtml+='<span class="product-meta-item" style="background:'+modeBg[session.mode]+';color:'+modeColor[session.mode]+'">'+session.mode+'</span>';
-  var stockHtml='';if(session.mode!=='入庫'){var si=summary.find(function(s){return s['SKU_ID']===skuId;});var wf={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'}[session.warehouse];var sq=si&&wf?parseFloat(si[wf])||0:0;stockHtml='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);">現在庫（'+session.warehouse+'）<span style="font-weight:700;font-size:20px;color:var(--primary);margin-left:6px;">'+sq+'</span> <span style="font-size:12px;">'+unit+'</span></div>';}
+    var si=summary.find(function(s){return s['SKU_ID']===skuId;});var wf={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'}[session.warehouse];var sq=si&&wf?parseFloat(si[wf])||0:0;var stockHtml='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);">現在庫（'+session.warehouse+'）<span style="font-weight:700;font-size:20px;color:var(--primary);margin-left:6px;">'+sq+'</span> <span style="font-size:12px;">'+unit+'</span></div>';
   document.getElementById('product-confirm').innerHTML='<div class="product-name">'+name+' '+size+'</div><div class="product-sku">'+skuId+'</div><div class="product-meta">'+metaHtml+'</div>'+stockHtml;
   var ml={入庫:'✓ 入庫を記録する',出庫:'✓ 出庫を記録する',移動:'✓ 移動を記録する'};
   var btn=document.getElementById('record-btn');
