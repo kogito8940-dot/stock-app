@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.30 -->
+<!-- v3o.31 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1104,9 +1104,10 @@ async function showKodakeFrequency(){
     var minDate=new Date(Math.min.apply(null,kodakeDates));
     var maxDate=new Date(Math.max.apply(null,kodakeDates));
     var months=Math.max(1,((maxDate.getFullYear()-minDate.getFullYear())*12+(maxDate.getMonth()-minDate.getMonth()))+1);
+  var now=new Date();var cutoff=new Date(now);cutoff.setMonth(cutoff.getMonth()-2);var weeks=Math.max(1,(now-cutoff)/(1000*60*60*24*7));var outTypes=['出庫（販売）','出庫（使用）','出庫（廃棄）','移動（出）','出庫'];var outSums={},outUnits={};historyLogs.forEach(function(r){if(cancelledIds[r['LOG_ID']])return;if(outTypes.indexOf(r['操作種別'])<0)return;var dt=new Date(r['日時']);if(isNaN(dt)||dt<cutoff)return;var sku=r['SKU_ID'];outSums[sku]=(outSums[sku]||0)+Math.abs(parseFloat(r['数量変動'])||0);if(!outUnits[sku])outUnits[sku]=r['単位']||'';});
   var ranking=Object.keys(counts).map(function(sku){
     var prod=masterAll.find(function(m){return m['SKU_ID']===sku;})||{};
-    return {name:(prod['商品名']||sku),size:(prod['サイズ']||''),cat:(prod['カテゴリ']||''),count:counts[sku],perMonth:(counts[sku]/months).toFixed(1)};
+    var wu=Math.round((outSums[sku]||0)/weeks*10)/10;return {name:(prod['商品名']||sku),size:(prod['サイズ']||''),cat:(prod['カテゴリ']||''),count:counts[sku],perMonth:(counts[sku]/months).toFixed(1),weeklyOut:wu,unit:outUnits[sku]||prod['単位']||''};
   }).sort(function(a,b){return b.count-a.count;});
   var fmt=function(d){return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate();};
   document.getElementById('kodake-freq-period').textContent=fmt(minDate)+' 〜 '+fmt(maxDate)+'（'+months+'ヶ月）';
@@ -1121,6 +1122,7 @@ async function showKodakeFrequency(){
       +'<div style="text-align:right;flex-shrink:0;margin-left:8px;">'
         +'<div style="font-size:14px;font-weight:700;color:var(--primary);">'+r.perMonth+'<span style="font-size:10px;font-weight:400;">回/月</span></div>'
         +'<div style="font-size:11px;color:var(--text2);">計'+r.count+'回</div>'
+        +(r.weeklyOut>0?'<div style="font-size:11px;color:var(--text3);margin-top:1px;">週'+r.weeklyOut+r.unit+'出庫<\/div>':'')
       +'</div>'
     +'</div>';
   }).join('');
