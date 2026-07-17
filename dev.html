@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.27 -->
+<!-- v3o.28 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -389,6 +389,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',-apple-system,Blink
   </div>
   <div id="screen-qty" class="screen">
     <div id="product-confirm" class="product-confirm"></div>
+    <div id="current-stock-display" style="display:none;background:rgba(26,115,232,.08);border:1px solid rgba(26,115,232,.2);border-radius:10px;padding:8px 14px;text-align:center;margin-bottom:10px;"><span style="font-size:12px;color:var(--text2);">現在庫（<span id="current-stock-wh"></span>）</span><br><span style="font-size:20px;font-weight:700;color:var(--primary);" id="current-stock-qty">0</span><span style="font-size:13px;color:var(--text2);margin-left:3px;" id="current-stock-unit"></span></div>
     <div class="qty-display">
       <span class="qty-num" id="qty-display">0</span>
       <span class="qty-unit" id="qty-unit"></span>
@@ -916,6 +917,7 @@ function selectSku(skuId,name,size,unit){
   btn.textContent=ml[session.mode]||'記録する';
   btn.style.background=modeColor[session.mode]||'var(--primary)';
   showScreen('qty');
+  var sd=document.getElementById('current-stock-display');if(session.mode!=='入庫'){var si=summary.find(function(s){return s['SKU_ID']===skuId;});var wf={'\u5c71\u79d1\u5009\u5eab':'\u5c71\u79d1\u5009\u5eab_\u5728\u5eab','\u5275\u9020\u793e\u5009\u5eab':'\u5275\u9020\u793e\u5009\u5eab_\u5728\u5eab','\u4e8b\u52d9\u6240':'\u4e8b\u52d9\u6240_\u5728\u5eab'}[session.warehouse];var sq=si&&wf?parseFloat(si[wf])||0:0;document.getElementById('current-stock-wh').textContent=session.warehouse;document.getElementById('current-stock-qty').textContent=sq;document.getElementById('current-stock-unit').textContent=unit;sd.style.display='block';}else{sd.style.display='none';}
 }
 function numInput(n){if(currentQty.length>=4)return;currentQty+=n;document.getElementById('qty-display').textContent=parseInt(currentQty)||0;}
 function numDel(){currentQty=currentQty.slice(0,-1);document.getElementById('qty-display').textContent=currentQty?parseInt(currentQty):0;}
