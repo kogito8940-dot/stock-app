@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.31 -->
+<!-- v3o.32 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -924,6 +924,10 @@ function numDel(){currentQty=currentQty.slice(0,-1);document.getElementById('qty
 async function recordLog(){
   var qty=parseInt(currentQty)||0;
   if(qty===0){showToast('数量を入力してください');return;}
+  if(!session.warehouse){showToast('倉庫が未設定です。作業設定を確認してください');return;}
+  if(!session.staff){showToast('担当者名が未入力です。作業設定を確認してください');return;}
+  if(session.mode==='移動'&&!session.dest){showToast('移動先倉庫が未設定です。作業設定を確認してください');return;}
+  if(session.mode==='移動'&&session.dest===session.warehouse){showToast('移動元と移動先が同じ倉庫です');return;}
   var opMap={入庫:'入庫',出庫:session.reason||'出庫（使用）',移動:'移動（出）'};
   var sign=session.mode==='入庫'?1:-1;
   var payload={action:'addLog',操作種別:opMap[session.mode],SKU_ID:currentProduct.skuId,倉庫:session.warehouse,移動先倉庫:session.mode==='移動'?session.dest:'',即移動先倉庫:session.mode==='入庫'&&session.immediateDest?session.immediateDest:'',数量変動:qty*sign,単位:currentProduct.unit,担当者:session.staff};
