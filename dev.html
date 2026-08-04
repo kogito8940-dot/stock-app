@@ -98,6 +98,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',-apple-system,Blink
 .numpad-btn:active{background:#e8f0fe;border-color:var(--primary)}
 .numpad-btn.del{font-size:20px;color:var(--danger)}
 .numpad-btn.zero{grid-column:span 2}
+.numpad-btn.dot{font-weight:700}
 .record-btn{width:100%;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:8px;letter-spacing:-.01em;}
 .back-link{width:100%;background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:8px;text-align:center;display:block}
 .card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
@@ -397,7 +398,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',-apple-system,Blink
       <div class="numpad-btn" onclick="numInput('7')">7</div><div class="numpad-btn" onclick="numInput('8')">8</div><div class="numpad-btn" onclick="numInput('9')">9</div>
       <div class="numpad-btn" onclick="numInput('4')">4</div><div class="numpad-btn" onclick="numInput('5')">5</div><div class="numpad-btn" onclick="numInput('6')">6</div>
       <div class="numpad-btn" onclick="numInput('1')">1</div><div class="numpad-btn" onclick="numInput('2')">2</div><div class="numpad-btn" onclick="numInput('3')">3</div>
-      <div class="numpad-btn zero" onclick="numInput('0')">0</div><div class="numpad-btn del" onclick="numDel()">⌫</div>
+      <div class="numpad-btn dot" onclick="numInput('.')">.</div><div class="numpad-btn" onclick="numInput('0')">0</div><div class="numpad-btn del" onclick="numDel()">⌫</div>
     </div>
     <button class="record-btn" id="record-btn" onclick="recordLog()">記録する</button>
     <button class="back-link" onclick="goBack()">← 商品選択に戻る</button>
@@ -470,7 +471,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',-apple-system,Blink
       <div class="numpad-btn" onclick="invNumInput('7')">7</div><div class="numpad-btn" onclick="invNumInput('8')">8</div><div class="numpad-btn" onclick="invNumInput('9')">9</div>
       <div class="numpad-btn" onclick="invNumInput('4')">4</div><div class="numpad-btn" onclick="invNumInput('5')">5</div><div class="numpad-btn" onclick="invNumInput('6')">6</div>
       <div class="numpad-btn" onclick="invNumInput('1')">1</div><div class="numpad-btn" onclick="invNumInput('2')">2</div><div class="numpad-btn" onclick="invNumInput('3')">3</div>
-      <div class="numpad-btn zero" onclick="invNumInput('0')">0</div><div class="numpad-btn del" onclick="invNumDel()">⌫</div>
+      <div class="numpad-btn dot" onclick="invNumInput('.')">.</div><div class="numpad-btn" onclick="invNumInput('0')">0</div><div class="numpad-btn del" onclick="invNumDel()">⌫</div>
     </div>
     <button class="record-btn" id="inv-record-btn" onclick="recordInventory()" style="background:#f9ab00;">棚卸し修正を記録する</button>
     <button class="back-link" onclick="goBack()">← 商品一覧に戻る</button>
@@ -918,11 +919,22 @@ function selectSku(skuId,name,size,unit){
   btn.style.background=modeColor[session.mode]||'var(--primary)';
   showScreen('qty');
 }
-function numInput(n){if(currentQty.length>=4)return;currentQty+=n;document.getElementById('qty-display').textContent=parseInt(currentQty)||0;}
-function numDel(){currentQty=currentQty.slice(0,-1);document.getElementById('qty-display').textContent=currentQty?parseInt(currentQty):0;}
+// 数量入力共通（小数点2桁まで / 整数部5桁まで）
+function qtyAppend(cur,n){
+  if(n==='.'){ if(cur.indexOf('.')>=0) return cur; return cur===''?'0.':cur+'.'; }
+  var p=cur.split('.');
+  if(p.length>1){ if(p[1].length>=2) return cur; }
+  else if(p[0].length>=5){ return cur; }
+  if(cur==='0') return n;
+  return cur+n;
+}
+function qtyText(s){ return s===''?'0':s; }
+function qtyValue(s){ return Math.round((parseFloat(s)||0)*100)/100; }
+function numInput(n){currentQty=qtyAppend(currentQty,n);document.getElementById('qty-display').textContent=qtyText(currentQty);}
+function numDel(){currentQty=currentQty.slice(0,-1);document.getElementById('qty-display').textContent=qtyText(currentQty);}
 
 async function recordLog(){
-  var qty=parseInt(currentQty)||0;
+  var qty=qtyValue(currentQty);
   if(qty===0){showToast('数量を入力してください');return;}
   if(!session.warehouse){showToast('倉庫が未設定です。作業設定を確認してください');return;}
   if(!session.staff){showToast('担当者名が未入力です。作業設定を確認してください');return;}
@@ -1544,18 +1556,18 @@ function selectInvProduct(skuId){
   document.getElementById('inv-product-confirm').innerHTML='<div class="product-name">'+stock['商品名']+' '+stock['サイズ']+'</div><div class="product-sku">'+stock['SKU_ID']+'</div><div class="product-meta"><span class="product-meta-item" style="background:rgba(249,171,0,.1);color:#b06000">'+session.warehouse+'</span><span class="product-meta-item" style="background:rgba(249,171,0,.1);color:#b06000">'+session.staff+'</span><span class="product-meta-item" style="background:rgba(249,171,0,.1);color:#b06000">棚卸し</span></div>';
   showScreen('inventoryQty');
 }
-function invNumInput(n){if(invQty.length>=5) return;invQty+=n;var num=parseInt(invQty)||0;document.getElementById('inv-qty-display').textContent=num;updateInvDiff(num);}
-function invNumDel(){invQty=invQty.slice(0,-1);var num=invQty?parseInt(invQty):0;document.getElementById('inv-qty-display').textContent=num;updateInvDiff(num);}
+function invNumInput(n){invQty=qtyAppend(invQty,n);document.getElementById('inv-qty-display').textContent=qtyText(invQty);updateInvDiff(qtyValue(invQty));}
+function invNumDel(){invQty=invQty.slice(0,-1);document.getElementById('inv-qty-display').textContent=qtyText(invQty);updateInvDiff(qtyValue(invQty));}
 function updateInvDiff(actual){
   if(!currentInvProduct) return;
-  var system=parseFloat(currentInvProduct['在庫数'])||0,diff=actual-system;
+  var system=parseFloat(currentInvProduct['在庫数'])||0,diff=Math.round((actual-system)*100)/100;
   var el=document.getElementById('inv-diff-display'),btn=document.getElementById('inv-record-btn');
   if(diff===0){el.textContent='差分なし（記録不要）';el.style.background='#e6f4ea';el.style.color='#137333';btn.style.opacity='0.4';btn.disabled=true;}
   else{el.textContent='差分: '+(diff>0?'+':'')+diff+currentInvProduct['単位']+'（棚卸し修正を記録します）';el.style.background=diff>0?'#e8f0fe':'#fce8e6';el.style.color=diff>0?'#1a73e8':'#c5221f';btn.style.opacity='1';btn.disabled=false;}
 }
 async function recordInventory(){
   if(!currentInvProduct) return;
-  var actual=parseInt(invQty)||0,system=parseFloat(currentInvProduct['在庫数'])||0,diff=actual-system;
+  var actual=qtyValue(invQty),system=parseFloat(currentInvProduct['在庫数'])||0,diff=Math.round((actual-system)*100)/100;
   if(diff===0){showToast('差分がないため記録不要です');return;}
   var btn=document.getElementById('inv-record-btn');btn.disabled=true;btn.textContent='記録中...';
   try{
