@@ -911,7 +911,7 @@ function selectSku(skuId,name,size,unit){
   if(session.mode==='移動') metaHtml+='<span class="product-meta-item" style="background:rgba(26,115,232,.1);color:#1a73e8">→ '+session.dest+'</span>';
   metaHtml+='<span class="product-meta-item">'+session.staff+'</span>';
   metaHtml+='<span class="product-meta-item" style="background:'+modeBg[session.mode]+';color:'+modeColor[session.mode]+'">'+session.mode+'</span>';
-    var si=summary.find(function(s){return s['SKU_ID']===skuId;});var wf={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'}[session.warehouse];var sq=si&&wf?parseFloat(si[wf])||0:0;var stockHtml='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);">現在庫（'+session.warehouse+'）<span style="font-weight:700;font-size:20px;color:var(--primary);margin-left:6px;">'+sq+'</span> <span style="font-size:12px;">'+unit+'</span></div>';
+    var si=summary.find(function(s){return s['SKU_ID']===skuId;});var wf={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'}[session.warehouse];var sq=si&&wf?num2(si[wf]):0;var stockHtml='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);">現在庫（'+session.warehouse+'）<span style="font-weight:700;font-size:20px;color:var(--primary);margin-left:6px;">'+fmtQty(sq)+'</span> <span style="font-size:12px;">'+unit+'</span></div>';
   document.getElementById('product-confirm').innerHTML='<div class="product-name">'+name+' '+size+'</div><div class="product-sku">'+skuId+'</div><div class="product-meta">'+metaHtml+'</div>'+stockHtml;
   var ml={入庫:'✓ 入庫を記録する',出庫:'✓ 出庫を記録する',移動:'✓ 移動を記録する'};
   var btn=document.getElementById('record-btn');
@@ -930,6 +930,9 @@ function qtyAppend(cur,n){
 }
 function qtyText(s){ return s===''?'0':s; }
 function qtyValue(s){ return Math.round((parseFloat(s)||0)*100)/100; }
+// 浮動小数点誤差対策：数値は小数点2桁で丸めて扱う / 表示する
+function num2(v){ return Math.round((parseFloat(v)||0)*100)/100; }
+function fmtQty(v){ if(v===''||v===null||v===undefined) return ''; var n=parseFloat(v); if(isNaN(n)) return String(v); return String(Math.round(n*100)/100); }
 function numInput(n){currentQty=qtyAppend(currentQty,n);document.getElementById('qty-display').textContent=qtyText(currentQty);}
 function numDel(){currentQty=currentQty.slice(0,-1);document.getElementById('qty-display').textContent=qtyText(currentQty);}
 
@@ -961,7 +964,7 @@ function renderHistory(){
   el.innerHTML=sessionHistory.slice(0,5).map(function(h){
     var isMove=h.mode==='移動',isIn=h.qty>0;
     var bc=isMove?'move':isIn?'in':'out',bt=isMove?'移動':isIn?'入庫':'出庫',qc=isMove?'move':isIn?'plus':'minus';
-    return '<div class="history-item"><span class="history-badge '+bc+'">'+bt+'</span><div class="history-name">'+h.name+(isMove?' →'+h.dest:'')+'</div><div class="history-qty '+qc+'">'+(isIn&&!isMove?'+':'')+h.qty+'</div><div style="font-size:11px;color:var(--text3);margin-left:2px">'+h.unit+'</div></div>';
+    return '<div class="history-item"><span class="history-badge '+bc+'">'+bt+'</span><div class="history-name">'+h.name+(isMove?' →'+h.dest:'')+'</div><div class="history-qty '+qc+'">'+(isIn&&!isMove?'+':'')+fmtQty(h.qty)+'</div><div style="font-size:11px;color:var(--text3);margin-left:2px">'+h.unit+'</div></div>';
   }).join('');
 }
 function updateHome(){}
@@ -1161,10 +1164,10 @@ function renderStock(){
   if(filtered.length===0){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">該当なし</div>';return;}
   var html='';
   filtered.forEach(function(item){
-    var y=parseFloat(item['山科倉庫_在庫'])||0,s=parseFloat(item['創造社倉庫_在庫'])||0,o=parseFloat(item['事務所_在庫'])||0;
-    var q=(currentWarehouseFilter==='all'||currentWarehouseFilter==='import')?y+s+o:currentWarehouseFilter==='山科倉庫'?y:currentWarehouseFilter==='創造社倉庫'?s:o;
+    var y=num2(item['山科倉庫_在庫']),s=num2(item['創造社倉庫_在庫']),o=num2(item['事務所_在庫']);
+    var q=num2((currentWarehouseFilter==='all'||currentWarehouseFilter==='import')?y+s+o:currentWarehouseFilter==='山科倉庫'?y:currentWarehouseFilter==='創造社倉庫'?s:o);
     var st=item['ステータス']||'正常',bc=st==='欠品'?'badge-ng':st==='要補充'?'badge-warn':'badge-ok';
-    html+='<div class="list-item" style="cursor:default"><div style="flex:1"><div class="list-item-name">'+(item['商品名']||'')+' '+(item['サイズ']||'')+'</div></div><div style="text-align:right"><div style="font-size:20px;font-weight:700">'+q+'</div><span class="badge '+bc+'">'+st+'</span></div></div>';
+    html+='<div class="list-item" style="cursor:default"><div style="flex:1"><div class="list-item-name">'+(item['商品名']||'')+' '+(item['サイズ']||'')+'</div></div><div style="text-align:right"><div style="font-size:20px;font-weight:700">'+fmtQty(q)+'</div><span class="badge '+bc+'">'+st+'</span></div></div>';
   });
   el.innerHTML=html;
 }
@@ -1192,7 +1195,7 @@ function printStockList(){
   Object.keys(grouped).sort(jaSort).forEach(function(cat){
     var items=grouped[cat];
     html+='<div class="category">'+cat+'</div><table><colgroup><col style="width:34%"><col style="width:18%"><col style="width:9%"><col style="width:13%"><col style="width:16%"></colgroup><tr><th>商品名</th><th>サイズ</th><th style="text-align:center;">単位</th><th class="qty-col">在庫数</th><th class="status-col">ステータス</th></tr>';
-    items.forEach(function(item){var c=sc[item['ステータス']]||sc['正常'];html+='<tr><td>'+item['商品名']+'</td><td>'+item['サイズ']+'</td><td style="text-align:center;">'+item['単位']+'</td><td class="qty-col">'+item['在庫数']+'</td><td class="status-col"><span class="status-badge" style="background:'+c.bg+';color:'+c.fg+';">'+item['ステータス']+'</span></td></tr>';});
+    items.forEach(function(item){var c=sc[item['ステータス']]||sc['正常'];html+='<tr><td>'+item['商品名']+'</td><td>'+item['サイズ']+'</td><td style="text-align:center;">'+item['単位']+'</td><td class="qty-col">'+fmtQty(item['在庫数'])+'</td><td class="status-col"><span class="status-badge" style="background:'+c.bg+';color:'+c.fg+';">'+item['ステータス']+'</span></td></tr>';});
     html+='</table>';
   });
   html+='</body></html>';
@@ -1276,7 +1279,7 @@ function renderSingleCard(r,cancelledIds,typeColors,typeTextColors){
   var isCancelled=r['操作種別']&&r['操作種別'].indexOf('取消')===0;
   var alreadyCancelled=cancelledIds[r['LOG_ID']]===true;
   var canCancel=!isCancelled&&!alreadyCancelled&&r['LOG_ID'];
-  var qty=parseFloat(r['数量変動'])||0;
+  var qty=num2(r['数量変動']);
   var qtyColor=qty>0?'var(--success)':qty<0?'var(--danger)':'var(--text2)';
   var qtyStr=(qty>0?'+':'')+qty;
   var bg=typeColors[r['操作種別']]||'#f3f4f6';
@@ -1317,7 +1320,7 @@ function renderGroupCard(g,cancelledIds){
   var inRow2=items.find(function(r){return r['操作種別']==='移動（入）';});
   var fromWarehouse=inRow?inRow['倉庫']:outRow?outRow['倉庫']:'';
   var toWarehouse=outRow?outRow['移動先倉庫']:inRow2?inRow2['倉庫']:'';
-  var finalQty=Math.abs(inRow2?Number(inRow2['数量変動'])||0:Number(items[items.length-1]['数量変動'])||0);
+  var finalQty=num2(Math.abs(inRow2?Number(inRow2['数量変動'])||0:Number(items[items.length-1]['数量変動'])||0));
   var finalUnit=inRow2?inRow2['単位']||'':items[items.length-1]['単位']||'';
   var alreadyCancelled=items.some(function(r){return cancelledIds[r['LOG_ID']]===true;});
 
@@ -1414,11 +1417,11 @@ function printReplenishList(){
   summary.forEach(function(item){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!m||!(m['有効']===true||m['有効']==='TRUE'))return;
-    var stock=parseFloat(item[stockKey])||0;
+    var stock=num2(item[stockKey]);
     var ms=minStockData.find(function(r){return r['SKU_ID']===item['SKU_ID']&&r['倉庫名']===wName;});
     var minStock=ms?parseFloat(ms['最低在庫数'])||0:0,maxStock=ms?parseFloat(ms['最大在庫数'])||0:0;
     if(minStock===0) return;
-    var needQty=maxStock>0?Math.max(maxStock-stock,0):Math.max(minStock-stock,0);
+    var needQty=num2(maxStock>0?Math.max(maxStock-stock,0):Math.max(minStock-stock,0));
     if(m['商品区分']==='小分け品'&&stock<minStock) reorder.push({item:item,stock:stock,minStock:minStock,maxStock:maxStock,needQty:needQty});
     else if(m['商品区分']==='仕入品'&&stock===0) needPurchase.push({item:item,stock:stock,minStock:minStock,maxStock:maxStock,needQty:needQty});
   });
@@ -1452,11 +1455,11 @@ function renderReplenishList(){
   summary.forEach(function(item){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!m||!(m['有効']===true||m['有効']==='TRUE'))return;
-    var stock=parseFloat(item[stockKey])||0;
+    var stock=num2(item[stockKey]);
     var ms=minStockData.find(function(r){return r['SKU_ID']===item['SKU_ID']&&r['倉庫名']===wName;});
     var minStock=ms?parseFloat(ms['最低在庫数'])||0:0,maxStock=ms?parseFloat(ms['最大在庫数'])||0:0;
     if(minStock===0) return;
-    var needQty=maxStock>0?Math.max(maxStock-stock,0):Math.max(minStock-stock,0);
+    var needQty=num2(maxStock>0?Math.max(maxStock-stock,0):Math.max(minStock-stock,0));
     if(m['商品区分']==='小分け品'&&stock<minStock) reorder.push({item:item,stock:stock,minStock:minStock,maxStock:maxStock,needQty:needQty});
     else if(m['商品区分']==='仕入品'&&stock===0) needPurchase.push({item:item,stock:stock,minStock:minStock,maxStock:maxStock,needQty:needQty});
   });
@@ -1464,7 +1467,7 @@ function renderReplenishList(){
   var html='';
   if(reorder.length>0){
     html+='<div style="font-size:12px;font-weight:700;color:var(--warning);margin:12px 0 6px;">要補充 '+reorder.length+'件</div>';
-    reorder.forEach(function(d){var ml=d.maxStock>0?'最大'+d.maxStock:'最大（未設定）';html+='<div class="list-item" style="cursor:default;border-color:#fef7e0;"><div style="flex:1"><div class="list-item-name">'+(d.item['商品名']||'')+' '+(d.item['サイズ']||'')+'</div><div style="font-size:11px;color:var(--text3);font-family:monospace;">'+d.item['SKU_ID']+'</div></div><div style="text-align:right;"><div style="font-size:11px;color:var(--text3);">要補充数</div><div style="font-size:20px;font-weight:700;color:var(--warning);">'+d.needQty+'</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;">'+ml+'　現在'+d.stock+'</div></div></div>';});
+    reorder.forEach(function(d){var ml=d.maxStock>0?'最大'+d.maxStock:'最大（未設定）';html+='<div class="list-item" style="cursor:default;border-color:#fef7e0;"><div style="flex:1"><div class="list-item-name">'+(d.item['商品名']||'')+' '+(d.item['サイズ']||'')+'</div><div style="font-size:11px;color:var(--text3);font-family:monospace;">'+d.item['SKU_ID']+'</div></div><div style="text-align:right;"><div style="font-size:11px;color:var(--text3);">要補充数</div><div style="font-size:20px;font-weight:700;color:var(--warning);">'+fmtQty(d.needQty)+'</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;">'+ml+'　現在'+fmtQty(d.stock)+'</div></div></div>';});
   }
   if(needPurchase.length>0){
     html+='<div style="font-size:12px;font-weight:700;color:var(--danger);margin:14px 0 6px;">要仕入品 '+needPurchase.length+'件</div>';
@@ -1498,13 +1501,13 @@ function printInventoryList(){
     var cat=p['カテゴリ']||'未分類';
     if(!grouped[cat]) grouped[cat]=[];
     var si=summary.find(function(s){return s['SKU_ID']===p['SKU_ID'];});
-    grouped[cat].push({商品名:p['商品名'],サイズ:String(p['サイズ']),単位:p['単位'],SKU_ID:p['SKU_ID'],在庫数:si?parseFloat(si[stockKey])||0:0});
+    grouped[cat].push({商品名:p['商品名'],サイズ:String(p['サイズ']),単位:p['単位'],SKU_ID:p['SKU_ID'],在庫数:si?num2(si[stockKey]):0});
   });
   Object.keys(grouped).forEach(function(cat){grouped[cat].sort(function(a,b){return jaSort(a['商品名'],b['商品名']);});});
   var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>棚卸しリスト - '+wName+'</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;font-size:12px;}h1{font-size:16px;margin-bottom:4px;}.meta{font-size:11px;color:#666;margin-bottom:16px;}.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}.notice{font-size:11px;color:#92400e;background:#fef3c7;padding:6px 10px;border-radius:4px;margin-bottom:12px;}table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}th{background:#f3f4f6;padding:7px 8px;text-align:left;border-bottom:2px solid #d1d5db;font-weight:600;font-size:11px;color:#6b7280;}td{padding:7px 8px;border-bottom:1px solid #e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}tr:nth-child(even){background:#f9fafb;}.check-col{text-align:center;border-left:1px solid #d1d5db;width:28%;}.total-col{text-align:center;border-left:2px solid #9ca3af;background:#fefce8;width:10%;}.qty-col{text-align:right;width:11%;}@media print{body{padding:8px;}@page{margin:10mm;margin-top:3cm;size:A4;}.category,.notice{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><h1>棚卸しリスト</h1><div class="meta">倉庫：'+wName+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>'+(wName==='創造社倉庫'?'<div class="notice">※小分け品はリストから除外されています</div>':'');
   Object.keys(grouped).sort().forEach(function(cat){
     html+='<div class="category">'+cat+'</div><table><colgroup><col style="width:27%"><col style="width:17%"><col style="width:7%"><col style="width:11%"><col style="width:24%"><col style="width:10%"></colgroup><tr><th>商品名</th><th>サイズ</th><th style="text-align:center;">単位</th><th class="qty-col">データ在庫</th><th class="check-col">実数記入</th><th class="total-col">集計</th></tr>';
-    grouped[cat].forEach(function(item){html+='<tr><td>'+item['商品名']+'</td><td>'+item['サイズ']+'</td><td style="text-align:center;">'+item['単位']+'</td><td class="qty-col">'+item['在庫数']+'</td><td class="check-col"></td><td class="total-col"></td></tr>';});
+    grouped[cat].forEach(function(item){html+='<tr><td>'+item['商品名']+'</td><td>'+item['サイズ']+'</td><td style="text-align:center;">'+item['単位']+'</td><td class="qty-col">'+fmtQty(item['在庫数'])+'</td><td class="check-col"></td><td class="total-col"></td></tr>';});
     html+='</table>';
   });
   html+='</body></html>';
@@ -1530,7 +1533,7 @@ function renderInvSizes(cat,name){
     var stock=inventoryStock.find(function(s){return s.SKU_ID===item['SKU_ID'];});
     var sysQty=stock?stock['在庫数']:0;
     var done=invRecordedSizes.indexOf(item['SKU_ID'])!==-1;
-    html+='<div class="list-item" onclick="selectInvProduct(\''+escAttr(item['SKU_ID'])+'\')"><div style="flex:1"><div class="list-item-name">'+String(item['サイズ'])+'</div><div style="font-size:12px;color:var(--text2);">システム在庫: '+sysQty+item['単位']+'</div></div>'+(done?'<span class="badge badge-done">記録済</span>':'<div class="list-item-arrow">›</div>')+'</div>';
+    html+='<div class="list-item" onclick="selectInvProduct(\''+escAttr(item['SKU_ID'])+'\')"><div style="flex:1"><div class="list-item-name">'+String(item['サイズ'])+'</div><div style="font-size:12px;color:var(--text2);">システム在庫: '+fmtQty(sysQty)+item['単位']+'</div></div>'+(done?'<span class="badge badge-done">記録済</span>':'<div class="list-item-arrow">›</div>')+'</div>';
   });
   document.getElementById('inv-size-list').innerHTML=html;
 }
@@ -1545,7 +1548,7 @@ function selectInvProduct(skuId){
   }
   currentInvProduct=Object.assign({},stock,{カテゴリ:masterItem['カテゴリ']});
   invQty='';
-  document.getElementById('inv-system-qty').textContent=stock['在庫数'];
+  document.getElementById('inv-system-qty').textContent=fmtQty(stock['在庫数']);
   document.getElementById('inv-system-unit').textContent=stock['単位'];
   document.getElementById('inv-qty-display').textContent='0';
   document.getElementById('inv-qty-unit').textContent=stock['単位'];
