@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3o.32 -->
+<!-- v3o.33 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -584,28 +584,53 @@ var masterUnlocked=false;
 var pinCurrent='';
 let master=[],summary=[],warehouses=[],minStockData=[],masterAll=[],categoryOrder=[],session={warehouse:'',dest:'',staff:'',mode:'',reason:'',immediateDest:''},currentQty='',currentProduct=null,currentCategory='',currentProductName='',sessionHistory=[],recordedSizes=[],screenStack=[];
 
+// 個別タイムアウト付きfetch（1本のAPI障害で全体が止まらないようにする）
+function fetchJSON(action,ms){
+  ms=ms||25000;
+  return new Promise(function(resolve,reject){
+    var done=false;
+    var timer=setTimeout(function(){if(!done){done=true;reject(new Error('timeout:'+action));}},ms);
+    fetch(API+'?action='+action).then(function(r){return r.json();}).then(function(j){
+      if(!done){done=true;clearTimeout(timer);resolve(j);}
+    }).catch(function(e){
+      if(!done){done=true;clearTimeout(timer);reject(e);}
+    });
+  });
+}
+
 async function loadData(){
-  try{
-    const [m,s,w,ms,ma,co]=await Promise.all([
-      fetch(API+'?action=getMaster').then(r=>r.json()),
-      fetch(API+'?action=getSummary').then(r=>r.json()),
-      fetch(API+'?action=getWarehouseMaster').then(r=>r.json()),
-      fetch(API+'?action=getMinStockMaster').then(r=>r.json()),
-      fetch(API+'?action=getMasterAll').then(r=>r.json()),
-      fetch(API+'?action=getCategoryOrder').then(r=>r.json()),
-    ]);
-    master=m;summary=s;
-    warehouses=w.data||[];
-    minStockData=ms.data||[];
-    masterAll=ma.data||ma;
-    categoryOrder=co.data||[];
-    buildWarehouseSelects();
-    updateHome();
-    var curScreen=screenStack.length?screenStack[screenStack.length-1]:'';
-    if(curScreen==='stock') renderStockCategories();
-    if(curScreen==='stock-items') renderStock();
-    if(curScreen==='replenish') renderReplenish();
-  }catch(e){showToast('データ読み込みエラー');}
+  var results=await Promise.allSettled([
+    fetchJSON('getMaster'),
+    fetchJSON('getSummary'),
+    fetchJSON('getWarehouseMaster'),
+    fetchJSON('getMinStockMaster'),
+    fetchJSON('getMasterAll'),
+    fetchJSON('getCategoryOrder'),
+  ]);
+  function val(i){return results[i].status==='fulfilled'?results[i].value:null;}
+  var failed=[];
+  var names=['商品マスタ','在庫サマリ','倉庫マスタ','最低在庫マスタ','商品マスタ全件','カテゴリ順'];
+  results.forEach(function(r,i){if(r.status!=='fulfilled') failed.push(names[i]);});
+
+  var m=val(0),s=val(1),w=val(2),ms=val(3),ma=val(4),co=val(5);
+  if(m) master=m;
+  if(s) summary=s;
+  if(w) warehouses=w.data||[];
+  if(ms) minStockData=ms.data||[];
+  if(ma) masterAll=ma.data||ma;
+  if(co) categoryOrder=co.data||[];
+
+  buildWarehouseSelects();
+  updateHome();
+  var curScreen=screenStack.length?screenStack[screenStack.length-1]:'';
+  if(curScreen==='stock') renderStockCategories();
+  if(curScreen==='stock-items') renderStock();
+  if(curScreen==='replenish') renderReplenish();
+
+  if(failed.length){
+    console.warn('loadData 取得失敗:',failed,results);
+    showToast('一部データ取得失敗: '+failed.join('・'));
+  }
 }
 
 function buildWarehouseSelects(){
