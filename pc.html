@@ -707,14 +707,14 @@ function renderDash(){
 
   let html='<div class="kpis">'
     +kpi('有効SKU',activeSkus,offSkus?('廃番 '+offSkus+' 件'):'全件が有効','')
-    +kpi('小分け作業が必要',r.reorder.length,wName,'warn')
-    +kpi('発注が必要',r.purchase.length,wName,'danger')
+    +kpi('要補充',r.reorder.length,wName,'warn')
+    +kpi('要仕入品',r.purchase.length,wName,'danger')
     +kpi('全倉庫で在庫ゼロ',outOfStock,'有効SKUのうち','danger')
     +'</div>';
 
   html+='<div class="two-col">';
-  html+=replenishPanel('小分け作業が必要','小分け品が最低在庫を下回っています',r.reorder,'b-warn');
-  html+=replenishPanel('発注が必要','小分け品以外が最低在庫を下回っています',r.purchase,'b-danger');
+  html+=replenishPanel('要補充','小分け品が最低在庫を下回っています',r.reorder,'b-warn');
+  html+=replenishPanel('要仕入品','小分け品以外が最低在庫を下回っています',r.purchase,'b-danger');
   html+='</div>';
 
   setContent(html);
@@ -1828,7 +1828,7 @@ function printReplenish(){
     });
     return h+'</tbody></table>';
   }
-  const body=tbl('小分け作業が必要',r.reorder)+tbl('発注が必要',r.purchase);
+  const body=tbl('要補充',r.reorder)+tbl('要仕入品',r.purchase);
   inner+=body||'<div>補充が必要な商品はありません</div>';
   printWindow('補充確認リスト',inner);
 }
