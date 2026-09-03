@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>在庫管理コンソール</title>
+<style>
+:root{
+  --canvas:#eef0f4;
+  --surface:#ffffff;
+  --surface2:#f7f8fa;
+  --rail:#1f2437;
+  --rail2:#2b3145;
+  --rail-text:#aeb5c6;
+  --accent:#4f46e5;
+  --accent-soft:#eef0fe;
+  --ok:#16a34a;
+  --warn:#ea580c;
+  --warn-soft:#fff4ec;
+  --danger:#dc2626;
+  --danger-soft:#fdeceb;
+  --ink:#111827;
+  --ink2:#5b6472;
+  --ink3:#9aa1ac;
+  --line:#e3e6ec;
+  --line2:#eff1f5;
+  --font:"Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic","Noto Sans JP",-apple-system,"Segoe UI",sans-serif;
+  --rail-w:212px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:var(--font);
+  background:var(--canvas);
+  color:var(--ink);
+  font-size:13px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+
+/* ============ レイアウト ============ */
+.app{display:flex;height:100vh;}
+
+/* ---- 左レール ---- */
+.rail{
+  width:var(--rail-w);flex:0 0 var(--rail-w);
+  background:var(--rail);color:var(--rail-text);
+  display:flex;flex-direction:column;
+}
+.rail-head{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.08);}
+.rail-title{color:#fff;font-size:15px;font-weight:700;letter-spacing:.02em;}
+.rail-sub{font-size:11px;color:#6f7791;margin-top:2px;}
+.nav{padding:10px 10px;flex:1;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 11px;border-radius:8px;cursor:pointer;
+  color:var(--rail-text);font-size:13.5px;font-weight:500;
+  border:none;background:none;width:100%;text-align:left;font-family:inherit;
+  transition:background .12s,color .12s;
+}
+.nav-item:hover{background:var(--rail2);color:#fff;}
+.nav-item.active{background:var(--accent);color:#fff;}
+.nav-icon{width:16px;text-align:center;font-size:14px;}
+.nav-badge{
+  margin-left:auto;background:var(--warn);color:#fff;
+  font-size:10.5px;font-weight:700;border-radius:9px;padding:1px 6px;min-width:18px;text-align:center;
+}
+.nav-item.active .nav-badge{background:rgba(255,255,255,.25);}
+.rail-foot{padding:12px 14px 14px;border-top:1px solid rgba(255,255,255,.08);font-size:11.5px;}
+.rail-foot .who{color:#fff;font-weight:600;font-size:12.5px;}
+.rail-foot .stamp{color:#6f7791;margin-top:3px;}
+.rail-btn{
+  margin-top:10px;width:100%;padding:7px;border-radius:7px;
+  background:var(--rail2);color:#dfe3ec;border:1px solid rgba(255,255,255,.09);
+  font-family:inherit;font-size:12px;cursor:pointer;
+}
+.rail-btn:hover{background:#363d55;color:#fff;}
+.rail-link{display:block;margin-top:8px;color:#6f7791;font-size:11px;text-decoration:none;}
+.rail-link:hover{color:#aeb5c6;text-decoration:underline;}
+
+/* ---- 主要領域 ---- */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{
+  background:var(--surface);border-bottom:1px solid var(--line);
+  padding:14px 22px 0;flex:0 0 auto;
+}
+.topbar-row{display:flex;align-items:baseline;gap:12px;}
+h1{font-size:19px;font-weight:700;letter-spacing:.01em;}
+.count-note{font-size:12.5px;color:var(--ink2);}
+.topbar-actions{margin-left:auto;display:flex;gap:8px;align-self:center;}
+
+/* ---- ツールバー ---- */
+.toolbar{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  padding:12px 0 12px;
+}
+.field{display:flex;align-items:center;gap:6px;}
+.field label{font-size:12px;color:var(--ink2);}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  font-family:inherit;font-size:13px;color:var(--ink);
+  border:1px solid var(--line);border-radius:7px;background:#fff;
+  padding:6px 9px;
+}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);
+}
+.search{width:280px;}
+select{cursor:pointer;}
+.btn{
+  font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+  border:1px solid var(--line);background:#fff;color:var(--ink);
+  padding:6px 12px;border-radius:7px;
+}
+.btn:hover{background:var(--surface2);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn-primary:hover{background:#4338ca;}
+.btn-danger{color:var(--danger);border-color:#f3c9c7;}
+.btn-danger:hover{background:var(--danger-soft);}
+.btn:disabled{opacity:.5;cursor:default;}
+.btn-sm{padding:3px 9px;font-size:11.5px;}
+.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:#fff;}
+.seg button{
+  font-family:inherit;font-size:12.5px;padding:6px 13px;border:none;background:none;
+  cursor:pointer;color:var(--ink2);border-right:1px solid var(--line);
+}
+.seg button:last-child{border-right:none;}
+.seg button:hover{background:var(--surface2);}
+.seg button.on{background:var(--accent);color:#fff;}
+.check{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);cursor:pointer;user-select:none;}
+
+/* ---- コンテンツ ---- */
+.content{flex:1;overflow:auto;padding:18px 22px 40px;}
+
+/* ---- テーブル ---- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;}
+thead th:first-child{border-top-left-radius:9px;}
+thead th:last-child{border-top-right-radius:9px;}
+tbody tr:last-child td:first-child{border-bottom-left-radius:9px;}
+tbody tr:last-child td:last-child{border-bottom-right-radius:9px;}
+.panel-head{
+  padding:11px 15px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:10px;
+}
+.panel-title{font-size:13.5px;font-weight:700;}
+.panel-note{font-size:12px;color:var(--ink2);}
+table{width:100%;border-collapse:separate;border-spacing:0;}
+thead th{
+  position:sticky;top:0;z-index:5;
+  background:var(--surface2);color:var(--ink2);
+  font-size:11.5px;font-weight:600;text-align:left;
+  padding:8px 10px;border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+thead th.sortable{cursor:pointer;user-select:none;}
+thead th.sortable:hover{color:var(--ink);background:#eef0f4;}
+thead th .arrow{color:var(--accent);font-size:10px;margin-left:2px;}
+tbody td{
+  padding:7px 10px;border-bottom:1px solid var(--line2);
+  vertical-align:middle;
+}
+tbody tr:hover{background:#fafbfd;}
+tbody tr:last-child td{border-bottom:none;}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--ink3);}
+.nowrap{white-space:nowrap;}
+.name{font-weight:600;}
+.dim{color:var(--ink3);}
+.divider-l{border-left:1px solid var(--line);}
+
+/* 倉庫在庫セル */
+.wh{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
+.wh.low{color:var(--warn);font-weight:700;background:var(--warn-soft);}
+.wh.zero{color:var(--danger);font-weight:700;background:var(--danger-soft);}
+.wh .lim{font-size:10.5px;color:var(--ink3);font-weight:400;margin-left:3px;}
+.total{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;}
+
+/* バッジ */
+.badge{
+  display:inline-block;font-size:11px;font-weight:600;
+  padding:1.5px 8px;border-radius:20px;white-space:nowrap;
+}
+.b-ok{background:#eaf7ee;color:var(--ok);}
+.b-warn{background:var(--warn-soft);color:var(--warn);}
+.b-danger{background:var(--danger-soft);color:var(--danger);}
+.b-off{background:#eef0f4;color:var(--ink3);}
+.b-cat{background:var(--accent-soft);color:#4338ca;font-weight:500;}
+.b-in{background:#eaf7ee;color:#15803d;}
+.b-out{background:var(--danger-soft);color:#b91c1c;}
+.b-move{background:#eaf1fd;color:#1d4ed8;}
+.b-adj{background:#f4eefe;color:#7c3aed;}
+.b-cancel{background:#eef0f4;color:var(--ink2);}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+.kpi .k-label{font-size:12px;color:var(--ink2);}
+.kpi .k-val{font-size:30px;font-weight:700;line-height:1.15;margin-top:2px;font-variant-numeric:tabular-nums;}
+.kpi .k-sub{font-size:11.5px;color:var(--ink3);}
+.kpi.warn .k-val{color:var(--warn);}
+.kpi.danger .k-val{color:var(--danger);}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+.empty{padding:36px;text-align:center;color:var(--ink3);font-size:13px;}
+.loading{padding:36px;text-align:center;color:var(--ink3);font-size:13px;}
+.row-strike td{opacity:.5;}
+
+/* ---- モーダル ---- */
+.overlay{
+  position:fixed;inset:0;background:rgba(17,24,39,.45);
+  display:none;align-items:center;justify-content:center;z-index:100;padding:24px;
+}
+.overlay.show{display:flex;}
+.modal{
+  background:#fff;border-radius:12px;width:640px;max-width:100%;
+  max-height:88vh;display:flex;flex-direction:column;
+  box-shadow:0 18px 48px rgba(17,24,39,.25);
+}
+.modal.narrow{width:420px;}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;}
+.modal-head h2{font-size:15.5px;font-weight:700;}
+.modal-head .sku{margin-left:auto;}
+.modal-body{padding:18px 20px;overflow:auto;}
+.modal-foot{padding:13px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;}
+.form-row{display:flex;flex-direction:column;gap:4px;}
+.form-row.wide{grid-column:1 / -1;}
+.form-row label{font-size:12px;color:var(--ink2);font-weight:600;}
+.form-row input,.form-row select{width:100%;}
+.sub-head{
+  font-size:12px;font-weight:700;color:var(--ink2);
+  margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line);
+}
+.ms-row{display:grid;grid-template-columns:1fr 88px 88px;gap:10px;align-items:center;margin-bottom:7px;}
+.ms-row .wname{font-size:12.5px;color:var(--ink2);}
+.ms-head{font-size:11px;color:var(--ink3);text-align:right;}
+
+/* ---- トースト ---- */
+#toast{
+  position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(14px);
+  background:var(--rail);color:#fff;padding:10px 18px;border-radius:8px;
+  font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:200;
+  box-shadow:0 8px 24px rgba(17,24,39,.3);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============ 左レール ============ -->
+  <aside class="rail">
+    <div class="rail-head">
+      <div class="rail-title">在庫管理コンソール</div>
+      <div class="rail-sub">山科・創造社・事務所</div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" data-view="dash" onclick="go('dash')">
+        <span class="nav-icon">◧</span>ダッシュボード<span class="nav-badge" id="badge-dash" style="display:none"></span>
+      </button>
+      <button class="nav-item" data-view="stock" onclick="go('stock')">
+        <span class="nav-icon">▤</span>在庫一覧
+      </button>
+      <button class="nav-item" data-view="master" onclick="go('master')">
+        <span class="nav-icon">▣</span>商品マスタ
+      </button>
+      <button class="nav-item" data-view="history" onclick="go('history')">
+        <span class="nav-icon">⟲</span>入出庫履歴
+      </button>
+    </nav>
+    <div class="rail-foot">
+      <div class="who" id="foot-staff">担当者未設定</div>
+      <div class="stamp" id="foot-stamp">読み込み中…</div>
+      <button class="rail-btn" onclick="reload()">データを再読み込み</button>
+      <a class="rail-link" href="./index.html">スマホ版を開く</a>
+    </div>
+  </aside>
+
+  <!-- ============ 主要領域 ============ -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-row">
+        <h1 id="view-title">ダッシュボード</h1>
+        <span class="count-note" id="view-count"></span>
+        <div class="topbar-actions" id="view-actions"></div>
+      </div>
+      <div class="toolbar" id="view-toolbar"></div>
+    </div>
+    <div class="content" id="content">
+      <div class="loading">読み込み中…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 商品編集モーダル ============ -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="edit-title">商品を編集</h2>
+      <span class="mono sku" id="edit-sku"></span>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-row"><label for="f-category">カテゴリ</label><select id="f-category"></select></div>
+        <div class="form-row"><label for="f-type">商品区分</label>
+          <select id="f-type">
+            <option>輸入品</option><option>小分け品</option><option>副資材</option><option>仕入品</option>
+          </select>
+        </div>
+        <div class="form-row wide"><label for="f-name">商品名</label><input type="text" id="f-name"></div>
+        <div class="form-row"><label for="f-size">サイズ</label><input type="text" id="f-size"></div>
+        <div class="form-row"><label for="f-unit">単位</label><input type="text" id="f-unit" list="unit-list">
+          <datalist id="unit-list"><option>袋</option><option>缶</option><option>本</option><option>個</option><option>枚</option><option>kg</option><option>g</option><option>L</option><option>箱</option></datalist>
+        </div>
+        <div class="form-row"><label for="f-bctype">バーコード種別</label>
+          <select id="f-bctype"><option>QR</option><option>JAN</option><option>CODE128</option><option>なし</option></select>
+        </div>
+        <div class="form-row"><label for="f-bcnum">バーコード番号</label><input type="text" id="f-bcnum"></div>
+        <div class="form-row wide"><label for="f-note">備考</label><input type="text" id="f-note"></div>
+      </div>
+
+      <div class="sub-head">倉庫ごとの在庫設定</div>
+      <div class="ms-row">
+        <span></span><span class="ms-head">最低在庫数</span><span class="ms-head">最大在庫数</span>
+      </div>
+      <div id="f-minstock"></div>
+      <div style="font-size:11.5px;color:var(--ink3);margin-top:8px;">
+        最低在庫数が 0 の倉庫は補充判定の対象になりません。
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeEdit()">やめる</button>
+      <button class="btn btn-primary" id="edit-save-btn" onclick="saveEdit()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 確認モーダル ============ -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal narrow">
+    <div class="modal-head"><h2 id="confirm-title">確認</h2></div>
+    <div class="modal-body"><div id="confirm-body" style="font-size:13.5px;line-height:1.7;"></div></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeConfirm()">やめる</button>
+      <button class="btn btn-primary" id="confirm-ok-btn">実行する</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+const API='https://script.google.com/macros/s/AKfycbz2K9_frpjl7gXnl4jMcqSNIt4Yupx-SYcVJHiM6Wtb0gFsRlgmNLlBy06Xz7TnOPgx/exec';
+
+/* ============================================================
+   状態
+   ============================================================ */
+let master=[],summary=[],warehouses=[],minStockData=[],masterAll=[],categoryOrder=[],logs=[];
+let currentView='dash';
+let loadedAt=null;
+let staffName=localStorage.getItem('staff_name')||'';
+
+const filters={
+  stock:{q:'',cat:'',type:'',state:'',showOff:false,sort:{key:'cat',dir:1}},
+  master:{q:'',cat:'',type:'',showOff:false,sort:{key:'cat',dir:1}},
+  history:{q:'',range:'week',type:'',wh:'',showCancel:false,limit:300},
+  dash:{wh:''}
+};
+
+/* ============================================================
+   ユーティリティ
+   ============================================================ */
+function num2(v){return Math.round((parseFloat(v)||0)*100)/100;}
+function fmtQty(v){
+  if(v===''||v===null||v===undefined)return '';
+  const n=parseFloat(v);
+  if(isNaN(n))return String(v);
+  return String(Math.round(n*100)/100);
+}
+function esc(s){
+  return String(s===null||s===undefined?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function jsq(s){
+  return String(s===null||s===undefined?'':s)
+    .replace(/\\/g,'\\\\').replace(/'/g,"\\'")
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+}
+function jaSort(a,b){
+  a=String(a||'');b=String(b||'');
+  const aL=/^[A-Za-z0-9]/.test(a),bL=/^[A-Za-z0-9]/.test(b);
+  if(aL&&!bL)return -1;
+  if(!aL&&bL)return 1;
+  return a.localeCompare(b,'ja');
+}
+function isActive(m){return m&&(m['有効']===true||m['有効']==='TRUE');}
+function stockKeyOf(wName){return wName+'_在庫';}
+function applyCategoryOrder(cats){
+  if(!categoryOrder.length)return cats.slice().sort(jaSort);
+  return cats.slice().sort(function(a,b){
+    const ia=categoryOrder.indexOf(a),ib=categoryOrder.indexOf(b);
+    if(ia===-1&&ib===-1)return jaSort(a,b);
+    if(ia===-1)return 1;
+    if(ib===-1)return -1;
+    return ia-ib;
+  });
+}
+function catRank(c){
+  const i=categoryOrder.indexOf(c);
+  return i===-1?9999:i;
+}
+function allCategories(){
+  const set={};
+  masterAll.forEach(function(p){if(p['カテゴリ'])set[p['カテゴリ']]=1;});
+  return applyCategoryOrder(Object.keys(set));
+}
+function msOf(skuId,wName){
+  return minStockData.find(function(r){
+    return r['SKU_ID']===skuId&&r['倉庫名']===wName;
+  })||null;
+}
+function parseJSTDate(str){
+  if(!str)return new Date(NaN);
+  const m=String(str).match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+(m[6]||0));
+  return new Date(NaN);
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t=setTimeout(function(){t.classList.remove('show');},2600);
+}
+function timeStamp(d){
+  return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '
+    +d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+/* ============================================================
+   通信
+   ============================================================ */
+function fetchJSON(action,ms){
+  ms=ms||25000;
+  return new Promise(function(resolve,reject){
+    let done=false;
+    const timer=setTimeout(function(){
+      if(!done){done=true;reject(new Error('timeout: '+action));}
+    },ms);
+    fetch(API+'?action='+action)
+      .then(function(r){return r.json();})
+      .then(function(j){if(!done){done=true;clearTimeout(timer);resolve(j);}})
+      .catch(function(e){if(!done){done=true;clearTimeout(timer);reject(e);}});
+  });
+}
+async function post(payload){
+  const res=await fetch(API,{method:'POST',body:JSON.stringify(payload)});
+  const json=await res.json();
+  if(json.success===false)throw new Error(json.message||'不明なエラー');
+  return json;
+}
+
+async function loadData(){
+  const results=await Promise.allSettled([
+    fetchJSON('getMaster'),
+    fetchJSON('getSummary'),
+    fetchJSON('getWarehouseMaster'),
+    fetchJSON('getMinStockMaster'),
+    fetchJSON('getMasterAll'),
+    fetchJSON('getCategoryOrder')
+  ]);
+  const names=['商品マスタ','在庫サマリ','倉庫マスタ','在庫設定','商品マスタ全件','カテゴリ順'];
+  const failed=[];
+  results.forEach(function(r,i){if(r.status!=='fulfilled')failed.push(names[i]);});
+  const val=function(i){return results[i].status==='fulfilled'?results[i].value:null;};
+
+  const m=val(0),s=val(1),w=val(2),ms=val(3),ma=val(4),co=val(5);
+  if(m)master=m;
+  if(s)summary=s;
+  if(w)warehouses=w.data||[];
+  if(ms)minStockData=ms.data||[];
+  if(ma)masterAll=ma.data||ma;
+  if(co)categoryOrder=co.data||[];
+
+  loadedAt=new Date();
+  document.getElementById('foot-stamp').textContent='最終更新 '+timeStamp(loadedAt);
+  document.getElementById('foot-staff').textContent=staffName||'担当者未設定';
+
+  if(failed.length){
+    console.warn('loadData 取得失敗:',failed,results);
+    showToast('一部データを取得できませんでした: '+failed.join('・'));
+  }
+  updateBadge();
+}
+
+async function reload(){
+  document.getElementById('foot-stamp').textContent='読み込み中…';
+  await loadData();
+  render();
+  showToast('最新のデータを読み込みました');
+}
+
+/* ============================================================
+   補充判定（スマホ版の補充リストと同じ規則）
+   ============================================================ */
+function replenishFor(wName){
+  const key=stockKeyOf(wName);
+  const reorder=[],purchase=[];
+  summary.forEach(function(item){
+    const m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+    if(!isActive(m))return;
+    const stock=num2(item[key]);
+    const ms=msOf(item['SKU_ID'],wName);
+    const min=ms?parseFloat(ms['最低在庫数'])||0:0;
+    const max=ms?parseFloat(ms['最大在庫数'])||0:0;
+    if(min===0)return;
+    const need=num2(max>0?Math.max(max-stock,0):Math.max(min-stock,0));
+    const row={item:item,m:m,stock:stock,min:min,max:max,need:need};
+    if(m['商品区分']==='小分け品'&&stock<min)reorder.push(row);
+    else if(m['商品区分']==='仕入品'&&stock===0)purchase.push(row);
+  });
+  const s=function(a,b){return jaSort(a.item['商品名'],b.item['商品名']);};
+  reorder.sort(s);purchase.sort(s);
+  return {reorder:reorder,purchase:purchase};
+}
+
+/* 在庫一覧の状態バッジ：最低在庫数が設定された倉庫を全区分で判定 */
+function rowState(item){
+  let total=0,low=0,configured=0;
+  warehouses.forEach(function(w){
+    const wn=w['倉庫名'];
+    const stock=num2(item[stockKeyOf(wn)]);
+    total+=stock;
+    const ms=msOf(item['SKU_ID'],wn);
+    const min=ms?parseFloat(ms['最低在庫数'])||0:0;
+    if(min>0){configured++;if(stock<min)low++;}
+  });
+  if(total<=0)return {level:'欠品',cls:'b-danger'};
+  if(configured&&low)return {level:'要補充',cls:'b-warn'};
+  return {level:'正常',cls:'b-ok'};
+}
+
+function updateBadge(){
+  let n=0;
+  warehouses.forEach(function(w){
+    const r=replenishFor(w['倉庫名']);
+    n+=r.reorder.length+r.purchase.length;
+  });
+  const el=document.getElementById('badge-dash');
+  if(n>0){el.textContent=n;el.style.display='';}
+  else el.style.display='none';
+}
+
+/* ============================================================
+   画面切替
+   ============================================================ */
+const VIEWS={
+  dash:{title:'ダッシュボード',render:renderDash},
+  stock:{title:'在庫一覧',render:renderStock},
+  master:{title:'商品マスタ',render:renderMaster},
+  history:{title:'入出庫履歴',render:renderHistory}
+};
+
+function go(view){
+  currentView=view;
+  document.querySelectorAll('.nav-item').forEach(function(b){
+    b.classList.toggle('active',b.dataset.view===view);
+  });
+  document.getElementById('view-title').textContent=VIEWS[view].title;
+  document.getElementById('content').scrollTop=0;
+  if(view==='history'&&!logs.length)loadLogs();
+  else render();
+}
+function render(){VIEWS[currentView].render();}
+
+function setToolbar(html){document.getElementById('view-toolbar').innerHTML=html;}
+function setActions(html){document.getElementById('view-actions').innerHTML=html;}
+function setCount(text){document.getElementById('view-count').textContent=text||'';}
+function setContent(html){document.getElementById('content').innerHTML=html;}
+
+/* 並べ替えヘッダ */
+function sortHeader(view,key,label,extraClass){
+  const s=filters[view].sort;
+  const arrow=s.key===key?'<span class="arrow">'+(s.dir>0?'▲':'▼')+'</span>':'';
+  return '<th class="sortable '+(extraClass||'')+'" onclick="setSort(\''+view+'\',\''+key+'\')">'+esc(label)+arrow+'</th>';
+}
+function setSort(view,key){
+  const s=filters[view].sort;
+  if(s.key===key)s.dir=-s.dir;
+  else{s.key=key;s.dir=1;}
+  render();
+}
+function cmp(a,b){return a<b?-1:a>b?1:0;}
+
+/* ============================================================
+   ダッシュボード
+   ============================================================ */
+function renderDash(){
+  if(!warehouses.length||!summary.length){
+    setToolbar('');setActions('');setCount('');
+    setContent('<div class="loading">読み込み中…</div>');
+    return;
+  }
+  if(!filters.dash.wh)filters.dash.wh=warehouses[0]['倉庫名'];
+  const wName=filters.dash.wh;
+
+  setCount(loadedAt?timeStamp(loadedAt)+' 時点':'');
+  setActions('<button class="btn" onclick="printReplenish()">補充リストを印刷</button>');
+  setToolbar(
+    '<div class="seg">'+warehouses.map(function(w){
+      return '<button class="'+(w['倉庫名']===wName?'on':'')+'" onclick="filters.dash.wh=\''+jsq(w['倉庫名'])+'\';render();">'+esc(w['倉庫名'])+'</button>';
+    }).join('')+'</div>'
+  );
+
+  const activeSkus=masterAll.filter(isActive).length;
+  const offSkus=masterAll.length-activeSkus;
+  const r=replenishFor(wName);
+  let outOfStock=0;
+  summary.forEach(function(item){
+    const m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+    if(!isActive(m))return;
+    let t=0;
+    warehouses.forEach(function(w){t+=num2(item[stockKeyOf(w['倉庫名'])]);});
+    if(t<=0)outOfStock++;
+  });
+
+  let html='<div class="kpis">'
+    +kpi('有効SKU',activeSkus,offSkus?('廃番 '+offSkus+' 件'):'全件が有効','')
+    +kpi('要補充（小分け品）',r.reorder.length,wName,'warn')
+    +kpi('要仕入（在庫ゼロ）',r.purchase.length,wName,'danger')
+    +kpi('全倉庫で在庫ゼロ',outOfStock,'有効SKUのうち','danger')
+    +'</div>';
+
+  html+='<div class="two-col">';
+  html+=replenishPanel('要補充','小分け品が最低在庫を下回っています',r.reorder,'b-warn');
+  html+=replenishPanel('要仕入','仕入品の在庫がゼロです',r.purchase,'b-danger');
+  html+='</div>';
+
+  setContent(html);
+}
+function kpi(label,val,sub,cls){
+  return '<div class="kpi '+(cls||'')+'"><div class="k-label">'+esc(label)+'</div>'
+    +'<div class="k-val">'+val+'</div><div class="k-sub">'+esc(sub)+'</div></div>';
+}
+function replenishPanel(title,note,rows,badgeCls){
+  let h='<div class="panel"><div class="panel-head">'
+    +'<span class="panel-title">'+esc(title)+'</span>'
+    +'<span class="badge '+badgeCls+'">'+rows.length+'</span>'
+    +'<span class="panel-note" style="margin-left:auto">'+esc(note)+'</span></div>';
+  if(!rows.length){
+    h+='<div class="empty">対象はありません</div></div>';
+    return h;
+  }
+  h+='<table><thead><tr><th>商品名</th><th>サイズ</th>'
+    +'<th class="num">現在庫</th><th class="num">最低</th><th class="num">最大</th>'
+    +'<th class="num">補充数</th></tr></thead><tbody>';
+  rows.forEach(function(d){
+    const u=d.item['単位']||'';
+    h+='<tr><td class="name">'+esc(d.item['商品名'])+'</td>'
+      +'<td class="dim">'+esc(d.item['サイズ'])+'</td>'
+      +'<td class="num">'+fmtQty(d.stock)+'</td>'
+      +'<td class="num dim">'+fmtQty(d.min)+'</td>'
+      +'<td class="num dim">'+(d.max>0?fmtQty(d.max):'—')+'</td>'
+      +'<td class="num" style="font-weight:700;color:var(--warn)">'+fmtQty(d.need)+' <span class="dim" style="font-weight:400">'+esc(u)+'</span></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
+/* ============================================================
+   在庫一覧
+   ============================================================ */
+function stockRows(){
+  const f=filters.stock;
+  const q=f.q.trim().toLowerCase();
+  let rows=summary.map(function(item){
+    const m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];})||{};
+    let total=0;
+    const cells=warehouses.map(function(w){
+      const wn=w['倉庫名'];
+      const stock=num2(item[stockKeyOf(wn)]);
+      total+=stock;
+      const ms=msOf(item['SKU_ID'],wn);
+      return {
+        name:wn,stock:stock,
+        min:ms?parseFloat(ms['最低在庫数'])||0:0,
+        max:ms?parseFloat(ms['最大在庫数'])||0:0
+      };
+    });
+    return {item:item,m:m,cells:cells,total:num2(total),state:rowState(item)};
+  });
+
+  rows=rows.filter(function(r){
+    if(!f.showOff&&!isActive(r.m))return false;
+    if(f.cat&&r.m['カテゴリ']!==f.cat)return false;
+    if(f.type&&r.m['商品区分']!==f.type)return false;
+    if(f.state&&r.state.level!==f.state)return false;
+    if(q){
+      const hay=[r.item['商品名'],r.item['サイズ'],r.item['SKU_ID'],r.m['カテゴリ'],r.m['備考']].join(' ').toLowerCase();
+      if(hay.indexOf(q)===-1)return false;
+    }
+    return true;
+  });
+
+  const s=f.sort;
+  rows.sort(function(a,b){
+    let v=0;
+    switch(s.key){
+      case 'cat':
+        v=cmp(catRank(a.m['カテゴリ']),catRank(b.m['カテゴリ']))
+          ||jaSort(a.m['カテゴリ']||'',b.m['カテゴリ']||'')
+          ||jaSort(a.item['商品名'],b.item['商品名'])
+          ||jaSort(String(a.item['サイズ']),String(b.item['サイズ']));
+        break;
+      case 'name':
+        v=jaSort(a.item['商品名'],b.item['商品名'])||jaSort(String(a.item['サイズ']),String(b.item['サイズ']));
+        break;
+      case 'type':v=jaSort(a.m['商品区分']||'',b.m['商品区分']||'');break;
+      case 'total':v=cmp(a.total,b.total);break;
+      case 'state':v=cmp(a.state.level,b.state.level);break;
+      default:
+        if(s.key.indexOf('wh:')===0){
+          const i=+s.key.slice(3);
+          v=cmp(a.cells[i]?a.cells[i].stock:0,b.cells[i]?b.cells[i].stock:0);
+        }
+    }
+    return v*s.dir;
+  });
+  return rows;
+}
+
+function renderStock(){
+  if(!summary.length||!warehouses.length){
+    setToolbar('');setActions('');setCount('');
+    setContent('<div class="loading">読み込み中…</div>');
+    return;
+  }
+  const f=filters.stock;
+  setActions(
+    '<button class="btn" onclick="exportStockCsv()">CSVで書き出す</button>'
+    +'<button class="btn" onclick="printStock()">印刷する</button>'
+  );
+  setToolbar(
+    '<input type="text" class="search" id="tb-q" placeholder="商品名・サイズ・SKU_IDで絞り込む" value="'+esc(f.q)+'">'
+    +selectFilter('cat','全カテゴリ',allCategories(),f.cat,'filters.stock.cat')
+    +selectFilter('type','全区分',['輸入品','小分け品','副資材','仕入品'],f.type,'filters.stock.type')
+    +selectFilter('state','全ステータス',['正常','要補充','欠品'],f.state,'filters.stock.state')
+    +'<label class="check"><input type="checkbox" '+(f.showOff?'checked':'')
+      +' onchange="filters.stock.showOff=this.checked;render();">廃番も表示</label>'
+    +'<button class="btn" style="margin-left:auto" onclick="resetStockFilters()">条件をクリア</button>'
+  );
+  bindSearch('tb-q','stock');
+
+  const rows=stockRows();
+  setCount(rows.length+' 件 / 全 '+summary.length+' 件');
+
+  let h='<div class="panel"><table><thead><tr>'
+    +sortHeader('stock','cat','カテゴリ')
+    +sortHeader('stock','name','商品名')
+    +'<th>サイズ</th><th>単位</th>'
+    +sortHeader('stock','type','区分');
+  warehouses.forEach(function(w,i){
+    h+=sortHeader('stock','wh:'+i,w['倉庫名'],'num'+(i===0?' divider-l':''));
+  });
+  h+=sortHeader('stock','total','合計','num divider-l')
+    +sortHeader('stock','state','ステータス')
+    +'</tr></thead><tbody>';
+
+  if(!rows.length){
+    h+='</tbody></table><div class="empty">条件に合う商品がありません。絞り込みを緩めてください。</div></div>';
+    setContent(h);
+    return;
+  }
+
+  rows.forEach(function(r){
+    const off=!isActive(r.m);
+    h+='<tr'+(off?' class="row-strike"':'')+'>'
+      +'<td class="nowrap"><span class="badge b-cat">'+esc(r.m['カテゴリ']||'—')+'</span></td>'
+      +'<td class="name">'+esc(r.item['商品名'])+(off?' <span class="badge b-off">廃番</span>':'')+'</td>'
+      +'<td class="dim nowrap">'+esc(r.item['サイズ'])+'</td>'
+      +'<td class="dim">'+esc(r.item['単位'])+'</td>'
+      +'<td class="dim nowrap">'+esc(r.m['商品区分']||'')+'</td>';
+    r.cells.forEach(function(c,i){
+      let cls='wh'+(i===0?' divider-l':'');
+      if(c.min>0&&c.stock<=0)cls+=' zero';
+      else if(c.min>0&&c.stock<c.min)cls+=' low';
+      const lim=c.min>0?'<span class="lim">/'+fmtQty(c.min)+'</span>':'';
+      h+='<td class="'+cls+'">'+fmtQty(c.stock)+lim+'</td>';
+    });
+    h+='<td class="total divider-l">'+fmtQty(r.total)+'</td>'
+      +'<td><span class="badge '+r.state.cls+'">'+r.state.level+'</span></td></tr>';
+  });
+  h+='</tbody></table></div>'
+    +'<div style="font-size:11.5px;color:var(--ink3);margin-top:9px;">'
+    +'倉庫列の小さい数字は、その倉庫の最低在庫数です。下回っている値は色を付けています。</div>';
+  setContent(h);
+}
+function resetStockFilters(){
+  filters.stock.q='';filters.stock.cat='';filters.stock.type='';
+  filters.stock.state='';filters.stock.showOff=false;
+  render();
+}
+
+/* ============================================================
+   商品マスタ
+   ============================================================ */
+function masterRows(){
+  const f=filters.master;
+  const q=f.q.trim().toLowerCase();
+  let rows=masterAll.slice();
+  rows=rows.filter(function(m){
+    if(!f.showOff&&!isActive(m))return false;
+    if(f.cat&&m['カテゴリ']!==f.cat)return false;
+    if(f.type&&m['商品区分']!==f.type)return false;
+    if(q){
+      const hay=[m['商品名'],m['サイズ'],m['SKU_ID'],m['カテゴリ'],m['備考'],m['バーコード番号']].join(' ').toLowerCase();
+      if(hay.indexOf(q)===-1)return false;
+    }
+    return true;
+  });
+  const s=f.sort;
+  rows.sort(function(a,b){
+    let v=0;
+    switch(s.key){
+      case 'cat':
+        v=cmp(catRank(a['カテゴリ']),catRank(b['カテゴリ']))
+          ||jaSort(a['カテゴリ']||'',b['カテゴリ']||'')
+          ||jaSort(a['商品名'],b['商品名'])
+          ||jaSort(String(a['サイズ']),String(b['サイズ']));
+        break;
+      case 'name':v=jaSort(a['商品名'],b['商品名'])||jaSort(String(a['サイズ']),String(b['サイズ']));break;
+      case 'type':v=jaSort(a['商品区分']||'',b['商品区分']||'');break;
+      case 'sku':v=cmp(String(a['SKU_ID']),String(b['SKU_ID']));break;
+      default:v=0;
+    }
+    return v*s.dir;
+  });
+  return rows;
+}
+
+function renderMaster(){
+  if(!masterAll.length){
+    setToolbar('');setActions('');setCount('');
+    setContent('<div class="loading">読み込み中…</div>');
+    return;
+  }
+  const f=filters.master;
+  setActions('<button class="btn btn-primary" onclick="openAdd()">商品を追加</button>');
+  setToolbar(
+    '<input type="text" class="search" id="tb-mq" placeholder="商品名・SKU_ID・バーコード番号で絞り込む" value="'+esc(f.q)+'">'
+    +selectFilter('mcat','全カテゴリ',allCategories(),f.cat,'filters.master.cat')
+    +selectFilter('mtype','全区分',['輸入品','小分け品','副資材','仕入品'],f.type,'filters.master.type')
+    +'<label class="check"><input type="checkbox" '+(f.showOff?'checked':'')
+      +' onchange="filters.master.showOff=this.checked;render();">廃番も表示</label>'
+    +'<button class="btn" style="margin-left:auto" onclick="exportMasterCsv()">CSVで書き出す</button>'
+  );
+  bindSearch('tb-mq','master');
+
+  const rows=masterRows();
+  setCount(rows.length+' 件 / 全 '+masterAll.length+' 件');
+
+  let h='<div class="panel"><table><thead><tr>'
+    +sortHeader('master','cat','カテゴリ')
+    +sortHeader('master','name','商品名')
+    +'<th>サイズ</th><th>単位</th>'
+    +sortHeader('master','type','区分')
+    +sortHeader('master','sku','SKU_ID');
+  warehouses.forEach(function(w,i){
+    h+='<th class="num'+(i===0?' divider-l':'')+'">'+esc(w['倉庫名'])+'<br><span style="font-weight:400;color:var(--ink3)">最低 / 最大</span></th>';
+  });
+  h+='<th class="divider-l">バーコード</th><th>状態</th><th></th>'
+    +'</tr></thead><tbody>';
+
+  if(!rows.length){
+    h+='</tbody></table><div class="empty">条件に合う商品がありません。</div></div>';
+    setContent(h);
+    return;
+  }
+
+  rows.forEach(function(m){
+    const off=!isActive(m);
+    const sku=jsq(m['SKU_ID']);
+    h+='<tr'+(off?' class="row-strike"':'')+'>'
+      +'<td class="nowrap"><span class="badge b-cat">'+esc(m['カテゴリ']||'—')+'</span></td>'
+      +'<td class="name">'+esc(m['商品名'])+'</td>'
+      +'<td class="dim nowrap">'+esc(m['サイズ'])+'</td>'
+      +'<td class="dim">'+esc(m['単位'])+'</td>'
+      +'<td class="dim nowrap">'+esc(m['商品区分']||'')+'</td>'
+      +'<td class="mono">'+sku+'</td>';
+    warehouses.forEach(function(w,i){
+      const ms=msOf(m['SKU_ID'],w['倉庫名']);
+      const min=ms?parseFloat(ms['最低在庫数'])||0:0;
+      const max=ms?parseFloat(ms['最大在庫数'])||0:0;
+      const txt=(min||max)
+        ?(fmtQty(min)+' / '+(max>0?fmtQty(max):'—'))
+        :'<span class="dim">—</span>';
+      h+='<td class="num'+(i===0?' divider-l':'')+'">'+txt+'</td>';
+    });
+    h+='<td class="divider-l nowrap"><span class="dim">'+esc(m['バーコード種別']||'')+'</span>'
+      +(m['バーコード番号']?' <span class="mono">'+esc(m['バーコード番号'])+'</span>':'')+'</td>'
+      +'<td>'+(off?'<span class="badge b-off">廃番</span>':'<span class="badge b-ok">有効</span>')+'</td>'
+      +'<td class="nowrap">'
+      +'<button class="btn btn-sm" onclick="openEdit(\''+sku+'\')">編集</button> '
+      +(off
+        ? '<button class="btn btn-sm" onclick="askToggle(\''+sku+'\',true)">復活</button>'
+        : '<button class="btn btn-sm btn-danger" onclick="askToggle(\''+sku+'\',false)">廃番</button>')
+      +'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  setContent(h);
+}
+
+/* ============================================================
+   入出庫履歴
+   ============================================================ */
+async function loadLogs(){
+  setToolbar('');setActions('');setCount('');
+  setContent('<div class="loading">履歴を読み込み中…</div>');
+  try{
+    const json=await fetchJSON('getLogs',30000);
+    logs=json.data||[];
+    render();
+  }catch(e){
+    setContent('<div class="empty">履歴を読み込めませんでした。「データを再読み込み」を押すか、しばらく待ってからもう一度お試しください。</div>');
+  }
+}
+
+function historyRows(){
+  const f=filters.history;
+  const q=f.q.trim().toLowerCase();
+  const now=new Date();
+  const cancelled={};
+  logs.forEach(function(r){
+    const m=(r['備考']||'').match(/取消（元LOG_ID:\s*([^）]+)）/);
+    if(m)cancelled[m[1].trim()]=true;
+  });
+  let rows=logs.filter(function(r){
+    const isCancelLog=r['操作種別']&&String(r['操作種別']).indexOf('取消')===0;
+    if(!f.showCancel&&(isCancelLog||cancelled[r['LOG_ID']]))return false;
+    const d=parseJSTDate(r['日時']);
+    if(f.range==='today'){if(d.toDateString()!==now.toDateString())return false;}
+    else if(f.range==='week'){const a=new Date(now);a.setDate(a.getDate()-7);if(d<a)return false;}
+    else if(f.range==='month'){const a=new Date(now);a.setMonth(a.getMonth()-1);if(d<a)return false;}
+    if(f.type&&r['操作種別']!==f.type)return false;
+    if(f.wh&&r['倉庫']!==f.wh)return false;
+    if(q){
+      const hay=[r['商品名（自動）'],r['サイズ（自動）'],r['SKU_ID'],r['担当者'],r['備考'],r['LOG_ID']].join(' ').toLowerCase();
+      if(hay.indexOf(q)===-1)return false;
+    }
+    return true;
+  });
+  rows.sort(function(a,b){return parseJSTDate(b['日時'])-parseJSTDate(a['日時']);});
+  rows.forEach(function(r){r._cancelled=!!cancelled[r['LOG_ID']];});
+  return rows;
+}
+
+function typeBadge(t){
+  t=String(t||'');
+  let cls='b-cancel';
+  if(t==='入庫')cls='b-in';
+  else if(t.indexOf('出庫')===0)cls='b-out';
+  else if(t.indexOf('移動')===0)cls='b-move';
+  else if(t==='棚卸し修正')cls='b-adj';
+  return '<span class="badge '+cls+'">'+esc(t)+'</span>';
+}
+
+function renderHistory(){
+  const f=filters.history;
+  setActions('<button class="btn" onclick="loadLogs()">履歴を再取得</button>'
+    +'<button class="btn" onclick="exportHistoryCsv()">CSVで書き出す</button>');
+  setToolbar(
+    '<div class="seg">'
+    +['today:今日','week:1週間','month:1か月','all:すべて'].map(function(x){
+      const p=x.split(':');
+      return '<button class="'+(f.range===p[0]?'on':'')+'" onclick="filters.history.range=\''+p[0]+'\';render();">'+p[1]+'</button>';
+    }).join('')+'</div>'
+    +'<input type="text" class="search" id="tb-hq" placeholder="商品名・担当者・備考で絞り込む" value="'+esc(f.q)+'">'
+    +selectFilter('htype','全種別',['入庫','出庫（販売）','出庫（使用）','出庫（廃棄）','移動（出）','移動（入）','棚卸し修正'],f.type,'filters.history.type')
+    +selectFilter('hwh','全倉庫',warehouses.map(function(w){return w['倉庫名'];}),f.wh,'filters.history.wh')
+    +'<label class="check"><input type="checkbox" '+(f.showCancel?'checked':'')
+      +' onchange="filters.history.showCancel=this.checked;render();">取消済みも表示</label>'
+  );
+  bindSearch('tb-hq','history');
+
+  const rows=historyRows();
+  const shown=rows.slice(0,f.limit);
+  setCount(rows.length+' 件'+(rows.length>shown.length?'（'+shown.length+' 件を表示中）':''));
+
+  let h='<div class="panel"><table><thead><tr>'
+    +'<th>日時</th><th>種別</th><th>商品名</th><th>サイズ</th>'
+    +'<th>倉庫</th><th>移動先</th><th class="num">数量</th><th>単位</th>'
+    +'<th>担当者</th><th>備考</th><th></th></tr></thead><tbody>';
+
+  if(!shown.length){
+    h+='</tbody></table><div class="empty">この条件の記録はありません。期間を広げてみてください。</div></div>';
+    setContent(h);
+    return;
+  }
+
+  shown.forEach(function(r){
+    const qty=num2(r['数量変動']);
+    const isCancelLog=String(r['操作種別']||'').indexOf('取消')===0;
+    const dead=r._cancelled||isCancelLog;
+    h+='<tr'+(dead?' class="row-strike"':'')+'>'
+      +'<td class="mono nowrap">'+esc(r['日時'])+'</td>'
+      +'<td class="nowrap">'+typeBadge(r['操作種別'])+'</td>'
+      +'<td class="name">'+esc(r['商品名（自動）'])+'</td>'
+      +'<td class="dim nowrap">'+esc(r['サイズ（自動）'])+'</td>'
+      +'<td class="dim nowrap">'+esc(r['倉庫'])+'</td>'
+      +'<td class="dim nowrap">'+esc(r['移動先倉庫']||'')+'</td>'
+      +'<td class="num" style="font-weight:700;color:'+(qty<0?'var(--danger)':'var(--ok)')+'">'
+        +(qty>0?'+':'')+fmtQty(qty)+'</td>'
+      +'<td class="dim">'+esc(r['単位'])+'</td>'
+      +'<td class="dim nowrap">'+esc(r['担当者'])+'</td>'
+      +'<td class="dim">'+esc(r['備考']||'')+'</td>'
+      +'<td class="nowrap">'
+      +(dead?'<span class="badge b-off">取消済</span>'
+        :'<button class="btn btn-sm btn-danger" onclick="askCancelLog(\''+jsq(r['LOG_ID'])+'\')">取消</button>')
+      +'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  if(rows.length>shown.length){
+    h+='<div style="text-align:center;margin-top:12px;">'
+      +'<button class="btn" onclick="filters.history.limit+=300;render();">さらに300件を表示</button></div>';
+  }
+  setContent(h);
+}
+
+/* ============================================================
+   フィルタ部品
+   ============================================================ */
+function selectFilter(id,allLabel,options,current,bindPath){
+  let h='<select id="fl-'+id+'" onchange="'+bindPath+'=this.value;render();">';
+  h+='<option value="">'+esc(allLabel)+'</option>';
+  options.forEach(function(o){
+    h+='<option value="'+esc(o)+'"'+(o===current?' selected':'')+'>'+esc(o)+'</option>';
+  });
+  return h+'</select>';
+}
+function bindSearch(elId,view){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  let t=null;
+  el.addEventListener('input',function(){
+    clearTimeout(t);
+    const v=el.value;
+    t=setTimeout(function(){
+      filters[view].q=v;
+      if(view==='history')filters.history.limit=300;
+      render();
+      const again=document.getElementById(elId);
+      if(again){again.focus();again.setSelectionRange(again.value.length,again.value.length);}
+    },220);
+  });
+}
+
+/* ============================================================
+   商品の編集・追加
+   ============================================================ */
+let editTarget=null; /* null = 新規追加 */
+
+function fillCategorySelect(selected){
+  const sel=document.getElementById('f-category');
+  sel.innerHTML='';
+  allCategories().forEach(function(c){
+    const o=document.createElement('option');
+    o.value=c;o.textContent=c;
+    if(c===selected)o.selected=true;
+    sel.appendChild(o);
+  });
+}
+function fillMinStock(skuId){
+  const box=document.getElementById('f-minstock');
+  box.innerHTML='';
+  warehouses.forEach(function(w){
+    const ms=skuId?minStockData.find(function(r){
+      return r['SKU_ID']===skuId&&r['倉庫ID']===w['倉庫ID'];
+    }):null;
+    const min=ms?(parseFloat(ms['最低在庫数'])||0):0;
+    const max=ms?(parseFloat(ms['最大在庫数'])||0):0;
+    const row=document.createElement('div');
+    row.className='ms-row';
+    row.innerHTML='<span class="wname">'+esc(w['倉庫名'])+'</span>'
+      +'<input type="number" min="0" step="any" class="num" value="'+min+'" data-wid="'+esc(w['倉庫ID'])+'" data-field="min">'
+      +'<input type="number" min="0" step="any" class="num" value="'+max+'" data-wid="'+esc(w['倉庫ID'])+'" data-field="max">';
+    box.appendChild(row);
+  });
+}
+function openEdit(skuId){
+  const m=masterAll.find(function(p){return p['SKU_ID']===skuId;});
+  if(!m)return;
+  editTarget=skuId;
+  document.getElementById('edit-title').textContent='商品を編集';
+  document.getElementById('edit-sku').textContent=skuId;
+  fillCategorySelect(m['カテゴリ']);
+  document.getElementById('f-name').value=m['商品名']||'';
+  document.getElementById('f-size').value=String(m['サイズ']||'');
+  document.getElementById('f-unit').value=m['単位']||'';
+  document.getElementById('f-type').value=m['商品区分']||'仕入品';
+  document.getElementById('f-bctype').value=m['バーコード種別']||'QR';
+  document.getElementById('f-bcnum').value=m['バーコード番号']||'';
+  document.getElementById('f-note').value=m['備考']||'';
+  fillMinStock(skuId);
+  document.getElementById('editOverlay').classList.add('show');
+  setTimeout(function(){document.getElementById('f-name').focus();},40);
+}
+function openAdd(){
+  editTarget=null;
+  document.getElementById('edit-title').textContent='商品を追加';
+  document.getElementById('edit-sku').textContent='SKU_IDは保存時に自動で振られます';
+  fillCategorySelect(filters.master.cat||'');
+  document.getElementById('f-name').value='';
+  document.getElementById('f-size').value='';
+  document.getElementById('f-unit').value='袋';
+  document.getElementById('f-type').value=filters.master.type||'仕入品';
+  document.getElementById('f-bctype').value='QR';
+  document.getElementById('f-bcnum').value='';
+  document.getElementById('f-note').value='';
+  fillMinStock(null);
+  document.getElementById('editOverlay').classList.add('show');
+  setTimeout(function(){document.getElementById('f-name').focus();},40);
+}
+function closeEdit(){
+  document.getElementById('editOverlay').classList.remove('show');
+  editTarget=null;
+}
+function collectMinStock(skuId){
+  const inputs=document.querySelectorAll('#f-minstock input');
+  const byW={};
+  for(let i=0;i<inputs.length;i++){
+    const inp=inputs[i],wid=inp.dataset.wid;
+    if(!byW[wid])byW[wid]={SKU_ID:skuId,'倉庫ID':wid};
+    byW[wid][inp.dataset.field==='max'?'最大在庫数':'最低在庫数']=Number(inp.value)||0;
+  }
+  return byW;
+}
+async function saveEdit(){
+  const cat=document.getElementById('f-category').value;
+  const name=document.getElementById('f-name').value.trim();
+  const size=document.getElementById('f-size').value.trim();
+  if(!cat||!name||!size){
+    showToast('カテゴリ・商品名・サイズは必ず入力してください');
+    return;
+  }
+  const btn=document.getElementById('edit-save-btn');
+  btn.disabled=true;btn.textContent='保存中…';
+  const base={
+    'カテゴリ':cat,'商品名':name,'サイズ':size,
+    '単位':document.getElementById('f-unit').value.trim()||'個',
+    '商品区分':document.getElementById('f-type').value,
+    'バーコード種別':document.getElementById('f-bctype').value,
+    '備考':document.getElementById('f-note').value.trim(),
+    'バーコード番号':document.getElementById('f-bcnum').value.trim()
+  };
+  try{
+    const wasNew=!editTarget;
+    let skuId=editTarget;
+    if(editTarget){
+      await post(Object.assign({action:'updateMaster',SKU_ID:editTarget},base));
+    }else{
+      const json=await post(Object.assign({action:'addMaster'},base));
+      skuId=json.SKU_ID||json.skuId||null;
+      if(!skuId){
+        // GASがSKU_IDを返さない場合は、マスタを読み直して同じ内容の行から特定する
+        const ma=await fetchJSON('getMasterAll');
+        masterAll=ma.data||ma;
+        const hit=masterAll.find(function(p){
+          return p['カテゴリ']===cat&&p['商品名']===name&&String(p['サイズ'])===size;
+        });
+        skuId=hit?hit['SKU_ID']:null;
+      }
+    }
+    if(skuId){
+      const byW=collectMinStock(skuId);
+      for(const wid in byW){
+        const v=byW[wid];
+        if(!wasNew||v['最低在庫数']>0||v['最大在庫数']>0){
+          await post(Object.assign({action:'updateMinStock'},v));
+        }
+      }
+    }
+    showToast(wasNew?'商品を追加しました':'保存しました');
+    if(wasNew&&!skuId)showToast('商品は追加しましたが、在庫設定は保存できませんでした。一覧から編集してください。');
+    closeEdit();
+    await loadData();
+    render();
+  }catch(e){
+    showToast('保存できませんでした：'+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='保存する';
+  }
+}
+
+/* ============================================================
+   確認モーダル
+   ============================================================ */
+function openConfirm(title,body,okLabel,onOk){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-body').innerHTML=body;
+  const btn=document.getElementById('confirm-ok-btn');
+  btn.textContent=okLabel;
+  btn.disabled=false;
+  btn.onclick=async function(){
+    btn.disabled=true;btn.textContent='実行中…';
+    try{await onOk();}
+    finally{btn.textContent=okLabel;btn.disabled=false;}
+  };
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+function closeConfirm(){document.getElementById('confirmOverlay').classList.remove('show');}
+
+function askToggle(skuId,restore){
+  const m=masterAll.find(function(p){return p['SKU_ID']===skuId;});
+  if(!m)return;
+  const label=esc(m['商品名'])+' '+esc(m['サイズ']);
+  openConfirm(
+    restore?'廃番を解除する':'廃番にする',
+    restore
+      ? '<b>'+label+'</b> を有効に戻します。<br>入出庫の選択肢に再び表示されるようになります。'
+      : '<b>'+label+'</b> を廃番にします。<br>記録や在庫はそのまま残り、入出庫の選択肢から外れます。',
+    restore?'有効に戻す':'廃番にする',
+    async function(){
+      try{
+        await post({action:'toggleMaster',SKU_ID:skuId,'有効':restore});
+        showToast(restore?'有効に戻しました':'廃番にしました');
+        closeConfirm();
+        await loadData();
+        render();
+      }catch(e){showToast('変更できませんでした：'+e.message);}
+    }
+  );
+}
+
+function askCancelLog(logId){
+  const r=logs.find(function(x){return x['LOG_ID']===logId;});
+  if(!r)return;
+  const qty=num2(r['数量変動']);
+  const body='<b>'+esc(r['商品名（自動）'])+' '+esc(r['サイズ（自動）'])+'</b><br>'
+    +esc(r['操作種別'])+'　'+(qty>0?'+':'')+fmtQty(qty)+' '+esc(r['単位'])+'　'+esc(r['倉庫'])+'<br>'
+    +'<span style="color:var(--ink2)">'+esc(r['日時'])+'</span><br><br>'
+    +'取消ログが追記されて在庫が元に戻ります。元の記録は残ります。';
+  openConfirm('この記録を取り消す',body,'取り消す',async function(){
+    try{
+      await post({
+        action:'cancelLog',
+        LOG_ID:r['LOG_ID'],SKU_ID:r['SKU_ID'],
+        '操作種別':r['操作種別'],'倉庫':r['倉庫'],
+        '移動先倉庫':r['移動先倉庫']||'','担当者':staffName||r['担当者'],
+        '数量変動':r['数量変動']
+      });
+      showToast('取り消しました');
+      closeConfirm();
+      await loadLogs();
+      await loadData();
+    }catch(e){showToast('取り消せませんでした：'+e.message);}
+  });
+}
+
+/* ============================================================
+   書き出し・印刷
+   ============================================================ */
+function downloadCsv(filename,rows){
+  const body=rows.map(function(r){
+    return r.map(function(c){
+      const s=String(c===null||c===undefined?'':c);
+      return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+    }).join(',');
+  }).join('\r\n');
+  const blob=new Blob(['\uFEFF'+body],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+  showToast(filename+' を書き出しました');
+}
+function dateTag(){
+  const d=new Date();
+  return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+}
+function exportStockCsv(){
+  const head=['カテゴリ','商品名','サイズ','単位','商品区分','SKU_ID'];
+  warehouses.forEach(function(w){head.push(w['倉庫名'],w['倉庫名']+'_最低',w['倉庫名']+'_最大');});
+  head.push('合計在庫','ステータス','有効');
+  const rows=[head];
+  stockRows().forEach(function(r){
+    const line=[r.m['カテゴリ']||'',r.item['商品名'],r.item['サイズ'],r.item['単位'],r.m['商品区分']||'',r.item['SKU_ID']];
+    r.cells.forEach(function(c){line.push(c.stock,c.min,c.max);});
+    line.push(r.total,r.state.level,isActive(r.m)?'TRUE':'FALSE');
+    rows.push(line);
+  });
+  downloadCsv('在庫一覧_'+dateTag()+'.csv',rows);
+}
+function exportMasterCsv(){
+  const head=['カテゴリ','商品名','サイズ','単位','商品区分','SKU_ID','バーコード種別','バーコード番号','備考'];
+  warehouses.forEach(function(w){head.push(w['倉庫名']+'_最低',w['倉庫名']+'_最大');});
+  head.push('有効');
+  const rows=[head];
+  masterRows().forEach(function(m){
+    const line=[m['カテゴリ']||'',m['商品名'],m['サイズ'],m['単位'],m['商品区分']||'',m['SKU_ID'],
+      m['バーコード種別']||'',m['バーコード番号']||'',m['備考']||''];
+    warehouses.forEach(function(w){
+      const ms=msOf(m['SKU_ID'],w['倉庫名']);
+      line.push(ms?parseFloat(ms['最低在庫数'])||0:0,ms?parseFloat(ms['最大在庫数'])||0:0);
+    });
+    line.push(isActive(m)?'TRUE':'FALSE');
+    rows.push(line);
+  });
+  downloadCsv('商品マスタ_'+dateTag()+'.csv',rows);
+}
+function exportHistoryCsv(){
+  const head=['LOG_ID','日時','操作種別','SKU_ID','商品名','サイズ','倉庫','移動先倉庫','数量変動','単位','担当者','備考'];
+  const rows=[head];
+  historyRows().forEach(function(r){
+    rows.push([r['LOG_ID'],r['日時'],r['操作種別'],r['SKU_ID'],r['商品名（自動）'],r['サイズ（自動）'],
+      r['倉庫'],r['移動先倉庫']||'',r['数量変動'],r['単位'],r['担当者'],r['備考']||'']);
+  });
+  downloadCsv('入出庫履歴_'+dateTag()+'.csv',rows);
+}
+
+function printWindow(title,inner){
+  const css='body{font-family:'+"'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif"+';padding:16px;color:#111;font-size:11px;}'
+    +'h1{font-size:16px;margin-bottom:4px;}.meta{font-size:11px;color:#666;margin-bottom:14px;}'
+    +'h2{font-size:13px;margin:16px 0 6px;padding:4px 10px;border-radius:4px;background:#eef0fe;color:#3730a3;}'
+    +'table{width:100%;border-collapse:collapse;margin-bottom:10px;}'
+    +'th{background:#f3f4f6;padding:6px 8px;text-align:left;border:1px solid #e5e7eb;font-weight:600;font-size:10.5px;}'
+    +'td{padding:5px 8px;border:1px solid #e5e7eb;}tr:nth-child(even){background:#fafbfd;}'
+    +'.num{text-align:right;}.low{color:#c2410c;font-weight:700;}'
+    +'@media print{@page{margin:12mm;size:A4 landscape;}h2{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}';
+  const html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>'+esc(title)+'</title>'
+    +'<style>'+css+'</style></head><body>'+inner+'</body></html>';
+  const win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  win.print();
+}
+function printStock(){
+  const rows=stockRows();
+  let inner='<h1>在庫一覧</h1><div class="meta">出力日時：'+timeStamp(new Date())
+    +'　／　'+rows.length+' 件'+(staffName?'　／　担当：'+esc(staffName):'')+'</div>';
+  let lastCat=null;
+  rows.forEach(function(r){
+    const cat=r.m['カテゴリ']||'未分類';
+    if(cat!==lastCat){
+      if(lastCat!==null)inner+='</tbody></table>';
+      inner+='<h2>'+esc(cat)+'</h2><table><thead><tr><th>商品名</th><th>サイズ</th><th>単位</th>'
+        +warehouses.map(function(w){return '<th class="num">'+esc(w['倉庫名'])+'</th>';}).join('')
+        +'<th class="num">合計</th></tr></thead><tbody>';
+      lastCat=cat;
+    }
+    inner+='<tr><td>'+esc(r.item['商品名'])+'</td><td>'+esc(r.item['サイズ'])+'</td><td>'+esc(r.item['単位'])+'</td>'
+      +r.cells.map(function(c){
+        const low=c.min>0&&c.stock<c.min;
+        return '<td class="num'+(low?' low':'')+'">'+fmtQty(c.stock)+'</td>';
+      }).join('')
+      +'<td class="num">'+fmtQty(r.total)+'</td></tr>';
+  });
+  if(lastCat!==null)inner+='</tbody></table>';
+  else inner+='<div>対象がありません</div>';
+  printWindow('在庫一覧',inner);
+}
+function printReplenish(){
+  const wName=filters.dash.wh;
+  const r=replenishFor(wName);
+  let inner='<h1>補充確認リスト</h1><div class="meta">倉庫：'+esc(wName)
+    +'　／　出力日時：'+timeStamp(new Date())+(staffName?'　／　担当：'+esc(staffName):'')+'</div>';
+  function tbl(title,rows){
+    if(!rows.length)return '';
+    let h='<h2>'+esc(title)+'（'+rows.length+'件）</h2><table><thead><tr>'
+      +'<th>商品名</th><th>サイズ</th><th class="num">現在庫</th><th class="num">最低</th>'
+      +'<th class="num">最大</th><th class="num">補充数</th><th style="width:70px">確認</th></tr></thead><tbody>';
+    rows.forEach(function(d){
+      const u=d.item['単位']||'';
+      h+='<tr><td>'+esc(d.item['商品名'])+'</td><td>'+esc(d.item['サイズ'])+'</td>'
+        +'<td class="num">'+fmtQty(d.stock)+' '+esc(u)+'</td>'
+        +'<td class="num">'+fmtQty(d.min)+'</td>'
+        +'<td class="num">'+(d.max>0?fmtQty(d.max):'—')+'</td>'
+        +'<td class="num low">'+fmtQty(d.need)+' '+esc(u)+'</td><td></td></tr>';
+    });
+    return h+'</tbody></table>';
+  }
+  const body=tbl('要補充（小分け品）',r.reorder)+tbl('要仕入（在庫ゼロ）',r.purchase);
+  inner+=body||'<div>補充が必要な商品はありません</div>';
+  printWindow('補充確認リスト',inner);
+}
+
+/* ============================================================
+   起動
+   ============================================================ */
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    if(document.getElementById('confirmOverlay').classList.contains('show'))closeConfirm();
+    else if(document.getElementById('editOverlay').classList.contains('show'))closeEdit();
+  }
+});
+['editOverlay','confirmOverlay'].forEach(function(id){
+  document.getElementById(id).addEventListener('mousedown',function(e){
+    if(e.target===this){id==='editOverlay'?closeEdit():closeConfirm();}
+  });
+});
+
+(async function init(){
+  await loadData();
+  go('dash');
+})();
+</script>
+</body>
+</html>
