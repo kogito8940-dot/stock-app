@@ -572,7 +572,12 @@ async function reload(){
 }
 
 /* ============================================================
-   補充判定（スマホ版の補充リストと同じ規則）
+   補充判定
+
+   最低在庫数が設定してある商品は、商品区分に関係なく
+   在庫がそれを下回った時点で対象にする。
+   区分は「小分け作業で補える」か「外から仕入れる」かの
+   仕分けにだけ使う。
    ============================================================ */
 function replenishFor(wName){
   const key=stockKeyOf(wName);
@@ -580,15 +585,16 @@ function replenishFor(wName){
   summary.forEach(function(item){
     const m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!isActive(m))return;
-    const stock=num2(item[key]);
     const ms=msOf(item['SKU_ID'],wName);
     const min=ms?parseFloat(ms['最低在庫数'])||0:0;
-    const max=ms?parseFloat(ms['最大在庫数'])||0:0;
     if(min===0)return;
+    const stock=num2(item[key]);
+    if(stock>=min)return;
+    const max=ms?parseFloat(ms['最大在庫数'])||0:0;
     const need=num2(max>0?Math.max(max-stock,0):Math.max(min-stock,0));
     const row={item:item,m:m,stock:stock,min:min,max:max,need:need};
-    if(m['商品区分']==='小分け品'&&stock<min)reorder.push(row);
-    else if(m['商品区分']==='仕入品'&&stock===0)purchase.push(row);
+    if(m['商品区分']==='小分け品')reorder.push(row);
+    else purchase.push(row);
   });
   const s=function(a,b){return jaSort(a.item['商品名'],b.item['商品名']);};
   reorder.sort(s);purchase.sort(s);
@@ -701,14 +707,14 @@ function renderDash(){
 
   let html='<div class="kpis">'
     +kpi('有効SKU',activeSkus,offSkus?('廃番 '+offSkus+' 件'):'全件が有効','')
-    +kpi('要補充（小分け品）',r.reorder.length,wName,'warn')
-    +kpi('要仕入（在庫ゼロ）',r.purchase.length,wName,'danger')
+    +kpi('小分け作業が必要',r.reorder.length,wName,'warn')
+    +kpi('発注が必要',r.purchase.length,wName,'danger')
     +kpi('全倉庫で在庫ゼロ',outOfStock,'有効SKUのうち','danger')
     +'</div>';
 
   html+='<div class="two-col">';
-  html+=replenishPanel('要補充','小分け品が最低在庫を下回っています',r.reorder,'b-warn');
-  html+=replenishPanel('要仕入','仕入品の在庫がゼロです',r.purchase,'b-danger');
+  html+=replenishPanel('小分け作業が必要','小分け品が最低在庫を下回っています',r.reorder,'b-warn');
+  html+=replenishPanel('発注が必要','小分け品以外が最低在庫を下回っています',r.purchase,'b-danger');
   html+='</div>';
 
   setContent(html);
@@ -726,13 +732,14 @@ function replenishPanel(title,note,rows,badgeCls){
     h+='<div class="empty">対象はありません</div></div>';
     return h;
   }
-  h+='<table><thead><tr><th>商品名</th><th>サイズ</th>'
+  h+='<table><thead><tr><th>商品名</th><th>サイズ</th><th>区分</th>'
     +'<th class="num">現在庫</th><th class="num">最低</th><th class="num">最大</th>'
     +'<th class="num">補充数</th></tr></thead><tbody>';
   rows.forEach(function(d){
     const u=d.item['単位']||'';
     h+='<tr><td class="name">'+esc(d.item['商品名'])+'</td>'
       +'<td class="dim">'+esc(d.item['サイズ'])+'</td>'
+      +'<td class="dim nowrap">'+esc(d.m['商品区分']||'')+'</td>'
       +'<td class="num">'+fmtQty(d.stock)+'</td>'
       +'<td class="num dim">'+fmtQty(d.min)+'</td>'
       +'<td class="num dim">'+(d.max>0?fmtQty(d.max):'—')+'</td>'
@@ -1808,11 +1815,12 @@ function printReplenish(){
   function tbl(title,rows){
     if(!rows.length)return '';
     let h='<h2>'+esc(title)+'（'+rows.length+'件）</h2><table><thead><tr>'
-      +'<th>商品名</th><th>サイズ</th><th class="num">現在庫</th><th class="num">最低</th>'
+      +'<th>商品名</th><th>サイズ</th><th>区分</th><th class="num">現在庫</th><th class="num">最低</th>'
       +'<th class="num">最大</th><th class="num">補充数</th><th style="width:70px">確認</th></tr></thead><tbody>';
     rows.forEach(function(d){
       const u=d.item['単位']||'';
       h+='<tr><td>'+esc(d.item['商品名'])+'</td><td>'+esc(d.item['サイズ'])+'</td>'
+        +'<td>'+esc(d.m['商品区分']||'')+'</td>'
         +'<td class="num">'+fmtQty(d.stock)+' '+esc(u)+'</td>'
         +'<td class="num">'+fmtQty(d.min)+'</td>'
         +'<td class="num">'+(d.max>0?fmtQty(d.max):'—')+'</td>'
@@ -1820,7 +1828,7 @@ function printReplenish(){
     });
     return h+'</tbody></table>';
   }
-  const body=tbl('要補充（小分け品）',r.reorder)+tbl('要仕入（在庫ゼロ）',r.purchase);
+  const body=tbl('小分け作業が必要',r.reorder)+tbl('発注が必要',r.purchase);
   inner+=body||'<div>補充が必要な商品はありません</div>';
   printWindow('補充確認リスト',inner);
 }
