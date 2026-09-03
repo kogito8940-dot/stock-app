@@ -237,6 +237,35 @@ tbody tr:last-child td{border-bottom:none;}
 .ms-row .wname{font-size:12.5px;color:var(--ink2);}
 .ms-head{font-size:11px;color:var(--ink3);text-align:right;}
 
+/* ---- 棚卸し ---- */
+.content.has-bar{padding-bottom:86px;}
+.inv-input{
+  width:86px;padding:4px 8px;text-align:right;font-variant-numeric:tabular-nums;
+  border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px;
+}
+.inv-input.filled{border-color:var(--accent);background:#fbfbff;font-weight:600;}
+.diff{font-variant-numeric:tabular-nums;text-align:right;font-weight:700;white-space:nowrap;}
+.diff.plus{color:var(--ok);}
+.diff.minus{color:var(--danger);}
+.diff.zero{color:var(--ink3);font-weight:400;}
+.commit-bar{
+  position:fixed;left:var(--rail-w);right:0;bottom:0;z-index:60;display:none;
+  background:#fff;border-top:1px solid var(--line);
+  padding:12px 22px;align-items:center;gap:18px;
+  box-shadow:0 -4px 16px rgba(17,24,39,.07);
+}
+.commit-bar.show{display:flex;}
+.cb-stat{font-size:12.5px;color:var(--ink2);}
+.cb-stat b{font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums;margin:0 3px;}
+.cb-stat b.warn{color:var(--warn);}
+.banner{
+  background:var(--accent-soft);border:1px solid #d5d8fb;color:#3730a3;
+  padding:9px 14px;border-radius:8px;font-size:12.5px;margin-bottom:14px;
+  display:flex;align-items:center;gap:12px;
+}
+.banner .btn{margin-left:auto;}
+.prog{font-size:12.5px;color:var(--ink2);}
+
 /* ---- トースト ---- */
 #toast{
   position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(14px);
@@ -266,12 +295,15 @@ tbody tr:last-child td{border-bottom:none;}
       <button class="nav-item" data-view="master" onclick="go('master')">
         <span class="nav-icon">▣</span>商品マスタ
       </button>
+      <button class="nav-item" data-view="inv" onclick="go('inv')">
+        <span class="nav-icon">☑</span>棚卸し<span class="nav-badge" id="badge-inv" style="display:none"></span>
+      </button>
       <button class="nav-item" data-view="history" onclick="go('history')">
         <span class="nav-icon">⟲</span>入出庫履歴
       </button>
     </nav>
     <div class="rail-foot">
-      <div class="who" id="foot-staff">担当者未設定</div>
+      <div class="who" id="foot-staff" style="cursor:pointer" onclick="editStaff()" title="クリックして変更">担当者未設定</div>
       <div class="stamp" id="foot-stamp">読み込み中…</div>
       <button class="rail-btn" onclick="reload()">データを再読み込み</button>
       <a class="rail-link" href="./index.html">スマホ版を開く</a>
@@ -349,6 +381,28 @@ tbody tr:last-child td{border-bottom:none;}
   </div>
 </div>
 
+<div class="commit-bar" id="commit-bar">
+  <div class="cb-stat">入力済み<b id="cb-entered">0</b>件　差異あり<b class="warn" id="cb-diff">0</b>件</div>
+  <div class="prog" id="cb-prog"></div>
+  <div style="margin-left:auto;display:flex;gap:8px;">
+    <button class="btn" onclick="invClearDraft()">入力をすべて消す</button>
+    <button class="btn btn-primary" id="cb-commit" onclick="openInvPreview()">差異を確認して確定する</button>
+  </div>
+</div>
+
+<div class="overlay" id="invOverlay">
+  <div class="modal" style="width:820px">
+    <div class="modal-head"><h2>棚卸しの差異を確認</h2>
+      <span class="panel-note sku" id="inv-pv-note"></span></div>
+    <div class="modal-body" id="inv-pv-body"></div>
+    <div class="modal-foot">
+      <span class="prog" id="inv-pv-prog" style="margin-right:auto"></span>
+      <button class="btn" onclick="closeInvPreview()">やめる</button>
+      <button class="btn btn-primary" id="inv-pv-btn" onclick="commitInventory()">棚卸し修正を記録する</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -367,8 +421,12 @@ const filters={
   stock:{q:'',cat:'',type:'',state:'',showOff:false,sort:{key:'cat',dir:1}},
   master:{q:'',cat:'',type:'',showOff:false,sort:{key:'cat',dir:1}},
   history:{q:'',range:'week',type:'',wh:'',showCancel:false,limit:300},
-  dash:{wh:''}
+  dash:{wh:''},
+  inv:{wh:'',cat:'',q:'',diffOnly:false}
 };
+
+/* 棚卸しの入力状態。counts は SKU_ID => 入力文字列、sysAt は下書き作成時のシステム在庫 */
+const inv={counts:{},sysAt:{},rows:[],restoredAt:null};
 
 /* ============================================================
    ユーティリティ
@@ -497,6 +555,15 @@ async function loadData(){
   updateBadge();
 }
 
+function editStaff(){
+  const v=prompt('担当者名を入力してください',staffName||'');
+  if(v===null)return;
+  staffName=v.trim();
+  localStorage.setItem('staff_name',staffName);
+  document.getElementById('foot-staff').textContent=staffName||'担当者未設定';
+  showToast(staffName?'担当者を「'+staffName+'」にしました':'担当者を未設定にしました');
+}
+
 async function reload(){
   document.getElementById('foot-stamp').textContent='読み込み中…';
   await loadData();
@@ -562,6 +629,7 @@ const VIEWS={
   dash:{title:'ダッシュボード',render:renderDash},
   stock:{title:'在庫一覧',render:renderStock},
   master:{title:'商品マスタ',render:renderMaster},
+  inv:{title:'棚卸し',render:renderInv},
   history:{title:'入出庫履歴',render:renderHistory}
 };
 
@@ -572,6 +640,9 @@ function go(view){
   });
   document.getElementById('view-title').textContent=VIEWS[view].title;
   document.getElementById('content').scrollTop=0;
+  const bar=document.getElementById('commit-bar');
+  bar.classList.toggle('show',view==='inv');
+  document.getElementById('content').classList.toggle('has-bar',view==='inv');
   if(view==='history'&&!logs.length)loadLogs();
   else render();
 }
@@ -912,6 +983,371 @@ function renderMaster(){
   });
   h+='</tbody></table></div>';
   setContent(h);
+}
+
+/* ============================================================
+   棚卸し
+   ============================================================ */
+function invDraftKey(){return 'pc_inv_'+(filters.inv.wh||'');}
+function invSaveDraft(){
+  if(!filters.inv.wh)return;
+  try{
+    localStorage.setItem(invDraftKey(),JSON.stringify({
+      ts:Date.now(),counts:inv.counts,sysAt:inv.sysAt
+    }));
+  }catch(e){/* 保存できなくても入力は続行できる */}
+}
+let invSaveTimer=null;
+function invSaveDraftSoon(){
+  clearTimeout(invSaveTimer);
+  invSaveTimer=setTimeout(invSaveDraft,500);
+}
+function invLoadDraft(){
+  inv.counts={};inv.sysAt={};inv.restoredAt=null;
+  try{
+    const raw=localStorage.getItem(invDraftKey());
+    if(!raw)return;
+    const d=JSON.parse(raw);
+    inv.counts=d.counts||{};
+    inv.sysAt=d.sysAt||{};
+    if(Object.keys(inv.counts).length)inv.restoredAt=new Date(d.ts||Date.now());
+  }catch(e){/* 壊れた下書きは無視する */}
+}
+function invSetWarehouse(w){
+  invSaveDraft();
+  filters.inv.wh=w;
+  invLoadDraft();
+  render();
+}
+function invClearDraft(){
+  if(!Object.keys(inv.counts).length){showToast('消す入力がありません');return;}
+  openConfirm('入力をすべて消す',
+    '<b>'+esc(filters.inv.wh)+'</b> に入力した実数をすべて消します。<br>まだ記録していない入力なので、在庫には影響しません。',
+    '消す',
+    function(){
+      inv.counts={};inv.sysAt={};inv.restoredAt=null;
+      localStorage.removeItem(invDraftKey());
+      closeConfirm();
+      render();
+      showToast('入力を消しました');
+    });
+}
+
+function invRows(){
+  const f=filters.inv;
+  const q=f.q.trim().toLowerCase();
+  const key=stockKeyOf(f.wh);
+  const rows=[];
+  summary.forEach(function(item){
+    const m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+    if(!isActive(m))return;
+    if(f.cat&&m['カテゴリ']!==f.cat)return;
+    if(q){
+      const hay=[item['商品名'],item['サイズ'],item['SKU_ID'],m['カテゴリ']].join(' ').toLowerCase();
+      if(hay.indexOf(q)===-1)return;
+    }
+    const sku=item['SKU_ID'];
+    const sys=num2(item[key]);
+    const val=inv.counts[sku];
+    const has=val!==undefined&&val!=='';
+    const diff=has?num2(parseFloat(val)-sys):null;
+    if(f.diffOnly&&!(has&&diff!==0))return;
+    rows.push({
+      sku:sku,m:m,item:item,sys:sys,
+      name:item['商品名'],size:item['サイズ'],unit:item['単位'],
+      cat:m['カテゴリ']||'未分類',val:has?val:'',diff:diff
+    });
+  });
+  rows.sort(function(a,b){
+    return cmp(catRank(a.cat),catRank(b.cat))||jaSort(a.cat,b.cat)
+      ||jaSort(a.name,b.name)||jaSort(String(a.size),String(b.size));
+  });
+  return rows;
+}
+
+function renderInv(){
+  if(!summary.length||!warehouses.length){
+    setToolbar('');setActions('');setCount('');
+    setContent('<div class="loading">読み込み中…</div>');
+    return;
+  }
+  const f=filters.inv;
+  if(!f.wh){f.wh=warehouses[0]['倉庫名'];invLoadDraft();}
+
+  setActions('<button class="btn" onclick="printInvSheet()">棚卸しリストを印刷</button>');
+  setToolbar(
+    '<div class="seg">'+warehouses.map(function(w){
+      return '<button class="'+(w['倉庫名']===f.wh?'on':'')+'" onclick="invSetWarehouse(\''+jsq(w['倉庫名'])+'\')">'+esc(w['倉庫名'])+'</button>';
+    }).join('')+'</div>'
+    +'<input type="text" class="search" id="tb-iq" placeholder="商品名・サイズ・SKU_IDで絞り込む" value="'+esc(f.q)+'">'
+    +selectFilter('icat','全カテゴリ',allCategories(),f.cat,'filters.inv.cat')
+    +'<label class="check"><input type="checkbox" '+(f.diffOnly?'checked':'')
+      +' onchange="filters.inv.diffOnly=this.checked;render();">差異がある行だけ表示</label>'
+  );
+  bindSearch('tb-iq','inv');
+
+  const rows=invRows();
+  inv.rows=rows;
+  setCount(rows.length+' 件');
+
+  let h='';
+  if(inv.restoredAt){
+    h+='<div class="banner">前回の入力を復元しました（'+esc(timeStamp(inv.restoredAt))+'）。'
+      +'続きから数えられます。<button class="btn btn-sm" onclick="inv.restoredAt=null;render();">閉じる</button></div>';
+  }
+  h+='<div class="panel"><table><thead><tr>'
+    +'<th>カテゴリ</th><th>商品名</th><th>サイズ</th><th>単位</th>'
+    +'<th class="num divider-l">システム在庫</th><th class="num">実数</th><th class="num">差異</th>'
+    +'</tr></thead><tbody>';
+
+  if(!rows.length){
+    h+='</tbody></table><div class="empty">'
+      +(f.diffOnly?'差異のある行はまだありません。':'条件に合う商品がありません。')
+      +'</div></div>';
+    setContent(h);
+    updateInvBar();
+    return;
+  }
+
+  rows.forEach(function(r,i){
+    h+='<tr>'
+      +'<td class="nowrap"><span class="badge b-cat">'+esc(r.cat)+'</span></td>'
+      +'<td class="name">'+esc(r.name)+'</td>'
+      +'<td class="dim nowrap">'+esc(r.size)+'</td>'
+      +'<td class="dim">'+esc(r.unit)+'</td>'
+      +'<td class="num divider-l">'+fmtQty(r.sys)+'</td>'
+      +'<td class="num"><input type="number" step="any" class="inv-input'+(r.val!==''?' filled':'')+'" '
+        +'id="iq-'+i+'" value="'+esc(r.val)+'" '
+        +'oninput="invInput(this,'+i+')" onkeydown="invKey(event,'+i+')"></td>'
+      +'<td class="diff '+diffCls(r.diff)+'" id="dc-'+i+'">'+diffText(r.diff)+'</td>'
+      +'</tr>';
+  });
+  h+='</tbody></table></div>'
+    +'<div style="font-size:11.5px;color:var(--ink3);margin-top:9px;">'
+    +'実数を入力すると差異が出ます。Enterで次の行へ移ります。入力は自動保存されるので、'
+    +'途中でページを閉じても続きから再開できます。確定するまで在庫は変わりません。</div>';
+  setContent(h);
+  updateInvBar();
+}
+
+function diffCls(d){
+  if(d===null||isNaN(d))return 'zero';
+  if(d>0)return 'plus';
+  if(d<0)return 'minus';
+  return 'zero';
+}
+function diffText(d){
+  if(d===null||isNaN(d))return '—';
+  if(d===0)return '0';
+  return (d>0?'+':'')+fmtQty(d);
+}
+
+function invInput(el,i){
+  const r=inv.rows[i];
+  if(!r)return;
+  const v=el.value.trim();
+  if(v===''){
+    delete inv.counts[r.sku];
+    delete inv.sysAt[r.sku];
+    r.val='';r.diff=null;
+    el.classList.remove('filled');
+  }else{
+    inv.counts[r.sku]=v;
+    inv.sysAt[r.sku]=r.sys;
+    r.val=v;
+    const n=parseFloat(v);
+    r.diff=isNaN(n)?null:num2(n-r.sys);
+    el.classList.add('filled');
+  }
+  const cell=document.getElementById('dc-'+i);
+  if(cell){cell.textContent=diffText(r.diff);cell.className='diff '+diffCls(r.diff);}
+  updateInvBar();
+  invSaveDraftSoon();
+}
+function invKey(e,i){
+  if(e.key!=='Enter')return;
+  e.preventDefault();
+  const next=document.getElementById('iq-'+(i+1));
+  if(next){next.focus();next.select();}
+  else e.target.blur();
+}
+function updateInvBar(){
+  let entered=0,diffs=0;
+  Object.keys(inv.counts).forEach(function(sku){
+    const v=inv.counts[sku];
+    if(v==='')return;
+    entered++;
+    const n=parseFloat(v);
+    if(isNaN(n))return;
+    const sys=inv.sysAt[sku];
+    if(num2(n-(sys||0))!==0)diffs++;
+  });
+  document.getElementById('cb-entered').textContent=entered;
+  document.getElementById('cb-diff').textContent=diffs;
+  document.getElementById('cb-commit').disabled=diffs===0;
+}
+
+/* ---- 確定前のプレビュー ---- */
+let invPending=[];
+async function openInvPreview(){
+  if(!staffName){
+    showToast('先に左下の担当者名を設定してください');
+    editStaff();
+    if(!staffName)return;
+  }
+  const btn=document.getElementById('cb-commit');
+  btn.disabled=true;
+  document.getElementById('cb-prog').textContent='最新の在庫を確認しています…';
+  let fresh=null;
+  try{
+    fresh=await fetchJSON('getSummary',30000);
+  }catch(e){
+    document.getElementById('cb-prog').textContent='';
+    btn.disabled=false;
+    showToast('最新の在庫を取得できませんでした。通信を確認してもう一度お試しください。');
+    return;
+  }
+  summary=fresh;
+  document.getElementById('cb-prog').textContent='';
+  btn.disabled=false;
+
+  const key=stockKeyOf(filters.inv.wh);
+  const map={};
+  summary.forEach(function(x){map[x['SKU_ID']]=x;});
+
+  invPending=[];
+  Object.keys(inv.counts).forEach(function(sku){
+    const v=inv.counts[sku];
+    const n=parseFloat(v);
+    if(v===''||isNaN(n))return;
+    const item=map[sku];
+    if(!item)return;
+    const sysNew=num2(item[key]);
+    const sysOld=inv.sysAt[sku];
+    const diff=num2(n-sysNew);
+    if(diff===0)return;
+    invPending.push({
+      sku:sku,name:item['商品名'],size:item['サイズ'],unit:item['単位'],
+      actual:num2(n),sysOld:sysOld,sysNew:sysNew,diff:diff,
+      changed:sysOld!==undefined&&num2(sysOld)!==sysNew
+    });
+  });
+
+  if(!invPending.length){
+    showToast('差異のある行がありません。すでに反映済みの可能性があります。');
+    render();
+    return;
+  }
+  invPending.sort(function(a,b){return jaSort(a.name,b.name);});
+
+  const changed=invPending.filter(function(x){return x.changed;}).length;
+  document.getElementById('inv-pv-note').textContent=filters.inv.wh+'　担当：'+staffName;
+
+  let h='';
+  if(changed){
+    h+='<div class="banner" style="background:var(--warn-soft);border-color:#fbd9bf;color:#9a3412;">'
+      +'数え始めてから他の記録で在庫が動いた商品が '+changed+' 件あります。'
+      +'差異は最新のシステム在庫を基準に計算し直しました。</div>';
+  }
+  h+='<table><thead><tr><th>商品名</th><th>サイズ</th>'
+    +'<th class="num">システム在庫</th><th class="num">実数</th><th class="num">差異</th></tr></thead><tbody>';
+  invPending.forEach(function(x){
+    h+='<tr><td class="name">'+esc(x.name)+(x.changed?' <span class="badge b-warn">在庫が変動</span>':'')+'</td>'
+      +'<td class="dim nowrap">'+esc(x.size)+'</td>'
+      +'<td class="num">'+fmtQty(x.sysNew)
+        +(x.changed?' <span class="dim" style="font-size:11px">←'+fmtQty(x.sysOld)+'</span>':'')+'</td>'
+      +'<td class="num" style="font-weight:600">'+fmtQty(x.actual)+'</td>'
+      +'<td class="diff '+diffCls(x.diff)+'">'+diffText(x.diff)+' <span class="dim" style="font-weight:400">'+esc(x.unit)+'</span></td></tr>';
+  });
+  h+='</tbody></table>'
+    +'<div style="font-size:12px;color:var(--ink2);margin-top:14px;line-height:1.7;">'
+    +invPending.length+' 件の棚卸し修正を②入出庫ログに追記します。'
+    +'既存の記録は書き換えません。記録後に間違いが分かった場合は、履歴画面から1件ずつ取り消せます。</div>';
+
+  document.getElementById('inv-pv-body').innerHTML=h;
+  document.getElementById('inv-pv-prog').textContent='';
+  document.getElementById('inv-pv-btn').disabled=false;
+  document.getElementById('inv-pv-btn').textContent=invPending.length+' 件を記録する';
+  document.getElementById('invOverlay').classList.add('show');
+}
+function closeInvPreview(){
+  document.getElementById('invOverlay').classList.remove('show');
+}
+
+async function commitInventory(){
+  const btn=document.getElementById('inv-pv-btn');
+  const prog=document.getElementById('inv-pv-prog');
+  btn.disabled=true;
+  const failed=[];
+  let done=0;
+  for(let i=0;i<invPending.length;i++){
+    const x=invPending[i];
+    prog.textContent='記録中… '+(i+1)+' / '+invPending.length+'　'+x.name;
+    try{
+      await post({
+        action:'addLog',
+        '操作種別':'棚卸し修正',
+        SKU_ID:x.sku,
+        '倉庫':filters.inv.wh,
+        '移動先倉庫':'',
+        '数量変動':x.diff,
+        '単位':x.unit,
+        '担当者':staffName,
+        '備考':'棚卸し（実数:'+x.actual+' システム:'+x.sysNew+'）'
+      });
+      delete inv.counts[x.sku];
+      delete inv.sysAt[x.sku];
+      done++;
+    }catch(e){
+      failed.push(x.name+' '+x.size+'：'+e.message);
+    }
+  }
+  invSaveDraft();
+  prog.textContent='';
+  btn.disabled=false;
+  closeInvPreview();
+
+  if(failed.length){
+    showToast(done+' 件を記録し、'+failed.length+' 件が失敗しました');
+    console.warn('棚卸し記録の失敗:',failed);
+  }else{
+    showToast(done+' 件の棚卸し修正を記録しました');
+  }
+
+  await loadData();
+  render();
+
+  if(failed.length){
+    openConfirm('記録できなかった行があります',
+      '<div style="font-size:12.5px;line-height:1.8">'+failed.map(esc).join('<br>')+'</div>'
+      +'<div style="margin-top:12px;color:var(--ink2);font-size:12px">'
+      +'失敗した行の入力は残してあります。通信を確認してもう一度確定してください。</div>',
+      '閉じる',function(){closeConfirm();});
+  }
+}
+
+function printInvSheet(){
+  const rows=invRows();
+  if(!rows.length){showToast('印刷する行がありません');return;}
+  let inner='<h1>棚卸しリスト</h1><div class="meta">倉庫：'+esc(filters.inv.wh)
+    +'　／　出力日時：'+timeStamp(new Date())
+    +(staffName?'　／　担当：'+esc(staffName):'')
+    +'　／　'+rows.length+' 件</div>';
+  let lastCat=null;
+  rows.forEach(function(r){
+    if(r.cat!==lastCat){
+      if(lastCat!==null)inner+='</tbody></table>';
+      inner+='<h2>'+esc(r.cat)+'</h2><table><thead><tr>'
+        +'<th style="width:34%">商品名</th><th style="width:16%">サイズ</th><th style="width:8%">単位</th>'
+        +'<th class="num" style="width:12%">データ在庫</th>'
+        +'<th style="width:30%">実数記入</th></tr></thead><tbody>';
+      lastCat=r.cat;
+    }
+    inner+='<tr><td>'+esc(r.name)+'</td><td>'+esc(r.size)+'</td><td>'+esc(r.unit)+'</td>'
+      +'<td class="num">'+fmtQty(r.sys)+'</td><td></td></tr>';
+  });
+  inner+='</tbody></table>';
+  printWindow('棚卸しリスト',inner);
 }
 
 /* ============================================================
@@ -1395,13 +1831,20 @@ function printReplenish(){
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){
     if(document.getElementById('confirmOverlay').classList.contains('show'))closeConfirm();
+    else if(document.getElementById('invOverlay').classList.contains('show'))closeInvPreview();
     else if(document.getElementById('editOverlay').classList.contains('show'))closeEdit();
   }
 });
-['editOverlay','confirmOverlay'].forEach(function(id){
+const CLOSERS={editOverlay:closeEdit,confirmOverlay:closeConfirm,invOverlay:closeInvPreview};
+Object.keys(CLOSERS).forEach(function(id){
   document.getElementById(id).addEventListener('mousedown',function(e){
-    if(e.target===this){id==='editOverlay'?closeEdit():closeConfirm();}
+    if(e.target===this)CLOSERS[id]();
   });
+});
+
+/* 入力途中の棚卸しを閉じる前に保存する */
+window.addEventListener('beforeunload',function(){
+  if(Object.keys(inv.counts).length)invSaveDraft();
 });
 
 (async function init(){
