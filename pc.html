@@ -237,6 +237,11 @@ tbody tr:last-child td{border-bottom:none;}
 .ms-row .wname{font-size:12.5px;color:var(--ink2);}
 .ms-head{font-size:11px;color:var(--ink3);text-align:right;}
 
+/* ---- 発注 ---- */
+.b-order{background:#eaf1fd;color:#1d4ed8;}
+.ord{font-size:11px;color:var(--ink2);line-height:1.45;margin-top:2px;white-space:nowrap;}
+.ord .late{color:var(--danger);font-weight:700;}
+
 /* ---- 棚卸し ---- */
 .content.has-bar{padding-bottom:86px;}
 .inv-input{
@@ -369,6 +374,29 @@ tbody tr:last-child td{border-bottom:none;}
   </div>
 </div>
 
+<!-- ============ 発注登録モーダル ============ -->
+<div class="overlay" id="orderOverlay">
+  <div class="modal narrow" style="width:480px">
+    <div class="modal-head"><h2>発注を登録</h2></div>
+    <div class="modal-body">
+      <div style="font-size:14px;font-weight:700;margin-bottom:2px;" id="o-name"></div>
+      <div style="font-size:12px;color:var(--ink2);margin-bottom:16px;" id="o-meta"></div>
+      <div class="form-grid">
+        <div class="form-row wide"><label for="o-due">予定納期</label><input type="date" id="o-due"></div>
+        <div class="form-row wide"><label for="o-note">備考</label><input type="text" id="o-note"></div>
+      </div>
+      <div style="font-size:11.5px;color:var(--ink3);margin-top:14px;line-height:1.7;">
+        登録すると補充リストに手配済みと表示されます。
+        この倉庫でこの商品の入庫を記録すると、手配済み表示は自動で消えます。
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeOrder()">やめる</button>
+      <button class="btn btn-primary" id="o-save" onclick="saveOrder()">登録する</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ 確認モーダル ============ -->
 <div class="overlay" id="confirmOverlay">
   <div class="modal narrow">
@@ -413,6 +441,7 @@ const API='https://script.google.com/macros/s/AKfycbz2K9_frpjl7gXnl4jMcqSNIt4Yup
    状態
    ============================================================ */
 let master=[],summary=[],warehouses=[],minStockData=[],masterAll=[],categoryOrder=[],logs=[];
+let openOrders=[];
 let currentView='dash';
 let loadedAt=null;
 let staffName=localStorage.getItem('staff_name')||'';
@@ -529,20 +558,22 @@ async function loadData(){
     fetchJSON('getWarehouseMaster'),
     fetchJSON('getMinStockMaster'),
     fetchJSON('getMasterAll'),
-    fetchJSON('getCategoryOrder')
+    fetchJSON('getCategoryOrder'),
+    fetchJSON('getOpenOrders')
   ]);
-  const names=['商品マスタ','在庫サマリ','倉庫マスタ','在庫設定','商品マスタ全件','カテゴリ順'];
+  const names=['商品マスタ','在庫サマリ','倉庫マスタ','在庫設定','商品マスタ全件','カテゴリ順','発注管理'];
   const failed=[];
   results.forEach(function(r,i){if(r.status!=='fulfilled')failed.push(names[i]);});
   const val=function(i){return results[i].status==='fulfilled'?results[i].value:null;};
 
-  const m=val(0),s=val(1),w=val(2),ms=val(3),ma=val(4),co=val(5);
+  const m=val(0),s=val(1),w=val(2),ms=val(3),ma=val(4),co=val(5),oo=val(6);
   if(m)master=m;
   if(s)summary=s;
   if(w)warehouses=w.data||[];
   if(ms)minStockData=ms.data||[];
   if(ma)masterAll=ma.data||ma;
   if(co)categoryOrder=co.data||[];
+  if(oo)openOrders=oo.data||[];
 
   loadedAt=new Date();
   document.getElementById('foot-stamp').textContent='最終更新 '+timeStamp(loadedAt);
@@ -599,6 +630,16 @@ function replenishFor(wName){
   const s=function(a,b){return jaSort(a.item['商品名'],b.item['商品名']);};
   reorder.sort(s);purchase.sort(s);
   return {reorder:reorder,purchase:purchase};
+}
+
+/* その倉庫・SKUに未入荷の発注があれば返す。複数あれば最も新しいもの */
+function orderFor(skuId,wName){
+  let hit=null;
+  openOrders.forEach(function(o){
+    if(o['SKU_ID']!==skuId||o['倉庫']!==wName)return;
+    if(!hit||String(o['発注日'])>String(hit['発注日']))hit=o;
+  });
+  return hit;
 }
 
 /* 在庫一覧の状態バッジ：最低在庫数が設定された倉庫を全区分で判定 */
@@ -714,7 +755,7 @@ function renderDash(){
 
   html+='<div class="two-col">';
   html+=replenishPanel('要補充','小分け品が最低在庫を下回っています',r.reorder,'b-warn');
-  html+=replenishPanel('要仕入品','小分け品以外が最低在庫を下回っています',r.purchase,'b-danger');
+  html+=replenishPanel('要仕入品','小分け品以外が最低在庫を下回っています',r.purchase,'b-danger',wName);
   html+='</div>';
 
   setContent(html);
@@ -723,7 +764,20 @@ function kpi(label,val,sub,cls){
   return '<div class="kpi '+(cls||'')+'"><div class="k-label">'+esc(label)+'</div>'
     +'<div class="k-val">'+val+'</div><div class="k-sub">'+esc(sub)+'</div></div>';
 }
-function replenishPanel(title,note,rows,badgeCls){
+function orderCell(d,wName){
+  const o=orderFor(d.item['SKU_ID'],wName);
+  if(!o){
+    return '<td class="nowrap"><button class="btn btn-sm" onclick="openOrder(\''
+      +jsq(d.item['SKU_ID'])+'\',\''+jsq(wName)+'\','+d.need+')">発注登録</button></td>';
+  }
+  let sub=esc(String(o['発注日']).slice(0,10))+' 発注';
+  if(o['予定納期'])sub+='<br>着予定 '+esc(o['予定納期']);
+  if(o['納期超過']>0)sub+=' <span class="late">超過'+o['納期超過']+'日</span>';
+  return '<td class="nowrap"><span class="badge b-order">手配済</span>'
+    +'<div class="ord">'+sub+'</div></td>';
+}
+
+function replenishPanel(title,note,rows,badgeCls,wName){
   let h='<div class="panel"><div class="panel-head">'
     +'<span class="panel-title">'+esc(title)+'</span>'
     +'<span class="badge '+badgeCls+'">'+rows.length+'</span>'
@@ -732,9 +786,10 @@ function replenishPanel(title,note,rows,badgeCls){
     h+='<div class="empty">対象はありません</div></div>';
     return h;
   }
+  const withOrder=!!wName;
   h+='<table><thead><tr><th>商品名</th><th>サイズ</th><th>区分</th>'
     +'<th class="num">現在庫</th><th class="num">最低</th><th class="num">最大</th>'
-    +'<th class="num">補充数</th></tr></thead><tbody>';
+    +'<th class="num">補充数</th>'+(withOrder?'<th>手配</th>':'')+'</tr></thead><tbody>';
   rows.forEach(function(d){
     const u=d.item['単位']||'';
     h+='<tr><td class="name">'+esc(d.item['商品名'])+'</td>'
@@ -743,7 +798,8 @@ function replenishPanel(title,note,rows,badgeCls){
       +'<td class="num">'+fmtQty(d.stock)+'</td>'
       +'<td class="num dim">'+fmtQty(d.min)+'</td>'
       +'<td class="num dim">'+(d.max>0?fmtQty(d.max):'—')+'</td>'
-      +'<td class="num" style="font-weight:700;color:var(--warn)">'+fmtQty(d.need)+' <span class="dim" style="font-weight:400">'+esc(u)+'</span></td></tr>';
+      +'<td class="num" style="font-weight:700;color:var(--warn)">'+fmtQty(d.need)+' <span class="dim" style="font-weight:400">'+esc(u)+'</span></td>'
+      +(withOrder?orderCell(d,wName):'')+'</tr>';
   });
   h+='</tbody></table></div>';
   return h;
@@ -1639,6 +1695,71 @@ async function saveEdit(){
 }
 
 /* ============================================================
+   発注登録
+   ============================================================ */
+let orderTarget=null;
+
+function openOrder(skuId,wName,need){
+  const item=summary.find(function(x){return x['SKU_ID']===skuId;});
+  if(!item){showToast('商品が見つかりません');return;}
+  if(!staffName){
+    showToast('先に左下の担当者名を設定してください');
+    editStaff();
+    if(!staffName)return;
+  }
+  orderTarget={sku:skuId,wh:wName,item:item};
+
+  document.getElementById('o-name').textContent=item['商品名']+'　'+(item['サイズ']||'');
+  document.getElementById('o-meta').textContent=
+    wName+'　現在庫 '+fmtQty(item[stockKeyOf(wName)])+(item['単位']||'')+'　担当 '+staffName;
+  document.getElementById('o-due').value='';
+  document.getElementById('o-note').value='';
+
+  document.getElementById('orderOverlay').classList.add('show');
+  setTimeout(function(){document.getElementById('o-due').focus();},40);
+}
+function closeOrder(){
+  document.getElementById('orderOverlay').classList.remove('show');
+  orderTarget=null;
+}
+async function saveOrder(){
+  if(!orderTarget)return;
+  const btn=document.getElementById('o-save');
+  btn.disabled=true;btn.textContent='登録中…';
+  try{
+    await post({
+      action:'addOrder',
+      SKU_ID:orderTarget.sku,
+      '商品名':orderTarget.item['商品名'],
+      'サイズ':orderTarget.item['サイズ'],
+      '倉庫':orderTarget.wh,
+      '発注数':'',
+      '単位':orderTarget.item['単位']||'',
+      '発注先':'',
+      '予定納期':document.getElementById('o-due').value,
+      '担当者':staffName,
+      '備考':document.getElementById('o-note').value.trim()
+    });
+    showToast('発注を登録しました');
+    closeOrder();
+    await reloadOrders();
+    render();
+  }catch(e){
+    showToast('登録できませんでした：'+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='登録する';
+  }
+}
+async function reloadOrders(){
+  try{
+    const j=await fetchJSON('getOpenOrders');
+    openOrders=j.data||[];
+  }catch(e){
+    showToast('発注情報を取得できませんでした');
+  }
+}
+
+/* ============================================================
    確認モーダル
    ============================================================ */
 function openConfirm(title,body,okLabel,onOk){
@@ -1812,23 +1933,36 @@ function printReplenish(){
   const r=replenishFor(wName);
   let inner='<h1>補充確認リスト</h1><div class="meta">倉庫：'+esc(wName)
     +'　／　出力日時：'+timeStamp(new Date())+(staffName?'　／　担当：'+esc(staffName):'')+'</div>';
-  function tbl(title,rows){
+  function tbl(title,rows,withOrder){
     if(!rows.length)return '';
     let h='<h2>'+esc(title)+'（'+rows.length+'件）</h2><table><thead><tr>'
       +'<th>商品名</th><th>サイズ</th><th>区分</th><th class="num">現在庫</th><th class="num">最低</th>'
-      +'<th class="num">最大</th><th class="num">補充数</th><th style="width:70px">確認</th></tr></thead><tbody>';
+      +'<th class="num">最大</th><th class="num">補充数</th>'
+      +(withOrder?'<th style="width:130px">手配状況</th>':'')
+      +'<th style="width:70px">確認</th></tr></thead><tbody>';
     rows.forEach(function(d){
       const u=d.item['単位']||'';
+      let ord='';
+      if(withOrder){
+        const o=orderFor(d.item['SKU_ID'],wName);
+        if(o){
+          ord='手配済<br>'+esc(String(o['発注日']).slice(0,10))+' 発注'
+            +(o['予定納期']?('<br>着 '+esc(o['予定納期'])):'')
+            +(o['納期超過']>0?(' <span class="low">超過'+o['納期超過']+'日</span>'):'');
+        }
+      }
       h+='<tr><td>'+esc(d.item['商品名'])+'</td><td>'+esc(d.item['サイズ'])+'</td>'
         +'<td>'+esc(d.m['商品区分']||'')+'</td>'
         +'<td class="num">'+fmtQty(d.stock)+' '+esc(u)+'</td>'
         +'<td class="num">'+fmtQty(d.min)+'</td>'
         +'<td class="num">'+(d.max>0?fmtQty(d.max):'—')+'</td>'
-        +'<td class="num low">'+fmtQty(d.need)+' '+esc(u)+'</td><td></td></tr>';
+        +'<td class="num low">'+fmtQty(d.need)+' '+esc(u)+'</td>'
+        +(withOrder?('<td style="font-size:10px">'+ord+'</td>'):'')
+        +'<td></td></tr>';
     });
     return h+'</tbody></table>';
   }
-  const body=tbl('要補充',r.reorder)+tbl('要仕入品',r.purchase);
+  const body=tbl('要補充',r.reorder,false)+tbl('要仕入品',r.purchase,true);
   inner+=body||'<div>補充が必要な商品はありません</div>';
   printWindow('補充確認リスト',inner);
 }
@@ -1839,11 +1973,13 @@ function printReplenish(){
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){
     if(document.getElementById('confirmOverlay').classList.contains('show'))closeConfirm();
+    else if(document.getElementById('orderOverlay').classList.contains('show'))closeOrder();
     else if(document.getElementById('invOverlay').classList.contains('show'))closeInvPreview();
     else if(document.getElementById('editOverlay').classList.contains('show'))closeEdit();
   }
 });
-const CLOSERS={editOverlay:closeEdit,confirmOverlay:closeConfirm,invOverlay:closeInvPreview};
+const CLOSERS={editOverlay:closeEdit,confirmOverlay:closeConfirm,
+  invOverlay:closeInvPreview,orderOverlay:closeOrder};
 Object.keys(CLOSERS).forEach(function(id){
   document.getElementById(id).addEventListener('mousedown',function(e){
     if(e.target===this)CLOSERS[id]();
