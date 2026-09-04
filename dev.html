@@ -856,7 +856,6 @@ async function onScanSuccess(code){
   // 棚卸しスキャンモードの場合
   if(scanModeInventory){
     scanModeInventory=false;
-    showToast('読み取り: '+code);
     try{
       var item=await resolveProductByCode(code);
       if(!item){showToast('❌ 商品が見つかりません');return;}
@@ -894,7 +893,6 @@ async function onScanSuccess(code){
     return;
   }
   // 通常の入出庫スキャンモード
-  showToast('読み取り: '+code);
   try{
     var item=await resolveProductByCode(code);
     if(!item){showToast('❌ 商品が見つかりません');return;}
@@ -1043,10 +1041,17 @@ function pinDel(){
   pinCurrent=pinCurrent.slice(0,-1);updatePinDots();
   document.getElementById('pin-error').textContent='';
 }
-function showToast(msg){
+var toastTimer=null;
+function showToast(msg,ms){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   var m=document.getElementById('toast-mascot');if(m)m.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');if(m)m.classList.remove('show');},2000);
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show');if(m)m.classList.remove('show');},ms||2000);
+}
+function hideToast(){
+  clearTimeout(toastTimer);
+  var t=document.getElementById('toast');if(t)t.classList.remove('show');
+  var m=document.getElementById('toast-mascot');if(m)m.classList.remove('show');
 }
 function escAttr(str){return String(str||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\r?\n/g,' ');}
 
