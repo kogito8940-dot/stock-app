@@ -1625,6 +1625,9 @@ function orderPrintText(d){
    未送信の記録はlocalStorageに保存するので、アプリを閉じても消えない。
    ============================================================ */
 var sendQueue=[],sendBusy=false,sendRetry=null;
+
+/** このブロック専用の数値変換（既存のnum2に依存しない） */
+function qnum(v){var n=parseFloat(v);return isNaN(n)?0:Math.round(n*100)/100;}
 var QUEUE_KEY='log_queue_v1';
 
 function saveQueue(){
@@ -1696,21 +1699,21 @@ function applyLocalDelta(payload){
   if(!si)return;
   var wf={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'};
   var from=wf[payload['倉庫']]||(payload['倉庫']+'_在庫');
-  var d=num2(payload['数量変動']);
+  var d=qnum(payload['数量変動']);
   var hasTotal=si['合計在庫']!==undefined;
 
-  if(si[from]!==undefined)si[from]=num2(si[from])+d;
-  if(hasTotal)si['合計在庫']=num2(si['合計在庫'])+d;
+  if(si[from]!==undefined)si[from]=qnum(si[from])+d;
+  if(hasTotal)si['合計在庫']=qnum(si['合計在庫'])+d;
 
   if(payload['移動先倉庫']){
     var to=wf[payload['移動先倉庫']]||(payload['移動先倉庫']+'_在庫');
-    if(si[to]!==undefined)si[to]=num2(si[to])+Math.abs(d);
-    if(hasTotal)si['合計在庫']=num2(si['合計在庫'])+Math.abs(d);
+    if(si[to]!==undefined)si[to]=qnum(si[to])+Math.abs(d);
+    if(hasTotal)si['合計在庫']=qnum(si['合計在庫'])+Math.abs(d);
   }
   if(payload['即移動先倉庫']){
     var to2=wf[payload['即移動先倉庫']]||(payload['即移動先倉庫']+'_在庫');
-    if(si[from]!==undefined)si[from]=num2(si[from])-d;
-    if(si[to2]!==undefined)si[to2]=num2(si[to2])+d;
+    if(si[from]!==undefined)si[from]=qnum(si[from])-d;
+    if(si[to2]!==undefined)si[to2]=qnum(si[to2])+d;
   }
 }
 
