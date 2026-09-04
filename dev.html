@@ -621,10 +621,18 @@ function fetchJSON(action,ms){
 }
 
 async function loadData(){
+  // 倉庫マスタは他のAPIの完了を待たずに反映する
+  var pWh=fetchJSON('getWarehouseMaster');
+  pWh.then(function(w){
+    if(w&&w.data&&w.data.length){
+      warehouses=w.data;saveWarehouseCache();buildWarehouseSelects();
+    }
+  }).catch(function(){});
+
   var results=await Promise.allSettled([
     fetchJSON('getMaster'),
     fetchJSON('getSummary'),
-    fetchJSON('getWarehouseMaster'),
+    pWh,
     fetchJSON('getMinStockMaster'),
     fetchJSON('getMasterAll'),
     fetchJSON('getCategoryOrder'),
@@ -657,7 +665,31 @@ async function loadData(){
   }
 }
 
+/* 倉庫一覧は3件でほぼ変わらないので、前回の内容を保存して起動直後から使う */
+var WH_CACHE_KEY='wh_cache_v1',whSig='';
+function warehouseSig(list){
+  return (list||[]).map(function(w){return w['倉庫名'];}).join('|');
+}
+function saveWarehouseCache(){
+  try{localStorage.setItem(WH_CACHE_KEY,JSON.stringify(warehouses));}catch(e){}
+}
+function loadWarehouseCache(){
+  try{
+    var raw=localStorage.getItem(WH_CACHE_KEY);
+    if(!raw)return false;
+    var a=JSON.parse(raw);
+    if(!Array.isArray(a)||!a.length)return false;
+    warehouses=a;
+    buildWarehouseSelects();
+    return true;
+  }catch(e){return false;}
+}
+
 function buildWarehouseSelects(){
+  // 中身が前回と同じなら作り直さない（選択中の倉庫を保持するため）
+  var sig=warehouseSig(warehouses);
+  if(sig===whSig)return;
+  whSig=sig;
   var opts=warehouses.map(function(w){return '<option>'+w['倉庫名']+'</option>';}).join('');
   ['sel-warehouse','sel-dest','sel-immediate-dest'].forEach(function(id){
     var el=document.getElementById(id);
@@ -698,6 +730,7 @@ window.onload=function(){
   document.getElementById('modal-start-btn').addEventListener('click',startSession);
   var savedStaff=localStorage.getItem('staff_name');
   if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
+  loadWarehouseCache();
   loadData();
   // 初期ホーム画面でキャラとC&B Limitedを表示
   var cb=document.getElementById('cb-limited');
