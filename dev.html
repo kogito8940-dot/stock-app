@@ -126,6 +126,26 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',-apple-system,Blink
 <body>
 <div class="app-shell on-home">
 
+<div id="orderModal" class="modal-overlay">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0">発注を登録</div>
+      <button onclick="closeOrderModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3)">✕</button>
+    </div>
+    <div style="background:#f0f6ff;border-radius:10px;padding:10px 12px;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:700;color:var(--text);" id="order-name"></div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px;" id="order-meta"></div>
+    </div>
+    <div class="form-group"><label class="form-label">予定納期</label><input id="order-due" class="form-input" type="date"></div>
+    <div class="form-group"><label class="form-label">担当者名 *</label><input id="order-staff" class="form-input" type="text" placeholder="名前を入力"></div>
+    <div class="form-group"><label class="form-label">備考</label><input id="order-note" class="form-input" type="text"></div>
+    <div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:14px;">
+      登録すると補充リストに手配済みと表示されます。この倉庫でこの商品の入庫を記録すると、手配済み表示は自動で消えます。
+    </div>
+    <button class="form-btn" id="order-save-btn" onclick="saveOrder()">発注を登録</button>
+  </div>
+</div>
+
 <div id="modal" class="modal-overlay">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
@@ -606,19 +626,21 @@ async function loadData(){
     fetchJSON('getMinStockMaster'),
     fetchJSON('getMasterAll'),
     fetchJSON('getCategoryOrder'),
+    fetchJSON('getOpenOrders'),
   ]);
   function val(i){return results[i].status==='fulfilled'?results[i].value:null;}
   var failed=[];
-  var names=['商品マスタ','在庫サマリ','倉庫マスタ','最低在庫マスタ','商品マスタ全件','カテゴリ順'];
+  var names=['商品マスタ','在庫サマリ','倉庫マスタ','最低在庫マスタ','商品マスタ全件','カテゴリ順','発注管理'];
   results.forEach(function(r,i){if(r.status!=='fulfilled') failed.push(names[i]);});
 
-  var m=val(0),s=val(1),w=val(2),ms=val(3),ma=val(4),co=val(5);
+  var m=val(0),s=val(1),w=val(2),ms=val(3),ma=val(4),co=val(5),oo=val(6);
   if(m) master=m;
   if(s) summary=s;
   if(w) warehouses=w.data||[];
   if(ms) minStockData=ms.data||[];
   if(ma) masterAll=ma.data||ma;
   if(co) categoryOrder=co.data||[];
+  if(oo) openOrders=oo.data||[];
 
   buildWarehouseSelects();
   updateHome();
@@ -1455,7 +1477,7 @@ function printReplenishList(){
   var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
   var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>補充確認リスト - '+wName+'</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;}h1{font-size:18px;margin-bottom:4px;}.meta{font-size:12px;color:#666;margin-bottom:16px;}h2{font-size:14px;margin:20px 0 8px;padding:4px 10px;border-radius:4px;}.reorder-title{background:#fef3c7;color:#92400e;}.shortage-title{background:#fee2e2;color:#991b1b;}table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px;}th{background:#f3f4f6;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-weight:600;}td{padding:8px 10px;border:1px solid #e5e7eb;}tr:nth-child(even){background:#f0f4ff;}.shortage-num{color:#dc2626;font-weight:700;}.empty{text-align:center;padding:20px;color:#9ca3af;font-size:13px;}@media print{body{padding:10px;}@page{margin:15mm;margin-top:3cm;}}</style></head><body><h1>補充確認リスト</h1><div class="meta">倉庫：'+wName+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>';
   if(reorder.length>0){html+='<h2 class="reorder-title">⚠️ 要補充（'+reorder.length+'件）</h2><table><tr><th>商品名</th><th>サイズ</th><th>現在庫</th><th>最低在庫</th><th>最大在庫</th><th>不足数</th><th>確認</th></tr>';reorder.forEach(function(d){html+='<tr><td>'+(d.item['商品名']||'')+'</td><td>'+(d.item['サイズ']||'')+'</td><td>'+d.stock+' '+(d.item['単位']||'')+'</td><td>'+d.minStock+' '+(d.item['単位']||'')+'</td><td>'+(d.maxStock>0?d.maxStock+' '+(d.item['単位']||''):'-')+'</td><td class="shortage-num">'+d.needQty+' '+(d.item['単位']||'')+'</td><td style="width:60px;"></td></tr>';});html+='</table>';}
-  if(needPurchase.length>0){html+='<h2 class="shortage-title">🚨 要仕入品（'+needPurchase.length+'件）</h2><table><tr><th>商品名</th><th>サイズ</th><th>現在庫</th><th>最低在庫</th><th>最大在庫</th><th>不足数</th><th>確認</th></tr>';needPurchase.forEach(function(d){html+='<tr><td>'+(d.item['商品名']||'')+'</td><td>'+(d.item['サイズ']||'')+'</td><td>'+d.stock+' '+(d.item['単位']||'')+'</td><td>'+d.minStock+' '+(d.item['単位']||'')+'</td><td>'+(d.maxStock>0?d.maxStock+' '+(d.item['単位']||''):'-')+'</td><td class="shortage-num">'+d.needQty+' '+(d.item['単位']||'')+'</td><td style="width:60px;"></td></tr>';});html+='</table>';}
+  if(needPurchase.length>0){html+='<h2 class="shortage-title">🚨 要仕入品（'+needPurchase.length+'件）</h2><table><tr><th>商品名</th><th>サイズ</th><th>現在庫</th><th>最低在庫</th><th>最大在庫</th><th>不足数</th><th>手配状況</th><th>確認</th></tr>';needPurchase.forEach(function(d){html+='<tr><td>'+(d.item['商品名']||'')+'</td><td>'+(d.item['サイズ']||'')+'</td><td>'+d.stock+' '+(d.item['単位']||'')+'</td><td>'+d.minStock+' '+(d.item['単位']||'')+'</td><td>'+(d.maxStock>0?d.maxStock+' '+(d.item['単位']||''):'-')+'</td><td class="shortage-num">'+d.needQty+' '+(d.item['単位']||'')+'</td><td>'+orderPrintText(d)+'</td><td style="width:60px;"></td></tr>';});html+='</table>';}
   if(reorder.length===0&&needPurchase.length===0) html+='<div class="empty">補充が必要な商品はありません</div>';
   html+='</body></html>';
   var win=window.open('','_blank');win.document.write(html);win.document.close();win.print();
@@ -1474,6 +1496,130 @@ function renderReplenish(){
   renderReplenishList();
 }
 function switchReplenishWarehouse(n){currentReplenishWarehouse=n;renderReplenish();}
+/* ============================================================
+   発注管理
+   ============================================================ */
+var openOrders=[];
+
+/** その倉庫・SKUの未入荷発注（複数あれば最新） */
+function orderFor(skuId,wName){
+  var hit=null;
+  openOrders.forEach(function(o){
+    if(o['SKU_ID']!==skuId||o['倉庫']!==wName)return;
+    if(!hit||String(o['発注日'])>String(hit['発注日']))hit=o;
+  });
+  return hit;
+}
+
+function escOrd(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function jsqOrd(s){
+  return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+}
+
+/** 要仕入品の行に出す手配状況 */
+function orderChip(d){
+  var wName=currentReplenishWarehouse;
+  var o=orderFor(d.item['SKU_ID'],wName);
+  if(!o){
+    return '<div style="margin-top:6px;">'
+      +'<button onclick="openOrderModal(\''+jsqOrd(d.item['SKU_ID'])+'\','+(d.needQty||0)+')" '
+      +'style="background:var(--primary);color:#fff;border:none;border-radius:8px;'
+      +'padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;">発注登録</button></div>';
+  }
+  var t='<span style="display:inline-block;background:#eaf1fd;color:#1d4ed8;'
+    +'border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;">手配済</span>';
+  var sub=escOrd(String(o['発注日']).slice(0,10))+' 発注';
+  if(o['予定納期'])sub+='<br>着予定 '+escOrd(o['予定納期']);
+  if(o['納期超過']>0)sub+=' <span style="color:var(--danger);font-weight:700;">超過'+o['納期超過']+'日</span>';
+  return '<div style="margin-top:6px;">'+t
+    +'<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-top:3px;">'+sub+'</div></div>';
+}
+
+var orderTarget=null;
+
+function openOrderModal(skuId,need){
+  var item=summary.find(function(x){return x['SKU_ID']===skuId;});
+  if(!item){showToast('商品が見つかりません');return;}
+  var wName=currentReplenishWarehouse;
+  var stockKey={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'}[wName]||(wName+'_在庫');
+  orderTarget={sku:skuId,wh:wName,item:item};
+
+  document.getElementById('order-name').textContent=
+    (item['商品名']||'')+' '+(item['サイズ']||'');
+  document.getElementById('order-meta').textContent=
+    wName+'　現在庫 '+fmtQty(item[stockKey])+(item['単位']||'');
+  document.getElementById('order-due').value='';
+  document.getElementById('order-note').value='';
+  document.getElementById('order-staff').value=
+    session.staff||localStorage.getItem('staff_name')||'';
+
+  document.getElementById('orderModal').classList.add('show');
+}
+function closeOrderModal(){
+  document.getElementById('orderModal').classList.remove('show');
+  orderTarget=null;
+}
+
+async function saveOrder(){
+  if(!orderTarget)return;
+  var staff=document.getElementById('order-staff').value.trim();
+  if(!staff){alert('担当者名を入力してください');return;}
+  localStorage.setItem('staff_name',staff);
+
+  var btn=document.getElementById('order-save-btn');
+  btn.disabled=true;btn.textContent='登録中…';
+  try{
+    var res=await fetch(API,{method:'POST',body:JSON.stringify({
+      action:'addOrder',
+      SKU_ID:orderTarget.sku,
+      '商品名':orderTarget.item['商品名'],
+      'サイズ':orderTarget.item['サイズ'],
+      '倉庫':orderTarget.wh,
+      '発注数':'',
+      '単位':orderTarget.item['単位']||'',
+      '発注先':'',
+      '予定納期':document.getElementById('order-due').value,
+      '担当者':staff,
+      '備考':document.getElementById('order-note').value.trim()
+    })});
+    var json=await res.json();
+    if(json.success===false)throw new Error(json.message||'不明なエラー');
+    showToast('発注を登録しました');
+    closeOrderModal();
+    await reloadOpenOrders();
+    renderReplenishList();
+  }catch(e){
+    alert('登録できませんでした：'+(e.message||e));
+  }finally{
+    btn.disabled=false;btn.textContent='発注を登録';
+  }
+}
+
+async function reloadOpenOrders(){
+  try{
+    var res=await fetch(API+'?action=getOpenOrders');
+    var json=await res.json();
+    openOrders=json.data||[];
+  }catch(e){
+    showToast('発注情報を取得できませんでした');
+  }
+}
+
+/** 印刷用の手配状況（プレーンテキスト） */
+function orderPrintText(d){
+  var o=orderFor(d.item['SKU_ID'],currentReplenishWarehouse);
+  if(!o)return '';
+  var t='手配済';
+  if(o['発注日'])t+=' '+String(o['発注日']).slice(0,10)+'発注';
+  if(o['予定納期'])t+=' 着'+o['予定納期'];
+  if(o['納期超過']>0)t+=' 超過'+o['納期超過']+'日';
+  return t;
+}
+
 function renderReplenishList(){
   var wName=currentReplenishWarehouse;
   var stockKey={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'}[wName]||(wName+'_在庫');
@@ -1498,7 +1644,7 @@ function renderReplenishList(){
   }
   if(needPurchase.length>0){
     html+='<div style="font-size:12px;font-weight:700;color:var(--danger);margin:14px 0 6px;">要仕入品 '+needPurchase.length+'件</div>';
-    needPurchase.forEach(function(d){var ml=d.maxStock>0?'最大'+d.maxStock:'最大（未設定）';html+='<div class="list-item" style="cursor:default;border-color:#fce8e6;"><div style="flex:1"><div class="list-item-name">'+(d.item['商品名']||'')+' '+(d.item['サイズ']||'')+'</div><div style="font-size:11px;color:var(--text3);font-family:monospace;">'+d.item['SKU_ID']+'</div></div><div style="text-align:right;"><div style="font-size:11px;color:var(--text3);">要補充数</div><div style="font-size:20px;font-weight:700;color:var(--danger);">'+d.needQty+'</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;">'+ml+'　現在'+d.stock+'</div></div></div>';});
+    needPurchase.forEach(function(d){var ml=d.maxStock>0?'最大'+d.maxStock:'最大（未設定）';html+='<div class="list-item" style="cursor:default;border-color:#fce8e6;"><div style="flex:1"><div class="list-item-name">'+(d.item['商品名']||'')+' '+(d.item['サイズ']||'')+'</div><div style="font-size:11px;color:var(--text3);font-family:monospace;">'+d.item['SKU_ID']+'</div>'+orderChip(d)+'</div><div style="text-align:right;"><div style="font-size:11px;color:var(--text3);">要補充数</div><div style="font-size:20px;font-weight:700;color:var(--danger);">'+d.needQty+'</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;">'+ml+'　現在'+d.stock+'</div></div></div>';});
   }
   document.getElementById('replenish-list').innerHTML=html;
 }
