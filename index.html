@@ -558,10 +558,18 @@ let master=[],summary=[],warehouses=[],minStockData=[],masterAll=[],categoryOrde
 
 async function loadData(){
   try{
+    // 倉庫マスタは他のAPIの完了を待たずに反映する
+    const pWh=fetch(API+'?action=getWarehouseMaster').then(r=>r.json());
+    pWh.then(function(x){
+      if(x&&x.data&&x.data.length){
+        warehouses=x.data;saveWarehouseCache();buildWarehouseSelects();
+      }
+    }).catch(function(){});
+
     const [m,s,w,ms,ma,co]=await Promise.all([
       fetch(API+'?action=getMaster').then(r=>r.json()),
       fetch(API+'?action=getSummary').then(r=>r.json()),
-      fetch(API+'?action=getWarehouseMaster').then(r=>r.json()),
+      pWh,
       fetch(API+'?action=getMinStockMaster').then(r=>r.json()),
       fetch(API+'?action=getMasterAll').then(r=>r.json()),
       fetch(API+'?action=getCategoryOrder').then(r=>r.json()),
@@ -585,7 +593,31 @@ async function loadData(){
   }catch(e){showToast('データ読み込みエラー');}
 }
 
+/* 倉庫一覧は3件でほぼ変わらないので、前回の内容を保存して起動直後から使う */
+var WH_CACHE_KEY='wh_cache_v1',whSig='';
+function warehouseSig(list){
+  return (list||[]).map(function(w){return w['倉庫名'];}).join('|');
+}
+function saveWarehouseCache(){
+  try{localStorage.setItem(WH_CACHE_KEY,JSON.stringify(warehouses));}catch(e){}
+}
+function loadWarehouseCache(){
+  try{
+    var raw=localStorage.getItem(WH_CACHE_KEY);
+    if(!raw)return false;
+    var a=JSON.parse(raw);
+    if(!Array.isArray(a)||!a.length)return false;
+    warehouses=a;
+    buildWarehouseSelects();
+    return true;
+  }catch(e){return false;}
+}
+
 function buildWarehouseSelects(){
+  // 中身が前回と同じなら作り直さない（選択中の倉庫を保持するため）
+  var sig=warehouseSig(warehouses);
+  if(sig===whSig)return;
+  whSig=sig;
   var opts=warehouses.map(function(w){return '<option>'+w['倉庫名']+'</option>';}).join('');
   ['sel-warehouse','sel-dest','sel-immediate-dest'].forEach(function(id){
     var el=document.getElementById(id);
@@ -602,6 +634,7 @@ window.onload=function(){
   document.getElementById('modal-start-btn').addEventListener('click',startSession);
   var savedStaff=localStorage.getItem('staff_name');
   if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
+  loadWarehouseCache();
   loadData();
   // 初期ホーム画面でキャラとC&B Limitedを表示
   var chara=document.getElementById('home-chara');
