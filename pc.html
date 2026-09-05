@@ -238,6 +238,9 @@ tbody tr:last-child td{border-bottom:none;}
 .ms-head{font-size:11px;color:var(--ink3);text-align:right;}
 
 /* ---- 出荷分析 ---- */
+tbody tr.grp{background:var(--surface2);}
+tbody tr.grp:hover{background:#e9ecf2;}
+tbody tr.grp td{border-bottom:1px solid var(--line);font-weight:600;}
 .swatch{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;}
 .swatch.off{background:transparent;border:1.5px solid var(--line);}
 .pct{font-weight:600;}
@@ -465,7 +468,7 @@ const filters={
   history:{q:'',range:'week',type:'',wh:'',showCancel:false,limit:300},
   dash:{wh:''},
   inv:{wh:'',cat:'',q:'',diffOnly:false},
-  ship:{q:'',cat:'',mode:'w',selected:[],sort:{key:'year',dir:-1}}
+  ship:{q:'',cat:'',name:'',group:false,mode:'w',selected:[],sort:{key:'year',dir:-1}}
 };
 
 /* 棚卸しの入力状態。counts は SKU_ID => 入力文字列、sysAt は下書き作成時のシステム在庫 */
@@ -1458,6 +1461,39 @@ async function loadShipData(){
   }
 }
 
+/* サイズは文字列なので、そのまま並べると 100g / 10kg / 1kg の順になる。
+   数値と単位を取り出して基準単位に揃えたうえで比較する。 */
+function sizeValue(sz){
+  const s=String(sz||'').trim();
+  const m=s.match(/([0-9]+(?:\.[0-9]+)?)\s*(kg|g|L|l|ml|mm|cm|m|㎡)?/);
+  if(!m)return null;
+  const v=parseFloat(m[1]);
+  if(isNaN(v))return null;
+  const mul={kg:1000,g:1,L:1000,l:1000,ml:1,m:1000,'㎡':1000,cm:10,mm:1}[m[2]]||1;
+  return v*mul;
+}
+function sizeCompare(a,b){
+  const va=sizeValue(a),vb=sizeValue(b);
+  if(va!==null&&vb!==null&&va!==vb)return va-vb;
+  if(va!==null&&vb===null)return -1;
+  if(va===null&&vb!==null)return 1;
+  return jaSort(String(a||''),String(b||''));
+}
+
+/* いま選べる商品名（カテゴリの絞り込みを反映する） */
+function shipNames(){
+  if(!shipData)return [];
+  const f=filters.ship;
+  const set={};
+  shipData.items.forEach(function(o){
+    const m=masterAll.find(function(p){return p['SKU_ID']===o.SKU_ID;})||{};
+    const cat=m['カテゴリ']||'—';
+    if(f.cat&&cat!==f.cat)return;
+    if(o.商品名)set[o.商品名]=1;
+  });
+  return Object.keys(set).sort(jaSort);
+}
+
 function pctChange(now,prev){
   if(!prev||prev===0)return null;
   return Math.round(((now-prev)/prev)*100);
@@ -1483,6 +1519,7 @@ function shipRows(){
   });
   rows=rows.filter(function(r){
     if(f.cat&&r.cat!==f.cat)return false;
+    if(f.name&&r.o.商品名!==f.name)return false;
     if(q){
       const hay=[r.o.商品名,r.o.サイズ,r.o.SKU_ID,r.cat].join(' ').toLowerCase();
       if(hay.indexOf(q)===-1)return false;
@@ -1493,8 +1530,10 @@ function shipRows(){
   rows.sort(function(a,b){
     let v=0;
     switch(s.key){
-      case 'cat':v=cmp(catRank(a.cat),catRank(b.cat))||jaSort(a.cat,b.cat)||jaSort(a.o.商品名,b.o.商品名);break;
-      case 'name':v=jaSort(a.o.商品名,b.o.商品名)||jaSort(String(a.o.サイズ),String(b.o.サイズ));break;
+      case 'cat':v=cmp(catRank(a.cat),catRank(b.cat))||jaSort(a.cat,b.cat)
+        ||jaSort(a.o.商品名,b.o.商品名)||sizeCompare(a.o.サイズ,b.o.サイズ);break;
+      case 'name':v=jaSort(a.o.商品名,b.o.商品名)||sizeCompare(a.o.サイズ,b.o.サイズ);break;
+      case 'size':v=sizeCompare(a.o.サイズ,b.o.サイズ);break;
       case 'week':v=cmp(a.o.週間,b.o.週間);break;
       case 'month':v=cmp(a.o.月間,b.o.月間);break;
       case 'year':v=cmp(a.o.年間,b.o.年間);break;
@@ -1527,7 +1566,10 @@ function renderShip(){
     +'<button class="btn" onclick="shipData=null;loadShipData()">再集計する</button>');
   setToolbar(
     '<input type="text" class="search" id="tb-sq" placeholder="商品名・サイズ・SKU_IDで絞り込む" value="'+esc(f.q)+'">'
-    +selectFilter('scat','全カテゴリ',allCategories(),f.cat,'filters.ship.cat')
+    +selectFilter('scat','全カテゴリ',allCategories(),f.cat,'filters.ship.cat=this.value;filters.ship.name=\'\';x')
+    +selectFilter('sname','全商品名',shipNames(),f.name,'filters.ship.name')
+    +'<label class="check"><input type="checkbox" '+(f.group?'checked':'')
+      +' onchange="filters.ship.group=this.checked;render();">商品名でまとめる</label>'
     +'<div class="seg" style="margin-left:12px">'
       +'<button class="'+(f.mode==='w'?'on':'')+'" onclick="filters.ship.mode=\'w\';render();">週単位</button>'
       +'<button class="'+(f.mode==='m'?'on':'')+'" onclick="filters.ship.mode=\'m\';render();">月単位</button>'
@@ -1545,7 +1587,8 @@ function renderShip(){
     +'<th style="width:34px"></th>'
     +sortHeader('ship','cat','カテゴリ')
     +sortHeader('ship','name','商品名')
-    +'<th>サイズ</th><th>単位</th>'
+    +sortHeader('ship','size','サイズ')
+    +'<th>単位</th>'
     +sortHeader('ship','week','週間','num divider-l')
     +sortHeader('ship','wow','前週比','num')
     +sortHeader('ship','month','月間','num divider-l')
@@ -1560,16 +1603,17 @@ function renderShip(){
     return;
   }
 
-  rows.forEach(function(r){
-    const on=f.selected.indexOf(r.o.SKU_ID)>=0;
+  function bodyRow(r,indent){
     const ci=f.selected.indexOf(r.o.SKU_ID);
-    h+='<tr style="cursor:pointer" onclick="toggleShipSel(\''+jsq(r.o.SKU_ID)+'\')">'
+    const on=ci>=0;
+    return '<tr style="cursor:pointer" onclick="toggleShipSel(\''+jsq(r.o.SKU_ID)+'\')">'
       +'<td>'+(on
         ? '<span class="swatch" style="background:'+SHIP_COLORS[ci%SHIP_COLORS.length]+'"></span>'
         : '<span class="swatch off"></span>')+'</td>'
-      +'<td class="nowrap"><span class="badge b-cat">'+esc(r.cat)+'</span></td>'
-      +'<td class="name">'+esc(r.o.商品名)+'</td>'
-      +'<td class="dim nowrap">'+esc(r.o.サイズ)+'</td>'
+      +'<td class="nowrap">'+(indent?'':'<span class="badge b-cat">'+esc(r.cat)+'</span>')+'</td>'
+      +'<td class="'+(indent?'dim':'name')+'" style="'+(indent?'padding-left:26px':'')+'">'
+        +(indent?'└ ':'')+esc(r.o.商品名)+'</td>'
+      +'<td class="'+(indent?'name':'dim')+' nowrap">'+esc(r.o.サイズ)+'</td>'
       +'<td class="dim">'+esc(r.o.単位)+'</td>'
       +'<td class="num divider-l">'+fmtQty(r.o.週間)+'</td>'
       +pctCell(r.wow)
@@ -1578,7 +1622,37 @@ function renderShip(){
       +'<td class="num divider-l" style="font-weight:700">'+fmtQty(r.o.年間)+'</td>'
       +'<td class="num dim">'+fmtQty(r.o.週平均)+'</td>'
       +'</tr>';
-  });
+  }
+
+  if(!f.group){
+    rows.forEach(function(r){h+=bodyRow(r,false);});
+  }else{
+    // 商品名でまとめ、サイズは小さい順に並べる
+    const groups={},order=[];
+    rows.forEach(function(r){
+      const k=r.o.商品名||'（名称なし）';
+      if(!groups[k]){groups[k]={cat:r.cat,rows:[],週間:0,月間:0,年間:0};order.push(k);}
+      const g=groups[k];
+      g.rows.push(r);
+      g.週間+=r.o.週間;g.月間+=r.o.月間;g.年間+=r.o.年間;
+    });
+    order.sort(function(a,b){
+      return (groups[b].年間-groups[a].年間)||jaSort(a,b);
+    });
+    order.forEach(function(k){
+      const g=groups[k];
+      g.rows.sort(function(a,b){return sizeCompare(a.o.サイズ,b.o.サイズ);});
+      h+='<tr class="grp"><td></td>'
+        +'<td class="nowrap"><span class="badge b-cat">'+esc(g.cat)+'</span></td>'
+        +'<td class="name">'+esc(k)+'</td>'
+        +'<td class="dim">'+g.rows.length+'サイズ</td><td></td>'
+        +'<td class="num divider-l">'+fmtQty(Math.round(g.週間*100)/100)+'</td><td></td>'
+        +'<td class="num divider-l">'+fmtQty(Math.round(g.月間*100)/100)+'</td><td></td>'
+        +'<td class="num divider-l" style="font-weight:700">'+fmtQty(Math.round(g.年間*100)/100)+'</td>'
+        +'<td></td></tr>';
+      g.rows.forEach(function(r){h+=bodyRow(r,true);});
+    });
+  }
   h+='</tbody></table></div>'
     +'<div style="font-size:11.5px;color:var(--ink3);margin-top:9px;line-height:1.7;">'
     +'出荷は「山科倉庫・創造社倉庫からの出庫（販売）」と「事務所への移動（出）」の合計です。'
@@ -1814,7 +1888,11 @@ function renderHistory(){
    フィルタ部品
    ============================================================ */
 function selectFilter(id,allLabel,options,current,bindPath){
-  let h='<select id="fl-'+id+'" onchange="'+bindPath+'=this.value;render();">';
+  // bindPath が「代入式;x」の形なら、その式を実行してから再描画する
+  const handler=bindPath.slice(-2)===';x'
+    ? bindPath.slice(0,-1)+'render();'
+    : bindPath+'=this.value;render();';
+  let h='<select id="fl-'+id+'" onchange="'+handler+'">';
   h+='<option value="">'+esc(allLabel)+'</option>';
   options.forEach(function(o){
     h+='<option value="'+esc(o)+'"'+(o===current?' selected':'')+'>'+esc(o)+'</option>';
