@@ -237,6 +237,16 @@ tbody tr:last-child td{border-bottom:none;}
 .ms-row .wname{font-size:12.5px;color:var(--ink2);}
 .ms-head{font-size:11px;color:var(--ink3);text-align:right;}
 
+/* ---- 出荷分析 ---- */
+.swatch{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;}
+.swatch.off{background:transparent;border:1.5px solid var(--line);}
+.pct{font-weight:600;}
+.pct.up{color:var(--ok);}
+.pct.down{color:var(--danger);}
+.chart-wrap{padding:14px 16px 12px;}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-size:12px;}
+.legend .lg{display:flex;align-items:center;gap:6px;}
+
 /* ---- 発注 ---- */
 .b-order{background:#eaf1fd;color:#1d4ed8;}
 .ord{font-size:11px;color:var(--ink2);line-height:1.45;margin-top:2px;white-space:nowrap;}
@@ -299,6 +309,9 @@ tbody tr:last-child td{border-bottom:none;}
       </button>
       <button class="nav-item" data-view="master" onclick="go('master')">
         <span class="nav-icon">▣</span>商品マスタ
+      </button>
+      <button class="nav-item" data-view="ship" onclick="go('ship')">
+        <span class="nav-icon">◱</span>出荷分析
       </button>
       <button class="nav-item" data-view="inv" onclick="go('inv')">
         <span class="nav-icon">☑</span>棚卸し<span class="nav-badge" id="badge-inv" style="display:none"></span>
@@ -451,7 +464,8 @@ const filters={
   master:{q:'',cat:'',type:'',showOff:false,sort:{key:'cat',dir:1}},
   history:{q:'',range:'week',type:'',wh:'',showCancel:false,limit:300},
   dash:{wh:''},
-  inv:{wh:'',cat:'',q:'',diffOnly:false}
+  inv:{wh:'',cat:'',q:'',diffOnly:false},
+  ship:{q:'',cat:'',mode:'w',selected:[],sort:{key:'year',dir:-1}}
 };
 
 /* 棚卸しの入力状態。counts は SKU_ID => 入力文字列、sysAt は下書き作成時のシステム在庫 */
@@ -677,6 +691,7 @@ const VIEWS={
   stock:{title:'在庫一覧',render:renderStock},
   master:{title:'商品マスタ',render:renderMaster},
   inv:{title:'棚卸し',render:renderInv},
+  ship:{title:'出荷分析',render:renderShip},
   history:{title:'入出庫履歴',render:renderHistory}
 };
 
@@ -1411,6 +1426,272 @@ function printInvSheet(){
   });
   inner+='</tbody></table>';
   printWindow('棚卸しリスト',inner);
+}
+
+/* ============================================================
+   出荷分析
+
+   出荷の定義（集計はGAS側で実施）
+     ・出庫（販売）のうち山科倉庫・創造社倉庫のもの
+     ・移動（出）のうち移動先が事務所のもの
+   ============================================================ */
+let shipData=null,shipLoading=false;
+const SHIP_COLORS=['#4f46e5','#ea580c','#16a34a','#db2777','#0891b2','#a16207'];
+
+async function loadShipData(){
+  if(shipLoading)return;
+  shipLoading=true;
+  setToolbar('');setActions('');setCount('');
+  setContent('<div class="loading">出荷実績を集計しています…<br>'
+    +'<span style="font-size:12px">ログ全件を対象にするため、少し時間がかかります</span></div>');
+  try{
+    const j=await fetchJSON('getShipmentStats',60000);
+    if(j&&j.success===false)throw new Error(j.message||'集計に失敗しました');
+    shipData=j.data||j;
+    render();
+  }catch(e){
+    setContent('<div class="empty">出荷実績を取得できませんでした。<br>'
+      +esc(e.message||e)+'<br><br>'
+      +'<button class="btn" onclick="shipData=null;loadShipData()">もう一度試す</button></div>');
+  }finally{
+    shipLoading=false;
+  }
+}
+
+function pctChange(now,prev){
+  if(!prev||prev===0)return null;
+  return Math.round(((now-prev)/prev)*100);
+}
+function pctCell(p){
+  if(p===null)return '<td class="num dim">—</td>';
+  const cls=p>0?'up':(p<0?'down':'');
+  const sign=p>0?'+':'';
+  return '<td class="num pct '+cls+'">'+sign+p+'%</td>';
+}
+
+function shipRows(){
+  if(!shipData)return [];
+  const f=filters.ship;
+  const q=f.q.trim().toLowerCase();
+  let rows=shipData.items.map(function(o){
+    const m=masterAll.find(function(p){return p['SKU_ID']===o.SKU_ID;})||{};
+    return {
+      o:o,m:m,cat:m['カテゴリ']||'—',
+      wow:pctChange(o.週間,o.前週),
+      mom:pctChange(o.月間,o.前月)
+    };
+  });
+  rows=rows.filter(function(r){
+    if(f.cat&&r.cat!==f.cat)return false;
+    if(q){
+      const hay=[r.o.商品名,r.o.サイズ,r.o.SKU_ID,r.cat].join(' ').toLowerCase();
+      if(hay.indexOf(q)===-1)return false;
+    }
+    return true;
+  });
+  const s=f.sort;
+  rows.sort(function(a,b){
+    let v=0;
+    switch(s.key){
+      case 'cat':v=cmp(catRank(a.cat),catRank(b.cat))||jaSort(a.cat,b.cat)||jaSort(a.o.商品名,b.o.商品名);break;
+      case 'name':v=jaSort(a.o.商品名,b.o.商品名)||jaSort(String(a.o.サイズ),String(b.o.サイズ));break;
+      case 'week':v=cmp(a.o.週間,b.o.週間);break;
+      case 'month':v=cmp(a.o.月間,b.o.月間);break;
+      case 'year':v=cmp(a.o.年間,b.o.年間);break;
+      case 'avg':v=cmp(a.o.週平均,b.o.週平均);break;
+      case 'wow':v=cmp(a.wow===null?-99999:a.wow,b.wow===null?-99999:b.wow);break;
+      case 'mom':v=cmp(a.mom===null?-99999:a.mom,b.mom===null?-99999:b.mom);break;
+    }
+    return v*s.dir;
+  });
+  return rows;
+}
+
+function toggleShipSel(sku){
+  const sel=filters.ship.selected;
+  const i=sel.indexOf(sku);
+  if(i>=0)sel.splice(i,1);
+  else{
+    if(sel.length>=6){showToast('比較できるのは6件までです');return;}
+    sel.push(sku);
+  }
+  render();
+}
+function clearShipSel(){filters.ship.selected=[];render();}
+
+function renderShip(){
+  if(!shipData){loadShipData();return;}
+  const f=filters.ship;
+
+  setActions('<button class="btn" onclick="exportShipCsv()">CSVで書き出す</button>'
+    +'<button class="btn" onclick="shipData=null;loadShipData()">再集計する</button>');
+  setToolbar(
+    '<input type="text" class="search" id="tb-sq" placeholder="商品名・サイズ・SKU_IDで絞り込む" value="'+esc(f.q)+'">'
+    +selectFilter('scat','全カテゴリ',allCategories(),f.cat,'filters.ship.cat')
+    +'<div class="seg" style="margin-left:12px">'
+      +'<button class="'+(f.mode==='w'?'on':'')+'" onclick="filters.ship.mode=\'w\';render();">週単位</button>'
+      +'<button class="'+(f.mode==='m'?'on':'')+'" onclick="filters.ship.mode=\'m\';render();">月単位</button>'
+    +'</div>'
+    +(f.selected.length?'<button class="btn" style="margin-left:auto" onclick="clearShipSel()">選択を解除（'+f.selected.length+'件）</button>':'')
+  );
+  bindSearch('tb-sq','ship');
+
+  const rows=shipRows();
+  setCount(rows.length+' 件　'+(shipData.集計日時||'')+' 時点');
+
+  let h=renderShipChart();
+
+  h+='<div class="panel"><table><thead><tr>'
+    +'<th style="width:34px"></th>'
+    +sortHeader('ship','cat','カテゴリ')
+    +sortHeader('ship','name','商品名')
+    +'<th>サイズ</th><th>単位</th>'
+    +sortHeader('ship','week','週間','num divider-l')
+    +sortHeader('ship','wow','前週比','num')
+    +sortHeader('ship','month','月間','num divider-l')
+    +sortHeader('ship','mom','前月比','num')
+    +sortHeader('ship','year','年間','num divider-l')
+    +sortHeader('ship','avg','週平均','num')
+    +'</tr></thead><tbody>';
+
+  if(!rows.length){
+    h+='</tbody></table><div class="empty">出荷実績のある商品がありません。</div></div>';
+    setContent(h);
+    return;
+  }
+
+  rows.forEach(function(r){
+    const on=f.selected.indexOf(r.o.SKU_ID)>=0;
+    const ci=f.selected.indexOf(r.o.SKU_ID);
+    h+='<tr style="cursor:pointer" onclick="toggleShipSel(\''+jsq(r.o.SKU_ID)+'\')">'
+      +'<td>'+(on
+        ? '<span class="swatch" style="background:'+SHIP_COLORS[ci%SHIP_COLORS.length]+'"></span>'
+        : '<span class="swatch off"></span>')+'</td>'
+      +'<td class="nowrap"><span class="badge b-cat">'+esc(r.cat)+'</span></td>'
+      +'<td class="name">'+esc(r.o.商品名)+'</td>'
+      +'<td class="dim nowrap">'+esc(r.o.サイズ)+'</td>'
+      +'<td class="dim">'+esc(r.o.単位)+'</td>'
+      +'<td class="num divider-l">'+fmtQty(r.o.週間)+'</td>'
+      +pctCell(r.wow)
+      +'<td class="num divider-l">'+fmtQty(r.o.月間)+'</td>'
+      +pctCell(r.mom)
+      +'<td class="num divider-l" style="font-weight:700">'+fmtQty(r.o.年間)+'</td>'
+      +'<td class="num dim">'+fmtQty(r.o.週平均)+'</td>'
+      +'</tr>';
+  });
+  h+='</tbody></table></div>'
+    +'<div style="font-size:11.5px;color:var(--ink3);margin-top:9px;line-height:1.7;">'
+    +'出荷は「山科倉庫・創造社倉庫からの出庫（販売）」と「事務所への移動（出）」の合計です。'
+    +'事務所からの出庫（販売）は二重計上になるため含みません。<br>'
+    +'週間は直近7日、月間は直近30日、年間は直近365日。前週比・前月比はその前の同じ長さの期間との比較です。'
+    +'週平均は直近13週の平均です。</div>';
+  setContent(h);
+}
+
+/* ---- 推移グラフ ---- */
+function renderShipChart(){
+  const f=filters.ship;
+  const isW=f.mode==='w';
+  const labels=isW?shipData.weeks:shipData.months;
+
+  if(!f.selected.length){
+    return '<div class="panel" style="margin-bottom:16px"><div class="empty" style="padding:28px">'
+      +'表の行をクリックすると、ここに推移グラフが出ます。最大6件まで重ねて比較できます。'
+      +'</div></div>';
+  }
+
+  const series=[];
+  f.selected.forEach(function(sku,i){
+    const o=shipData.items.find(function(x){return x.SKU_ID===sku;});
+    if(!o)return;
+    series.push({
+      name:o.商品名+' '+(o.サイズ||''),
+      unit:o.単位||'',
+      color:SHIP_COLORS[i%SHIP_COLORS.length],
+      values:isW?o.w:o.m
+    });
+  });
+  if(!series.length)return '';
+
+  let max=0;
+  series.forEach(function(s){s.values.forEach(function(v){if(v>max)max=v;});});
+  if(max<=0)max=1;
+  // 目盛りをきりのよい値に丸める
+  const step=Math.pow(10,Math.floor(Math.log10(max/4||1)));
+  const nice=Math.ceil(max/(step*4))*step*4;
+  max=nice||max;
+
+  const W=1000,H=300,PL=56,PR=18,PT=16,PB=40;
+  const iw=W-PL-PR,ih=H-PT-PB;
+  const n=labels.length;
+  const px=function(i){return PL+(n<=1?iw/2:(iw*i/(n-1)));};
+  const py=function(v){return PT+ih-(ih*v/max);};
+
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="300" '
+    +'style="display:block" preserveAspectRatio="none">';
+
+  // 横目盛り
+  for(let g=0;g<=4;g++){
+    const v=max*g/4,y=py(v);
+    svg+='<line x1="'+PL+'" y1="'+y+'" x2="'+(W-PR)+'" y2="'+y+'" '
+      +'stroke="var(--line)" stroke-width="1"/>';
+    svg+='<text x="'+(PL-8)+'" y="'+(y+4)+'" text-anchor="end" '
+      +'font-size="11" fill="var(--ink3)">'+fmtQty(Math.round(v*100)/100)+'</text>';
+  }
+
+  // 横軸ラベル（間引く）
+  const every=isW?4:3;
+  for(let i=0;i<n;i++){
+    if(i%every!==0&&i!==n-1)continue;
+    const lb=isW?labels[i].slice(5).replace('-','/'):labels[i].slice(2).replace('-','/');
+    svg+='<text x="'+px(i)+'" y="'+(H-14)+'" text-anchor="middle" '
+      +'font-size="11" fill="var(--ink3)">'+esc(lb)+'</text>';
+  }
+
+  // 折れ線
+  series.forEach(function(s){
+    let pts=[];
+    s.values.forEach(function(v,i){pts.push(px(i)+','+py(v));});
+    svg+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+s.color+'" '
+      +'stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+    s.values.forEach(function(v,i){
+      svg+='<circle cx="'+px(i)+'" cy="'+py(v)+'" r="2.5" fill="'+s.color+'"/>';
+    });
+  });
+
+  svg+='</svg>';
+
+  let legend='<div class="legend">';
+  series.forEach(function(s){
+    legend+='<span class="lg"><span class="swatch" style="background:'+s.color+'"></span>'
+      +esc(s.name)+'<span class="dim" style="margin-left:5px">'+esc(s.unit)+'</span></span>';
+  });
+  legend+='</div>';
+
+  const mixed={};
+  series.forEach(function(s){mixed[s.unit]=1;});
+  const warn=Object.keys(mixed).length>1
+    ? '<div style="font-size:11.5px;color:var(--warn);margin-top:6px;">'
+      +'単位の異なる商品を重ねています。縦軸の数値は商品間で比較できません。</div>'
+    : '';
+
+  return '<div class="panel" style="margin-bottom:16px">'
+    +'<div class="panel-head"><span class="panel-title">'
+    +(isW?'週単位の推移（26週）':'月単位の推移（24か月）')+'</span>'
+    +'<span class="panel-note" style="margin-left:auto">'+series.length+' 件を表示中</span></div>'
+    +'<div class="chart-wrap">'+svg+legend+warn+'</div></div>';
+}
+
+function exportShipCsv(){
+  const head=['カテゴリ','商品名','サイズ','単位','SKU_ID','週間','前週','前週比%','月間','前月','前月比%','年間','週平均'];
+  const rows=[head];
+  shipRows().forEach(function(r){
+    rows.push([r.cat,r.o.商品名,r.o.サイズ,r.o.単位,r.o.SKU_ID,
+      r.o.週間,r.o.前週,r.wow===null?'':r.wow,
+      r.o.月間,r.o.前月,r.mom===null?'':r.mom,
+      r.o.年間,r.o.週平均]);
+  });
+  downloadCsv('出荷分析_'+dateTag()+'.csv',rows);
 }
 
 /* ============================================================
