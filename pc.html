@@ -2259,15 +2259,28 @@ function exportHistoryCsv(){
   downloadCsv('入出庫履歴_'+dateTag()+'.csv',rows);
 }
 
-function printWindow(title,inner){
+function printWindow(title,inner,opts){
+  opts=opts||{};
+  const orient=opts.orient==='portrait'?'A4 portrait':'A4 landscape';
+  // 列幅を固定すると、カテゴリごとに表が分かれても幅が揃う
+  const fixed=opts.fixed
+    ? 'table{table-layout:fixed;}'
+      +'th,td{height:24px;box-sizing:border-box;vertical-align:middle;overflow:hidden;}'
+      +'td,th{white-space:nowrap;text-overflow:ellipsis;}'
+      +'td.wrap{white-space:normal;word-break:break-all;line-height:1.35;}'
+    : '';
   const css='body{font-family:'+"'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif"+';padding:16px;color:#111;font-size:11px;}'
     +'h1{font-size:16px;margin-bottom:4px;}.meta{font-size:11px;color:#666;margin-bottom:14px;}'
     +'h2{font-size:13px;margin:16px 0 6px;padding:4px 10px;border-radius:4px;background:#eef0fe;color:#3730a3;}'
+    +'h3{font-size:11px;margin:10px 0 4px;color:#3730a3;font-weight:700;}'
     +'table{width:100%;border-collapse:collapse;margin-bottom:10px;}'
-    +'th{background:#f3f4f6;padding:6px 8px;text-align:left;border:1px solid #e5e7eb;font-weight:600;font-size:10.5px;}'
-    +'td{padding:5px 8px;border:1px solid #e5e7eb;}tr:nth-child(even){background:#fafbfd;}'
+    +'th{background:#f3f4f6;padding:4px 6px;text-align:left;border:1px solid #e5e7eb;font-weight:600;font-size:10.5px;}'
+    +'td{padding:4px 6px;border:1px solid #e5e7eb;}tr:nth-child(even){background:#fafbfd;}'
     +'.num{text-align:right;}.low{color:#c2410c;font-weight:700;}'
-    +'@media print{@page{margin:12mm;size:A4 landscape;}h2{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}';
+    +fixed
+    +'@media print{@page{margin:12mm;size:'+orient+';}'
+      +'h2,h3{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+      +'table{page-break-inside:auto;}tr{page-break-inside:avoid;}thead{display:table-header-group;}}';
   const html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>'+esc(title)+'</title>'
     +'<style>'+css+'</style></head><body>'+inner+'</body></html>';
   const win=window.open('','_blank');
@@ -2308,11 +2321,18 @@ function printReplenish(){
     +'　／　出力日時：'+timeStamp(new Date())+(staffName?'　／　担当：'+esc(staffName):'')+'</div>';
   function tbl(title,rows,withOrder){
     if(!rows.length)return '';
-    const head='<table><thead><tr>'
+    // 縦向きA4に収まる配分。カテゴリごとに表が分かれても同じ幅になる
+    const cols=withOrder
+      ? [26,11,8,9,7,7,10,13,9]
+      : [32,13,10,10,8,8,11,8];
+    const colgroup='<colgroup>'+cols.map(function(w){
+      return '<col style="width:'+w+'%">';
+    }).join('')+'</colgroup>';
+    const head='<table>'+colgroup+'<thead><tr>'
       +'<th>商品名</th><th>サイズ</th><th>区分</th><th class="num">現在庫</th><th class="num">最低</th>'
       +'<th class="num">最大</th><th class="num">補充数</th>'
-      +(withOrder?'<th style="width:130px">手配状況</th>':'')
-      +'<th style="width:70px">確認</th></tr></thead><tbody>';
+      +(withOrder?'<th>手配状況</th>':'')
+      +'<th>確認</th></tr></thead><tbody>';
     let h='<h2>'+esc(title)+'（'+rows.length+'件）</h2>';
     let lastCat=null;
     rows.forEach(function(d){
@@ -2333,20 +2353,20 @@ function printReplenish(){
             +(o['納期超過']>0?(' <span class="low">超過'+o['納期超過']+'日</span>'):'');
         }
       }
-      h+='<tr><td>'+esc(d.item['商品名'])+'</td><td>'+esc(d.item['サイズ'])+'</td>'
+      h+='<tr><td class="wrap">'+esc(d.item['商品名'])+'</td><td>'+esc(d.item['サイズ'])+'</td>'
         +'<td>'+esc(d.m['商品区分']||'')+'</td>'
         +'<td class="num">'+fmtQty(d.stock)+' '+esc(u)+'</td>'
         +'<td class="num">'+fmtQty(d.min)+'</td>'
         +'<td class="num">'+(d.max>0?fmtQty(d.max):'—')+'</td>'
         +'<td class="num low">'+fmtQty(d.need)+' '+esc(u)+'</td>'
-        +(withOrder?('<td style="font-size:10px">'+ord+'</td>'):'')
+        +(withOrder?('<td class="wrap" style="font-size:9px">'+ord+'</td>'):'')
         +'<td></td></tr>';
     });
     return h+(lastCat!==null?'</tbody></table>':'');
   }
   const body=tbl('要補充',r.reorder,false)+tbl('要仕入品',r.purchase,true);
   inner+=body||'<div>補充が必要な商品はありません</div>';
-  printWindow('補充確認リスト',inner);
+  printWindow('補充確認リスト',inner,{orient:'portrait',fixed:true});
 }
 
 /* ============================================================
