@@ -1685,7 +1685,13 @@ function updateQueueBadge(){
     +(failed?'<button onclick="retryQueue()" style="margin-left:10px;background:#fff;color:var(--danger);border:none;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;cursor:pointer;">再送</button>':'');
 }
 
+function newSendId(){
+  try{if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();}catch(e){}
+  return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10);
+}
 function enqueueLog(payload){
+  // 二重登録防止：記録ごとに一意の送信IDを付ける（再送しても同じID）
+  if(!payload['送信ID'])payload['送信ID']=newSendId();
   sendQueue.push(payload);
   saveQueue();
   updateQueueBadge();
