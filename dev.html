@@ -620,6 +620,7 @@ function fetchJSON(action,ms){
   });
 }
 
+var dataReady=false;
 var BOOT_NAMES={getMaster:'商品マスタ',getSummary:'在庫サマリ',getWarehouseMaster:'倉庫マスタ',getMinStockMaster:'最低在庫マスタ',getMasterAll:'商品マスタ全件',getCategoryOrder:'カテゴリ順',getOpenOrders:'発注管理'};
 
 /* 起動データは getBootstrap 1本で取得する。
@@ -678,15 +679,28 @@ async function loadData(opts){
 
   buildWarehouseSelects();
   updateHome();
-  var curScreen=screenStack.length?screenStack[screenStack.length-1]:'';
-  if(curScreen==='stock') renderStockCategories();
-  if(curScreen==='stock-items') renderStock();
-  if(curScreen==='replenish') renderReplenish();
+  refreshCurrentScreen();
+
+  dataReady=true;
 
   if(failed.length){
-    console.warn('loadData 取得失敗:',failed,results);
+    console.warn('loadData 取得失敗:',failed);
     showToast('一部データ取得失敗: '+failed.join('・'));
   }
+}
+
+/* 読み込み完了時に、今開いている画面を描き直す。
+   読み込み中に画面を進めると「読み込み中...」のまま固まっていたため、
+   対象画面を個別列挙ではなくここに集約する。 */
+function refreshCurrentScreen(){
+  var cur=screenStack.length?screenStack[screenStack.length-1]:'';
+  try{
+    if(cur==='category') renderCategories();
+    else if(cur==='stock') renderStockCategories();
+    else if(cur==='stock-items') renderStock();
+    else if(cur==='replenish') renderReplenish();
+    else if(cur==='inv-category') loadInventoryStock();
+  }catch(e){ console.warn('refreshCurrentScreen:',cur,e); }
 }
 
 /* 倉庫一覧は3件でほぼ変わらないので、前回の内容を保存して起動直後から使う */
