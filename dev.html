@@ -620,30 +620,54 @@ function fetchJSON(action,ms){
   });
 }
 
-async function loadData(){
-  // 倉庫マスタは他のAPIの完了を待たずに反映する
-  var pWh=fetchJSON('getWarehouseMaster');
-  pWh.then(function(w){
-    if(w&&w.data&&w.data.length){
-      warehouses=w.data;saveWarehouseCache();buildWarehouseSelects();
-    }
-  }).catch(function(){});
+var BOOT_NAMES={getMaster:'商品マスタ',getSummary:'在庫サマリ',getWarehouseMaster:'倉庫マスタ',getMinStockMaster:'最低在庫マスタ',getMasterAll:'商品マスタ全件',getCategoryOrder:'カテゴリ順',getOpenOrders:'発注管理'};
 
-  var results=await Promise.allSettled([
-    fetchJSON('getMaster'),
-    fetchJSON('getSummary'),
-    pWh,
-    fetchJSON('getMinStockMaster'),
-    fetchJSON('getMasterAll'),
-    fetchJSON('getCategoryOrder'),
-    fetchJSON('getOpenOrders'),
-  ]);
-  function val(i){return results[i].status==='fulfilled'?results[i].value:null;}
+/* 起動データは getBootstrap 1本で取得する。
+   従来は7本を同時に投げており、GAS側の同時実行制限に引っかかって
+   読み込みが止まる原因になっていた。 */
+async function loadData(opts){
+  opts=opts||{};
   var failed=[];
-  var names=['商品マスタ','在庫サマリ','倉庫マスタ','最低在庫マスタ','商品マスタ全件','カテゴリ順','発注管理'];
-  results.forEach(function(r,i){if(r.status!=='fulfilled') failed.push(names[i]);});
+  var m=null,s=null,w=null,ms=null,ma=null,co=null,oo=null;
+  var boot=null;
 
-  var m=val(0),s=val(1),w=val(2),ms=val(3),ma=val(4),co=val(5),oo=val(6);
+  try{
+    boot=await fetchJSON('getBootstrap'+(opts.fresh?'&nocache=1':''),40000);
+  }catch(e){
+    boot=null;
+    console.warn('getBootstrap 失敗（個別取得にフォールバック）:',e);
+  }
+
+  if(boot&&boot.data){
+    var g=boot.data;
+    m=g.getMaster; s=g.getSummary; w=g.getWarehouseMaster;
+    ms=g.getMinStockMaster; ma=g.getMasterAll; co=g.getCategoryOrder; oo=g.getOpenOrders;
+    Object.keys(BOOT_NAMES).forEach(function(k){
+      if(g[k]===null||g[k]===undefined) failed.push(BOOT_NAMES[k]);
+    });
+    if(boot.errors&&Object.keys(boot.errors).length) console.warn('getBootstrap 部分失敗:',boot.errors);
+    if(w&&w.data&&w.data.length){warehouses=w.data;saveWarehouseCache();buildWarehouseSelects();}
+  }else{
+    /* フォールバック：従来の個別取得 */
+    var pWh=fetchJSON('getWarehouseMaster');
+    pWh.then(function(x){
+      if(x&&x.data&&x.data.length){warehouses=x.data;saveWarehouseCache();buildWarehouseSelects();}
+    }).catch(function(){});
+
+    var results=await Promise.allSettled([
+      fetchJSON('getMaster'),
+      fetchJSON('getSummary'),
+      pWh,
+      fetchJSON('getMinStockMaster'),
+      fetchJSON('getMasterAll'),
+      fetchJSON('getCategoryOrder'),
+      fetchJSON('getOpenOrders'),
+    ]);
+    function val(i){return results[i].status==='fulfilled'?results[i].value:null;}
+    var names=['商品マスタ','在庫サマリ','倉庫マスタ','最低在庫マスタ','商品マスタ全件','カテゴリ順','発注管理'];
+    results.forEach(function(r,i){if(r.status!=='fulfilled') failed.push(names[i]);});
+    m=val(0);s=val(1);w=val(2);ms=val(3);ma=val(4);co=val(5);oo=val(6);
+  }
   if(m) master=m;
   if(s) summary=s;
   if(w) warehouses=w.data||[];
@@ -702,7 +726,7 @@ function buildWarehouseSelects(){
   if(selD) for(var i=0;i<selD.options.length;i++){if(selD.options[i].value==='事務所'||selD.options[i].text==='事務所'){selD.selectedIndex=i;break;}}
 }
 
-(function initCharaBg(){
+window.initCharaBg=function(){
   var el=document.getElementById('chara-bg-circle');
   if(!el)return;
   var imgs=[];
@@ -724,14 +748,15 @@ function buildWarehouseSelects(){
     },1600);
   }
   setInterval(function(){setRandom();},1*60*1000);
-})();
+};
 window.onload=function(){
   document.querySelector('.app-shell').classList.add('on-home');
   document.getElementById('modal-start-btn').addEventListener('click',startSession);
   var savedStaff=localStorage.getItem('staff_name');
   if(savedStaff) document.getElementById('inp-staff').value=savedStaff;
   loadWarehouseCache();
-  loadData();
+  /* 背景画像は装飾なので、本体データの取得を妖害しないよう後回しにする */
+  loadData().then(function(){setTimeout(function(){try{initCharaBg();}catch(e){}},1200);});
   // 初期ホーム画面でキャラとC&B Limitedを表示
   var cb=document.getElementById('cb-limited');
   if(cb) cb.style.display='';
