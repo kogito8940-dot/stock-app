@@ -239,6 +239,13 @@ tbody tr:last-child td{border-bottom:none;}
 
 /* ---- 出荷分析 ---- */
 tbody tr.cat-top td{border-top:1px solid var(--line);}
+/* 補充リスト：クリックで重要マーク（全端末共有） */
+tbody tr.prio-row{cursor:pointer;user-select:none;}
+tbody tr.prio-on td{background:#fef08a;}
+tbody tr.prio-on:hover td{background:#fde047;}
+tbody tr.prio-on td:first-child{box-shadow:inset 4px 0 0 #d97706;}
+tbody tr.prio-on td.name{font-weight:700;}
+tbody tr.prio-on td.name::before{content:'★ ';color:#d97706;}
 tbody tr:first-child.cat-top td{border-top:none;}
 tbody tr.grp{background:var(--surface2);}
 tbody tr.grp:hover{background:#e9ecf2;}
@@ -768,6 +775,7 @@ function renderDash(){
   const activeSkus=masterAll.filter(isActive).length;
   const offSkus=masterAll.length-activeSkus;
   const r=replenishFor(wName);
+  loadPrioMarks().then(function(ok){if(ok&&currentView==='dash')render();});
   let outOfStock=0;
   summary.forEach(function(item){
     const m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
@@ -785,8 +793,8 @@ function renderDash(){
     +'</div>';
 
   html+='<div class="two-col">';
-  html+=replenishPanel('要補充','小分け品が最低在庫を下回っています',r.reorder,'b-warn');
-  html+=replenishPanel('要仕入品','小分け品以外が最低在庫を下回っています',r.purchase,'b-danger',wName);
+  html+=replenishPanel('要補充','小分け品が最低在庫を下回っています',r.reorder,'b-warn',null,wName);
+  html+=replenishPanel('要仕入品','小分け品以外が最低在庫を下回っています',r.purchase,'b-danger',wName,wName);
   html+='</div>';
 
   setContent(html);
@@ -808,7 +816,62 @@ function orderCell(d,wName){
     +'<div class="ord">'+sub+'</div></td>';
 }
 
-function replenishPanel(title,note,rows,badgeCls,wName){
+/* ============================================================
+   重要マーク（補充リスト）— ⑦重要マーク シートで全端末共有
+   ============================================================ */
+var prioMarks={},prioLoadedAt=0,prioLoading=null,prioChain=Promise.resolve();
+function prioId(wh,sku){return String(wh)+'|'+String(sku);}
+function prioAttr(s){return String(s===null||s===undefined?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function prioStaff(){
+  try{
+    if(typeof staffName!=='undefined'&&staffName)return staffName;
+    if(typeof session!=='undefined'&&session&&session.staff)return session.staff;
+    return localStorage.getItem('staff_name')||'';
+  }catch(e){return '';}
+}
+/* 30秒以内に取得済みなら再取得しない。取得できたら true を返す */
+function loadPrioMarks(force){
+  if(!force&&prioLoadedAt&&Date.now()-prioLoadedAt<30000)return Promise.resolve(false);
+  if(prioLoading)return prioLoading;
+  prioLoading=fetch(API+'?action=getPriorityMarks')
+    .then(function(r){return r.json();})
+    .then(function(j){
+      if(!j||j.success===false)throw new Error((j&&j.message)||'取得失敗');
+      var o={};
+      (j.data||[]).forEach(function(r){o[prioId(r['倉庫'],r['SKU_ID'])]=1;});
+      prioMarks=o;prioLoadedAt=Date.now();
+      return true;
+    })
+    .catch(function(e){console.warn('重要マーク取得失敗',e);return false;})
+    .then(function(v){prioLoading=null;return v;});
+  return prioLoading;
+}
+function prioRowAttr(wh,sku){
+  return ' data-prio-wh="'+prioAttr(wh)+'" data-prio-sku="'+prioAttr(sku)+'" onclick="togglePrio(this,event)"';
+}
+function togglePrio(el,ev){
+  if(ev&&ev.target&&ev.target.closest&&ev.target.closest('button,a,input,select,textarea'))return;
+  var wh=el.getAttribute('data-prio-wh'),sku=el.getAttribute('data-prio-sku');
+  if(!wh||!sku)return;
+  var id=prioId(wh,sku),on=!prioMarks[id];
+  if(on)prioMarks[id]=1;else delete prioMarks[id];
+  el.classList.toggle('prio-on',on);
+  var payload={action:'setPriorityMark','倉庫':wh,'SKU_ID':sku,'重要':on,'担当者':prioStaff()};
+  /* 連続タップでも送信順が入れ替わらないよう直列化 */
+  prioChain=prioChain.then(function(){
+    return fetch(API,{method:'POST',body:JSON.stringify(payload)})
+      .then(function(r){return r.json();})
+      .then(function(j){if(!j||j.success===false)throw new Error((j&&j.message)||'保存失敗');})
+      .catch(function(e){
+        console.warn('重要マーク保存失敗',e);
+        if(on)delete prioMarks[id];else prioMarks[id]=1;
+        el.classList.toggle('prio-on',!on);
+        showToast('重要マークを保存できませんでした');
+      });
+  });
+}
+
+function replenishPanel(title,note,rows,badgeCls,wName,prioWh){
   let h='<div class="panel"><div class="panel-head">'
     +'<span class="panel-title">'+esc(title)+'</span>'
     +'<span class="badge '+badgeCls+'">'+rows.length+'</span>'
@@ -827,7 +890,13 @@ function replenishPanel(title,note,rows,badgeCls,wName){
     const cat=d.m['カテゴリ']||'—';
     const first=cat!==lastCat;
     lastCat=cat;
-    h+='<tr'+(first?' class="cat-top"':'')+'>'
+    let cls=first?'cat-top':'';
+    let attr='';
+    if(prioWh){
+      cls+=' prio-row'+(prioMarks[prioId(prioWh,d.item['SKU_ID'])]?' prio-on':'');
+      attr=prioRowAttr(prioWh,d.item['SKU_ID'])+' title="クリックで重要マークを切り替え"';
+    }
+    h+='<tr'+(cls.trim()?' class="'+cls.trim()+'"':'')+attr+'>'
       +'<td class="nowrap">'+(first?'<span class="badge b-cat">'+esc(cat)+'</span>':'')+'</td>'
       +'<td class="name">'+esc(d.item['商品名'])+'</td>'
       +'<td class="dim">'+esc(d.item['サイズ'])+'</td>'
