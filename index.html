@@ -63,6 +63,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sa
 .or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
 .list-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s}
 .list-item:active{background:#f8f9ff;}
+/* 補充リスト：タップで重要マーク（全端末共有） */
+.list-item.prio-row{cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;}
+.list-item.prio-on{background:#fef08a !important;border-color:#d97706 !important;box-shadow:inset 5px 0 0 #d97706;}
+.list-item.prio-on .list-item-name{font-weight:800;}
+.list-item.prio-on .list-item-name::before{content:'★ ';color:#d97706;}
 .list-item-name{font-size:17px;font-weight:700;color:var(--text)}
 .list-item-arrow{color:var(--text3);font-size:20px;flex-shrink:0}
 .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.01em;}
@@ -1337,6 +1342,7 @@ function renderReplenish(){
   tabHtml+='</div>';
   document.getElementById('replenish-warehouse-tabs').innerHTML=tabHtml;
   renderReplenishList();
+  loadPrioMarks().then(function(ok){if(ok)renderReplenishList();});
 }
 function switchReplenishWarehouse(n){currentReplenishWarehouse=n;renderReplenish();}
 /* ============================================================
@@ -1611,6 +1617,61 @@ async function resolveProductByCode(code){
   return json&&json.success?json.data:null;
 }
 
+/* ============================================================
+   重要マーク（補充リスト）— ⑦重要マーク シートで全端末共有
+   ============================================================ */
+var prioMarks={},prioLoadedAt=0,prioLoading=null,prioChain=Promise.resolve();
+function prioId(wh,sku){return String(wh)+'|'+String(sku);}
+function prioAttr(s){return String(s===null||s===undefined?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function prioStaff(){
+  try{
+    if(typeof staffName!=='undefined'&&staffName)return staffName;
+    if(typeof session!=='undefined'&&session&&session.staff)return session.staff;
+    return localStorage.getItem('staff_name')||'';
+  }catch(e){return '';}
+}
+/* 30秒以内に取得済みなら再取得しない。取得できたら true を返す */
+function loadPrioMarks(force){
+  if(!force&&prioLoadedAt&&Date.now()-prioLoadedAt<30000)return Promise.resolve(false);
+  if(prioLoading)return prioLoading;
+  prioLoading=fetch(API+'?action=getPriorityMarks')
+    .then(function(r){return r.json();})
+    .then(function(j){
+      if(!j||j.success===false)throw new Error((j&&j.message)||'取得失敗');
+      var o={};
+      (j.data||[]).forEach(function(r){o[prioId(r['倉庫'],r['SKU_ID'])]=1;});
+      prioMarks=o;prioLoadedAt=Date.now();
+      return true;
+    })
+    .catch(function(e){console.warn('重要マーク取得失敗',e);return false;})
+    .then(function(v){prioLoading=null;return v;});
+  return prioLoading;
+}
+function prioRowAttr(wh,sku){
+  return ' data-prio-wh="'+prioAttr(wh)+'" data-prio-sku="'+prioAttr(sku)+'" onclick="togglePrio(this,event)"';
+}
+function togglePrio(el,ev){
+  if(ev&&ev.target&&ev.target.closest&&ev.target.closest('button,a,input,select,textarea'))return;
+  var wh=el.getAttribute('data-prio-wh'),sku=el.getAttribute('data-prio-sku');
+  if(!wh||!sku)return;
+  var id=prioId(wh,sku),on=!prioMarks[id];
+  if(on)prioMarks[id]=1;else delete prioMarks[id];
+  el.classList.toggle('prio-on',on);
+  var payload={action:'setPriorityMark','倉庫':wh,'SKU_ID':sku,'重要':on,'担当者':prioStaff()};
+  /* 連続タップでも送信順が入れ替わらないよう直列化 */
+  prioChain=prioChain.then(function(){
+    return fetch(API,{method:'POST',body:JSON.stringify(payload)})
+      .then(function(r){return r.json();})
+      .then(function(j){if(!j||j.success===false)throw new Error((j&&j.message)||'保存失敗');})
+      .catch(function(e){
+        console.warn('重要マーク保存失敗',e);
+        if(on)delete prioMarks[id];else prioMarks[id]=1;
+        el.classList.toggle('prio-on',!on);
+        showToast('重要マークを保存できませんでした');
+      });
+  });
+}
+
 function renderReplenishList(){
   var wName=currentReplenishWarehouse;
   var stockKey={'山科倉庫':'山科倉庫_在庫','創造社倉庫':'創造社倉庫_在庫','事務所':'事務所_在庫'}[wName]||(wName+'_在庫');
@@ -1631,11 +1692,11 @@ function renderReplenishList(){
   var html='';
   if(reorder.length>0){
     html+='<div style="font-size:12px;font-weight:700;color:var(--warning);margin:12px 0 6px;">要補充 '+reorder.length+'件</div>';
-    reorder.forEach(function(d){var ml=d.maxStock>0?'最大'+d.maxStock:'最大（未設定）';html+='<div class="list-item" style="cursor:default;border-color:#fef7e0;"><div style="flex:1"><div class="list-item-name">'+(d.item['商品名']||'')+' '+(d.item['サイズ']||'')+'</div><div style="font-size:11px;color:var(--text3);font-family:monospace;">'+d.item['SKU_ID']+'</div></div><div style="text-align:right;"><div style="font-size:11px;color:var(--text3);">要補充数</div><div style="font-size:20px;font-weight:700;color:var(--warning);">'+d.needQty+'</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;">'+ml+'　現在'+d.stock+'</div></div></div>';});
+    reorder.forEach(function(d){var ml=d.maxStock>0?'最大'+d.maxStock:'最大（未設定）';html+='<div class="list-item prio-row'+(prioMarks[prioId(wName,d.item['SKU_ID'])]?' prio-on':'')+'"'+prioRowAttr(wName,d.item['SKU_ID'])+' style="border-color:#fef7e0;"><div style="flex:1"><div class="list-item-name">'+(d.item['商品名']||'')+' '+(d.item['サイズ']||'')+'</div><div style="font-size:11px;color:var(--text3);font-family:monospace;">'+d.item['SKU_ID']+'</div></div><div style="text-align:right;"><div style="font-size:11px;color:var(--text3);">要補充数</div><div style="font-size:20px;font-weight:700;color:var(--warning);">'+d.needQty+'</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;">'+ml+'　現在'+d.stock+'</div></div></div>';});
   }
   if(needPurchase.length>0){
     html+='<div style="font-size:12px;font-weight:700;color:var(--danger);margin:14px 0 6px;">要仕入品 '+needPurchase.length+'件</div>';
-    needPurchase.forEach(function(d){var ml=d.maxStock>0?'最大'+d.maxStock:'最大（未設定）';html+='<div class="list-item" style="cursor:default;border-color:#fce8e6;"><div style="flex:1"><div class="list-item-name">'+(d.item['商品名']||'')+' '+(d.item['サイズ']||'')+'</div><div style="font-size:11px;color:var(--text3);font-family:monospace;">'+d.item['SKU_ID']+'</div>'+orderChip(d)+'</div><div style="text-align:right;"><div style="font-size:11px;color:var(--text3);">要補充数</div><div style="font-size:20px;font-weight:700;color:var(--danger);">'+d.needQty+'</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;">'+ml+'　現在'+d.stock+'</div></div></div>';});
+    needPurchase.forEach(function(d){var ml=d.maxStock>0?'最大'+d.maxStock:'最大（未設定）';html+='<div class="list-item prio-row'+(prioMarks[prioId(wName,d.item['SKU_ID'])]?' prio-on':'')+'"'+prioRowAttr(wName,d.item['SKU_ID'])+' style="border-color:#fce8e6;"><div style="flex:1"><div class="list-item-name">'+(d.item['商品名']||'')+' '+(d.item['サイズ']||'')+'</div><div style="font-size:11px;color:var(--text3);font-family:monospace;">'+d.item['SKU_ID']+'</div>'+orderChip(d)+'</div><div style="text-align:right;"><div style="font-size:11px;color:var(--text3);">要補充数</div><div style="font-size:20px;font-weight:700;color:var(--danger);">'+d.needQty+'</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;">'+ml+'　現在'+d.stock+'</div></div></div>';});
   }
   document.getElementById('replenish-list').innerHTML=html;
 }
