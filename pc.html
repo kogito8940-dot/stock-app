@@ -505,6 +505,11 @@ function jaSort(a,b){
 }
 function isActive(m){return m&&(m['有効']===true||m['有効']==='TRUE');}
 function stockKeyOf(wName){return wName+'_在庫';}
+/* 単位は①商品マスタを正とし、空なら③在庫サマリの値を使う */
+function unitOf(item){
+  const m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
+  return (m&&m['単位'])||item['単位']||'';
+}
 function applyCategoryOrder(cats){
   if(!categoryOrder.length)return cats.slice().sort(jaSort);
   return cats.slice().sort(function(a,b){
@@ -818,7 +823,7 @@ function replenishPanel(title,note,rows,badgeCls,wName){
     +'<th class="num">補充数</th>'+(withOrder?'<th>手配</th>':'')+'</tr></thead><tbody>';
   let lastCat=null;
   rows.forEach(function(d){
-    const u=d.item['単位']||'';
+    const u=unitOf(d.item);
     const cat=d.m['カテゴリ']||'—';
     const first=cat!==lastCat;
     lastCat=cat;
@@ -2084,7 +2089,7 @@ function openOrder(skuId,wName,need){
 
   document.getElementById('o-name').textContent=item['商品名']+'　'+(item['サイズ']||'');
   document.getElementById('o-meta').textContent=
-    wName+'　現在庫 '+fmtQty(item[stockKeyOf(wName)])+(item['単位']||'')+'　担当 '+staffName;
+    wName+'　現在庫 '+fmtQty(item[stockKeyOf(wName)])+unitOf(item)+'　担当 '+staffName;
   document.getElementById('o-due').value='';
   document.getElementById('o-note').value='';
 
@@ -2107,7 +2112,7 @@ async function saveOrder(){
       'サイズ':orderTarget.item['サイズ'],
       '倉庫':orderTarget.wh,
       '発注数':'',
-      '単位':orderTarget.item['単位']||'',
+      '単位':unitOf(orderTarget.item),
       '発注先':'',
       '予定納期':document.getElementById('o-due').value,
       '担当者':staffName,
@@ -2343,7 +2348,7 @@ function printReplenish(){
           +esc(cat)+'</h3>'+head;
         lastCat=cat;
       }
-      const u=d.item['単位']||'';
+      const u=unitOf(d.item);
       let ord='';
       if(withOrder){
         const o=orderFor(d.item['SKU_ID'],wName);
