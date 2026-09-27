@@ -488,7 +488,7 @@ const filters={
   stock:{q:'',cat:'',type:'',state:'',showOff:false,sort:{key:'cat',dir:1}},
   master:{q:'',cat:'',type:'',showOff:false,sort:{key:'cat',dir:1}},
   history:{q:'',range:'week',type:'',wh:'',showCancel:false,limit:300},
-  dash:{wh:'',rank:'prio'},
+  dash:{wh:'',rank:localStorage.getItem('dash_rank')==='cat'?'cat':'prio'},
   inv:{wh:'',cat:'',q:'',diffOnly:false},
   ship:{q:'',cat:'',name:'',group:false,mode:'w',selected:[],sort:{key:'year',dir:-1},smooth:0,adj:false}
 };
@@ -783,6 +783,13 @@ function renderDash(){
     '<div class="seg">'+warehouses.map(function(w){
       return '<button class="'+(w['倉庫名']===wName?'on':'')+'" onclick="filters.dash.wh=\''+jsq(w['倉庫名'])+'\';render();">'+esc(w['倉庫名'])+'</button>';
     }).join('')+'</div>'
+    +(wName===PACE_WH
+      ? '<span class="panel-note" style="margin-left:18px">要補充の表示</span>'
+        +'<div class="seg">'
+        +'<button class="'+(filters.dash.rank==='cat'?'on':'')+'" onclick="setDashRank(\'cat\')">カテゴリ順</button>'
+        +'<button class="'+(filters.dash.rank==='prio'?'on':'')+'" onclick="setDashRank(\'prio\')">優先度順</button>'
+        +'</div>'
+      : '')
   );
 
   const activeSkus=masterAll.filter(isActive).length;
@@ -807,11 +814,10 @@ function renderDash(){
 
   html+='<div class="two-col">';
   let rankOpt=null;
-  if(wName===PACE_WH){
+  if(wName===PACE_WH&&filters.dash.rank==='prio'){
     loadPace().then(function(ok){if(ok&&currentView==='dash')render();});
-    rankOpt={mode:filters.dash.rank,ready:!!paceData};
-    if(paceData&&filters.dash.rank==='prio')r.reorder=rankReorder(r.reorder);
-    else if(paceData)r.reorder.forEach(attachPace);
+    rankOpt={ready:!!paceData};
+    if(paceData)r.reorder=rankReorder(r.reorder);
   }
   html+=replenishPanel('要補充','小分け品が最低在庫を下回っています',r.reorder,'b-warn',null,wName,rankOpt);
   html+=replenishPanel('要仕入品','小分け品以外が最低在庫を下回っています',r.purchase,'b-danger',wName,wName);
@@ -852,6 +858,11 @@ function bizDaysRange(from,to){
   let n=0;
   for(let d=new Date(a[0],a[1]-1,a[2]);d<=end;d.setDate(d.getDate()+1)){if(isBizDay(d))n++;}
   return n;
+}
+function setDashRank(m){
+  filters.dash.rank=m;
+  try{localStorage.setItem('dash_rank',m);}catch(e){}
+  render();
 }
 function attachPace(d){
   const it=paceData&&paceData.items[d.item['SKU_ID']];
@@ -958,20 +969,12 @@ function togglePrio(el,ev){
 }
 
 function replenishPanel(title,note,rows,badgeCls,wName,prioWh,rankOpt){
-  const ranked=!!(rankOpt&&rankOpt.ready&&rankOpt.mode==='prio');
-  const withPace=!!(rankOpt&&rankOpt.ready);
-  let rankCtl='';
-  if(rankOpt){
-    rankCtl='<div class="seg" style="margin-left:10px">'
-      +'<button class="'+(rankOpt.mode==='prio'?'on':'')+'" onclick="filters.dash.rank=\'prio\';render();">優先度順</button>'
-      +'<button class="'+(rankOpt.mode==='cat'?'on':'')+'" onclick="filters.dash.rank=\'cat\';render();">カテゴリ順</button>'
-      +'</div>';
-    if(!rankOpt.ready)note=(paceLoading?'出荷ペースを集計中…':'出荷ペースを取得できませんでした');
-  }
+  const ranked=!!(rankOpt&&rankOpt.ready);
+  const withPace=ranked;
+  if(rankOpt&&!rankOpt.ready)note=(paceLoading?'出荷ペースを集計中…':'出荷ペースを取得できませんでした');
   let h='<div class="panel"><div class="panel-head">'
     +'<span class="panel-title">'+esc(title)+'</span>'
     +'<span class="badge '+badgeCls+'">'+rows.length+'</span>'
-    +rankCtl
     +'<span class="panel-note" style="margin-left:auto">'+esc(note)+'</span></div>';
   if(!rows.length){
     h+='<div class="empty">対象はありません</div></div>';
