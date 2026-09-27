@@ -267,6 +267,16 @@ tbody tr.grp td{border-bottom:1px solid var(--line);font-weight:600;}
 .ord{font-size:11px;color:var(--ink2);line-height:1.45;margin-top:2px;white-space:nowrap;}
 .ord .late{color:var(--danger);font-weight:700;}
 
+/* ---- 補充の優先度 ---- */
+.rank-no{font-weight:700;color:var(--ink2);text-align:center;font-variant-numeric:tabular-nums;}
+.days{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.days.d1{color:var(--danger);}
+.days.d2{color:var(--warn);}
+.days.d0{color:var(--ink3);font-weight:400;}
+.pace-tag{font-size:10px;padding:1px 5px;border-radius:4px;background:var(--surface2);color:var(--ink2);margin-left:4px;font-weight:600;}
+.pace-tag.up{background:#fdecec;color:var(--danger);}
+.panel-head .seg button{padding:3px 9px;font-size:11.5px;}
+
 /* ---- 棚卸し ---- */
 .content.has-bar{padding-bottom:86px;}
 .inv-input{
@@ -478,7 +488,7 @@ const filters={
   stock:{q:'',cat:'',type:'',state:'',showOff:false,sort:{key:'cat',dir:1}},
   master:{q:'',cat:'',type:'',showOff:false,sort:{key:'cat',dir:1}},
   history:{q:'',range:'week',type:'',wh:'',showCancel:false,limit:300},
-  dash:{wh:''},
+  dash:{wh:'',rank:'prio'},
   inv:{wh:'',cat:'',q:'',diffOnly:false},
   ship:{q:'',cat:'',name:'',group:false,mode:'w',selected:[],sort:{key:'year',dir:-1},smooth:0,adj:false}
 };
@@ -796,12 +806,85 @@ function renderDash(){
     +'</div>';
 
   html+='<div class="two-col">';
-  html+=replenishPanel('要補充','小分け品が最低在庫を下回っています',r.reorder,'b-warn',null,wName);
+  let rankOpt=null;
+  if(wName===PACE_WH){
+    loadPace().then(function(ok){if(ok&&currentView==='dash')render();});
+    rankOpt={mode:filters.dash.rank,ready:!!paceData};
+    if(paceData&&filters.dash.rank==='prio')r.reorder=rankReorder(r.reorder);
+    else if(paceData)r.reorder.forEach(attachPace);
+  }
+  html+=replenishPanel('要補充','小分け品が最低在庫を下回っています',r.reorder,'b-warn',null,wName,rankOpt);
   html+=replenishPanel('要仕入品','小分け品以外が最低在庫を下回っています',r.purchase,'b-danger',wName,wName);
   html+='</div>';
 
   setContent(html);
 }
+/* ============================================================
+   補充の優先度（山科倉庫の要補充のみ）
+
+   出荷ペース：山科倉庫からの出荷（販売＋事務所への移動）を
+   直近4週・直近13週それぞれ稼働日数で割り、速い方を使う。
+   残り日数：現在庫 ÷ 1稼働日あたりの出荷ペース（稼働日）。
+   短い順に並べる。出荷実績のない商品は最後。
+   ============================================================ */
+const PACE_WH='山科倉庫';
+let paceData=null,paceLoading=null,paceLoadedAt=0;
+
+function loadPace(force){
+  if(!force&&paceData&&Date.now()-paceLoadedAt<10*60*1000)return Promise.resolve(false);
+  if(paceLoading)return paceLoading;
+  paceLoading=fetchJSON('getReplenishPace',60000)
+    .then(function(j){
+      if(!j||j.success===false)throw new Error(j&&j.message||'取得に失敗しました');
+      const d=j.data||j;
+      d.bd28=bizDaysRange(d.短期開始,d.基準日);
+      d.bd91=bizDaysRange(d.長期開始,d.基準日);
+      paceData=d;paceLoadedAt=Date.now();
+      return true;
+    })
+    .catch(function(e){console.warn('出荷ペース',e);return false;})
+    .then(function(v){paceLoading=null;return v;});
+  return paceLoading;
+}
+function bizDaysRange(from,to){
+  const a=from.split('-').map(Number),b=to.split('-').map(Number);
+  const end=new Date(b[0],b[1]-1,b[2]);
+  let n=0;
+  for(let d=new Date(a[0],a[1]-1,a[2]);d<=end;d.setDate(d.getDate()+1)){if(isBizDay(d))n++;}
+  return n;
+}
+function attachPace(d){
+  const it=paceData&&paceData.items[d.item['SKU_ID']];
+  const p4=it&&paceData.bd28?it.q28/paceData.bd28:0;
+  const p13=it&&paceData.bd91?it.q91/paceData.bd91:0;
+  d.pace=Math.max(p4,p13);
+  d.paceBasis=d.pace<=0?'':(p4>p13?'4週':'13週');
+  d.days=d.pace>0?Math.max(d.stock,0)/d.pace:null;
+  return d;
+}
+function rankReorder(rows){
+  rows.forEach(attachPace);
+  const base=rows.slice();
+  rows.sort(function(a,b){
+    if(a.days===null&&b.days===null)return base.indexOf(a)-base.indexOf(b);
+    if(a.days===null)return 1;
+    if(b.days===null)return -1;
+    return a.days-b.days||b.pace-a.pace;
+  });
+  return rows;
+}
+function paceCells(d,u){
+  if(d.pace===undefined)return '<td></td><td></td>';
+  if(!(d.pace>0))return '<td class="num dim">—</td><td class="days d0">出荷なし</td>';
+  const wk=Math.round(d.pace*5*10)/10;
+  const tag='<span class="pace-tag'+(d.paceBasis==='4週'?' up':'')+'" title="'
+    +(d.paceBasis==='4週'?'直近4週の方が速い（増加傾向）':'直近13週の方が速い')+'">'+d.paceBasis+'</span>';
+  const days=Math.round(d.days*10)/10;
+  const cls=days<=5?'d1':(days<=10?'d2':'');
+  return '<td class="num nowrap">'+fmtQty(wk)+' <span class="dim">'+esc(u)+'/週</span>'+tag+'</td>'
+    +'<td class="num"><span class="days '+cls+'">'+(days<1?'1日未満':fmtQty(Math.round(days))+'日')+'</span></td>';
+}
+
 function kpi(label,val,sub,cls){
   return '<div class="kpi '+(cls||'')+'"><div class="k-label">'+esc(label)+'</div>'
     +'<div class="k-val">'+val+'</div><div class="k-sub">'+esc(sub)+'</div></div>';
@@ -874,32 +957,47 @@ function togglePrio(el,ev){
   });
 }
 
-function replenishPanel(title,note,rows,badgeCls,wName,prioWh){
+function replenishPanel(title,note,rows,badgeCls,wName,prioWh,rankOpt){
+  const ranked=!!(rankOpt&&rankOpt.ready&&rankOpt.mode==='prio');
+  const withPace=!!(rankOpt&&rankOpt.ready);
+  let rankCtl='';
+  if(rankOpt){
+    rankCtl='<div class="seg" style="margin-left:10px">'
+      +'<button class="'+(rankOpt.mode==='prio'?'on':'')+'" onclick="filters.dash.rank=\'prio\';render();">優先度順</button>'
+      +'<button class="'+(rankOpt.mode==='cat'?'on':'')+'" onclick="filters.dash.rank=\'cat\';render();">カテゴリ順</button>'
+      +'</div>';
+    if(!rankOpt.ready)note=(paceLoading?'出荷ペースを集計中…':'出荷ペースを取得できませんでした');
+  }
   let h='<div class="panel"><div class="panel-head">'
     +'<span class="panel-title">'+esc(title)+'</span>'
     +'<span class="badge '+badgeCls+'">'+rows.length+'</span>'
+    +rankCtl
     +'<span class="panel-note" style="margin-left:auto">'+esc(note)+'</span></div>';
   if(!rows.length){
     h+='<div class="empty">対象はありません</div></div>';
     return h;
   }
   const withOrder=!!wName;
-  h+='<table><thead><tr><th>カテゴリ</th><th>商品名</th><th>サイズ</th><th>区分</th>'
+  h+='<table><thead><tr>'+(ranked?'<th style="width:34px;text-align:center">順位</th>':'')
+    +'<th>カテゴリ</th><th>商品名</th><th>サイズ</th><th>区分</th>'
     +'<th class="num">現在庫</th><th class="num">最低</th><th class="num">最大</th>'
-    +'<th class="num">補充数</th>'+(withOrder?'<th>手配</th>':'')+'</tr></thead><tbody>';
-  let lastCat=null;
+    +'<th class="num">補充数</th>'+(withOrder?'<th>手配</th>':'')
+    +(withPace?'<th class="num">出荷ペース</th><th class="num">残り</th>':'')+'</tr></thead><tbody>';
+  let lastCat=null,no=0;
   rows.forEach(function(d){
     const u=unitOf(d.item);
     const cat=d.m['カテゴリ']||'—';
-    const first=cat!==lastCat;
+    const first=ranked?true:cat!==lastCat;
     lastCat=cat;
-    let cls=first?'cat-top':'';
+    let cls=(first&&!ranked)?'cat-top':'';
     let attr='';
     if(prioWh){
       cls+=' prio-row'+(prioMarks[prioId(prioWh,d.item['SKU_ID'])]?' prio-on':'');
       attr=prioRowAttr(prioWh,d.item['SKU_ID'])+' title="クリックで重要マークを切り替え"';
     }
+    if(ranked&&d.pace>0)no++;
     h+='<tr'+(cls.trim()?' class="'+cls.trim()+'"':'')+attr+'>'
+      +(ranked?'<td class="rank-no">'+(d.pace>0?no:'')+'</td>':'')
       +'<td class="nowrap">'+(first?'<span class="badge b-cat">'+esc(cat)+'</span>':'')+'</td>'
       +'<td class="name">'+esc(d.item['商品名'])+'</td>'
       +'<td class="dim">'+esc(d.item['サイズ'])+'</td>'
@@ -908,9 +1006,17 @@ function replenishPanel(title,note,rows,badgeCls,wName,prioWh){
       +'<td class="num dim">'+fmtQty(d.min)+'</td>'
       +'<td class="num dim">'+(d.max>0?fmtQty(d.max):'—')+'</td>'
       +'<td class="num" style="font-weight:700;color:var(--warn)">'+fmtQty(d.need)+' <span class="dim" style="font-weight:400">'+esc(u)+'</span></td>'
-      +(withOrder?orderCell(d,wName):'')+'</tr>';
+      +(withOrder?orderCell(d,wName):'')
+      +(withPace?paceCells(d,u):'')+'</tr>';
   });
-  h+='</tbody></table></div>';
+  h+='</tbody></table>';
+  if(withPace){
+    h+='<div class="chart-note" style="padding:8px 14px 12px">'
+      +'出荷ペースは'+esc(PACE_WH)+'からの出荷（販売＋事務所への移動）を直近4週・13週で稼働日あたりに直し、速い方を1週（5稼働日）に換算したものです。'
+      +'残りは現在庫がなくなるまでの稼働日数の目安です。'
+      +(paceData&&paceData.集計日時?'（'+esc(paceData.集計日時)+' 集計）':'')+'</div>';
+  }
+  h+='</div>';
   return h;
 }
 
