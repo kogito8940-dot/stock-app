@@ -1608,27 +1608,31 @@ async function commitInventory(){
 }
 
 function printInvSheet(){
-  const rows=invRows();
-  if(!rows.length){showToast('印刷する行がありません');return;}
-  let inner='<h1>棚卸しリスト</h1><div class="meta">倉庫：'+esc(filters.inv.wh)
-    +'　／　出力日時：'+timeStamp(new Date())
-    +(staffName?'　／　担当：'+esc(staffName):'')
-    +'　／　'+rows.length+' 件</div>';
-  let lastCat=null;
-  rows.forEach(function(r){
-    if(r.cat!==lastCat){
-      if(lastCat!==null)inner+='</tbody></table>';
-      inner+='<h2>'+esc(r.cat)+'</h2><table><thead><tr>'
-        +'<th style="width:34%">商品名</th><th style="width:16%">サイズ</th><th style="width:8%">単位</th>'
-        +'<th class="num" style="width:12%">データ在庫</th>'
-        +'<th style="width:30%">実数記入</th></tr></thead><tbody>';
-      lastCat=r.cat;
-    }
-    inner+='<tr><td>'+esc(r.name)+'</td><td>'+esc(r.size)+'</td><td>'+esc(r.unit)+'</td>'
-      +'<td class="num">'+fmtQty(r.sys)+'</td><td></td></tr>';
+  /* スマホ版（index.html の printInventoryList）と同じ内容・書式で出力する */
+  var wName=filters.inv.wh;
+  if(!wName){showToast('倉庫を選択してください');return;}
+  var stockKey=stockKeyOf(wName);
+  var dateStr=timeStamp(new Date());
+  var grouped={};
+  master.forEach(function(p){
+    if(wName==='創造社倉庫'&&p['商品区分']==='小分け品') return;
+    var ms=minStockData.find(function(r){return r['SKU_ID']===p['SKU_ID']&&r['倉庫名']===wName;});
+    if((ms?parseFloat(ms['最低在庫数'])||0:0)===0&&p['商品区分']==='小分け品') return;
+    var cat=p['カテゴリ']||'未分類';
+    if(!grouped[cat]) grouped[cat]=[];
+    var si=summary.find(function(s){return s['SKU_ID']===p['SKU_ID'];});
+    grouped[cat].push({商品名:p['商品名'],サイズ:String(p['サイズ']),単位:p['単位'],SKU_ID:p['SKU_ID'],在庫数:si?num2(si[stockKey]):0});
   });
-  inner+='</tbody></table>';
-  printWindow('棚卸しリスト',inner);
+  if(!Object.keys(grouped).length){showToast('印刷する行がありません');return;}
+  Object.keys(grouped).forEach(function(cat){grouped[cat].sort(function(a,b){return jaSort(a['商品名'],b['商品名']);});});
+  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>棚卸しリスト - '+esc(wName)+'</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;font-size:12px;}h1{font-size:16px;margin-bottom:4px;}.meta{font-size:11px;color:#666;margin-bottom:16px;}.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}.notice{font-size:11px;color:#92400e;background:#fef3c7;padding:6px 10px;border-radius:4px;margin-bottom:12px;}table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}th{background:#f3f4f6;padding:7px 8px;text-align:left;border-bottom:2px solid #d1d5db;font-weight:600;font-size:11px;color:#6b7280;}td{padding:7px 8px;border-bottom:1px solid #e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}tr:nth-child(even){background:#f9fafb;}.check-col{text-align:center;border-left:1px solid #d1d5db;width:28%;}.total-col{text-align:center;border-left:2px solid #9ca3af;background:#fefce8;width:10%;}.qty-col{text-align:right;width:11%;}@media print{body{padding:8px;}@page{margin:10mm;margin-top:3cm;size:A4;}.category,.notice{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><h1>棚卸しリスト</h1><div class="meta">倉庫：'+esc(wName)+'　／　出力日時：'+dateStr+'　／　担当：'+esc(staffName||'')+'</div>'+(wName==='創造社倉庫'?'<div class="notice">※小分け品はリストから除外されています</div>':'');
+  Object.keys(grouped).sort().forEach(function(cat){
+    html+='<div class="category">'+esc(cat)+'</div><table><colgroup><col style="width:27%"><col style="width:17%"><col style="width:7%"><col style="width:11%"><col style="width:24%"><col style="width:10%"></colgroup><tr><th>商品名</th><th>サイズ</th><th style="text-align:center;">単位</th><th class="qty-col">データ在庫</th><th class="check-col">実数記入</th><th class="total-col">集計</th></tr>';
+    grouped[cat].forEach(function(item){html+='<tr><td>'+esc(item['商品名'])+'</td><td>'+esc(item['サイズ'])+'</td><td style="text-align:center;">'+esc(item['単位'])+'</td><td class="qty-col">'+fmtQty(item['在庫数'])+'</td><td class="check-col"></td><td class="total-col"></td></tr>';});
+    html+='</table>';
+  });
+  html+='</body></html>';
+  var win=window.open('','_blank');win.document.write(html);win.document.close();win.focus();win.print();
 }
 
 /* ============================================================
