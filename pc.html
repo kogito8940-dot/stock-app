@@ -489,7 +489,7 @@ const filters={
   master:{q:'',cat:'',type:'',showOff:false,sort:{key:'cat',dir:1}},
   history:{q:'',range:'week',type:'',wh:'',showCancel:false,limit:300},
   dash:{wh:'',rank:localStorage.getItem('dash_rank')==='cat'?'cat':'prio'},
-  inv:{wh:'',cat:'',q:'',diffOnly:false},
+  inv:{wh:'',cat:'',type:'',q:'',diffOnly:false},
   ship:{q:'',cat:'',name:'',group:false,mode:'w',selected:[],sort:{key:'year',dir:-1},smooth:0,adj:false}
 };
 
@@ -1323,6 +1323,8 @@ function invRows(){
     const m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!isActive(m))return;
     if(f.cat&&m['カテゴリ']!==f.cat)return;
+    if(f.type==='import'&&m['商品区分']!=='輸入品')return;
+    if(f.type==='other'&&m['商品区分']==='輸入品')return;
     if(q){
       const hay=[item['商品名'],item['サイズ'],item['SKU_ID'],m['カテゴリ']].join(' ').toLowerCase();
       if(hay.indexOf(q)===-1)return;
@@ -1362,6 +1364,9 @@ function renderInv(){
     }).join('')+'</div>'
     +'<input type="text" class="search" id="tb-iq" placeholder="商品名・サイズ・SKU_IDで絞り込む" value="'+esc(f.q)+'">'
     +selectFilter('icat','全カテゴリ',allCategories(),f.cat,'filters.inv.cat')
+    +'<div class="seg">'+[['','すべて'],['import','輸入品'],['other','輸入品以外']].map(function(t){
+      return '<button class="'+(f.type===t[0]?'on':'')+'" onclick="filters.inv.type=\''+t[0]+'\';render();">'+t[1]+'</button>';
+    }).join('')+'</div>'
     +'<label class="check"><input type="checkbox" '+(f.diffOnly?'checked':'')
       +' onchange="filters.inv.diffOnly=this.checked;render();">差異がある行だけ表示</label>'
   );
