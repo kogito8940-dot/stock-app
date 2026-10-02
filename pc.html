@@ -2600,29 +2600,44 @@ function printWindow(title,inner,opts){
   win.print();
 }
 function printStock(){
+  /* 棚卸しリストと同じ書式（A4縦・商品名27%／サイズ17%／単位7%）で出力する */
   const rows=stockRows();
-  let inner='<h1>在庫一覧</h1><div class="meta">出力日時：'+timeStamp(new Date())
+  const n=warehouses.length;
+  const whW=Math.floor(490/(n+1))/10;          // 残り49%を倉庫列と合計列で等分
+  const totW=Math.round((49-whW*n)*10)/10;
+  const colgroup='<colgroup><col style="width:27%"><col style="width:17%"><col style="width:7%">'
+    +warehouses.map(function(){return '<col style="width:'+whW+'%">';}).join('')
+    +'<col style="width:'+totW+'%"></colgroup>';
+  const head='<table>'+colgroup+'<tr><th>商品名</th><th>サイズ</th><th style="text-align:center;">単位</th>'
+    +warehouses.map(function(w){return '<th class="qty-col">'+esc(w['倉庫名'])+'</th>';}).join('')
+    +'<th class="total-col">合計</th></tr>';
+  let html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>在庫一覧</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;font-size:12px;}h1{font-size:16px;margin-bottom:4px;}.meta{font-size:11px;color:#666;margin-bottom:16px;}.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}th{background:#f3f4f6;padding:7px 8px;text-align:left;border-bottom:2px solid #d1d5db;font-weight:600;font-size:11px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}td{padding:7px 8px;border-bottom:1px solid #e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}tr:nth-child(even){background:#f9fafb;}.qty-col{text-align:right;}.total-col{text-align:right;border-left:2px solid #9ca3af;font-weight:700;}.low{color:#c2410c;font-weight:700;}@media print{body{padding:8px;}@page{margin:10mm;margin-top:3cm;size:A4;}.category{-webkit-print-color-adjust:exact;print-color-adjust:exact;}tr{page-break-inside:avoid;}}</style></head><body>'
+    +'<h1>在庫一覧</h1><div class="meta">出力日時：'+timeStamp(new Date())
     +'　／　'+rows.length+' 件'+(staffName?'　／　担当：'+esc(staffName):'')+'</div>';
   let lastCat=null;
   rows.forEach(function(r){
     const cat=r.m['カテゴリ']||'未分類';
     if(cat!==lastCat){
-      if(lastCat!==null)inner+='</tbody></table>';
-      inner+='<h2>'+esc(cat)+'</h2><table><thead><tr><th>商品名</th><th>サイズ</th><th>単位</th>'
-        +warehouses.map(function(w){return '<th class="num">'+esc(w['倉庫名'])+'</th>';}).join('')
-        +'<th class="num">合計</th></tr></thead><tbody>';
+      if(lastCat!==null)html+='</table>';
+      html+='<div class="category">'+esc(cat)+'</div>'+head;
       lastCat=cat;
     }
-    inner+='<tr><td>'+esc(r.item['商品名'])+'</td><td>'+esc(r.item['サイズ'])+'</td><td>'+esc(r.item['単位'])+'</td>'
+    html+='<tr><td>'+esc(r.item['商品名'])+'</td><td>'+esc(r.item['サイズ'])+'</td>'
+      +'<td style="text-align:center;">'+esc(r.item['単位'])+'</td>'
       +r.cells.map(function(c){
         const low=c.min>0&&c.stock<c.min;
-        return '<td class="num'+(low?' low':'')+'">'+fmtQty(c.stock)+'</td>';
+        return '<td class="qty-col'+(low?' low':'')+'">'+fmtQty(c.stock)+'</td>';
       }).join('')
-      +'<td class="num">'+fmtQty(r.total)+'</td></tr>';
+      +'<td class="total-col">'+fmtQty(r.total)+'</td></tr>';
   });
-  if(lastCat!==null)inner+='</tbody></table>';
-  else inner+='<div>対象がありません</div>';
-  printWindow('在庫一覧',inner);
+  if(lastCat!==null)html+='</table>';
+  else html+='<div>対象がありません</div>';
+  html+='</body></html>';
+  const win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  win.print();
 }
 function printReplenish(){
   const wName=filters.dash.wh;
