@@ -304,6 +304,25 @@ tbody tr.grp td{border-bottom:1px solid var(--line);font-weight:600;}
   display:flex;align-items:center;gap:12px;
 }
 .banner .btn{margin-left:auto;}
+/* 棚卸しグループ */
+.ig-wrap{margin-bottom:14px;}
+.ig-head{font-size:12px;color:var(--ink2);margin-bottom:6px;display:flex;gap:10px;align-items:baseline;}
+.ig-head .dim{font-size:11.5px;}
+.ig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;}
+.ig-card{
+  text-align:left;background:var(--surface);border:1px solid var(--line);border-left:4px solid #cbd0da;
+  border-radius:8px;padding:8px 11px;cursor:pointer;font:inherit;color:var(--ink);
+}
+.ig-card:hover{background:#fafbfd;}
+.ig-card.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft);}
+.ig-card.lv-ok{border-left-color:var(--ok);}
+.ig-card.lv-warn{border-left-color:var(--warn);}
+.ig-card.lv-danger{border-left-color:var(--danger);}
+.ig-name{font-weight:700;font-size:13px;}
+.ig-cnt{font-size:11.5px;color:var(--ink3);font-weight:400;margin-left:4px;}
+.ig-last{font-size:11.5px;color:var(--ink2);margin-top:3px;}
+.ig-card.lv-warn .ig-last b{color:var(--warn);}
+.ig-card.lv-danger .ig-last b{color:var(--danger);}
 .prog{font-size:12.5px;color:var(--ink2);}
 
 /* ---- トースト ---- */
@@ -489,12 +508,38 @@ const filters={
   master:{q:'',cat:'',type:'',showOff:false,sort:{key:'cat',dir:1}},
   history:{q:'',range:'week',type:'',wh:'',showCancel:false,limit:300},
   dash:{wh:'',rank:localStorage.getItem('dash_rank')==='cat'?'cat':'prio'},
-  inv:{wh:'',cat:'',type:'',q:'',diffOnly:false},
+  inv:{wh:'',cat:'',type:'',group:'',q:'',diffOnly:false},
   ship:{q:'',cat:'',name:'',group:false,mode:'w',selected:[],sort:{key:'year',dir:-1},smooth:0,adj:false}
 };
 
 /* 棚卸しの入力状態。counts は SKU_ID => 入力文字列、sysAt は下書き作成時のシステム在庫 */
-const inv={counts:{},sysAt:{},rows:[],restoredAt:null};
+const inv={counts:{},sysAt:{},committed:{},rows:[],restoredAt:null};
+
+/* 棚卸しグループと実施記録（⑧棚卸しグループ・⑨棚卸し実施記録シート） */
+const INV_WARN_DAYS=30;    // これを超えたら黄色
+const INV_ALERT_DAYS=60;   // これを超えたら赤
+const INV_RECENT_DAYS=7;   // この日数以内に記録があれば「ダブりでは？」と確認する
+const INV_IMPORT_GROUP='輸入品';
+const INV_UNASSIGNED='未割当';
+/* GASのシートが読めないときの仮の分け方（GAS側の初期値と同じ） */
+const INV_DEFAULT_GROUPS=[
+  ['AC100','① AC系・ADDITIVE'],['AC200','① AC系・ADDITIVE'],['AC730 BASE','① AC系・ADDITIVE'],
+  ['AC730 Liquid','① AC系・ADDITIVE'],['ADDITIVE','① AC系・ADDITIVE'],
+  ['PIGMENT','② 顔料'],['蛍光PIGMENT','② 顔料'],
+  ['強化繊維','③ フィラー・繊維・コーティング剤'],['ガラス繊維','③ フィラー・繊維・コーティング剤'],
+  ['ガラスチョップ','③ フィラー・繊維・コーティング剤'],['意匠フィラー','③ フィラー・繊維・コーティング剤'],
+  ['フィラー','③ フィラー・繊維・コーティング剤'],['コーティング剤','③ フィラー・繊維・コーティング剤'],
+  ['Flex Metal Base','④ シリコン・ツール類'],['Flex Metal Liquid','④ シリコン・ツール類'],
+  ['離型剤','④ シリコン・ツール類'],['シリコン','④ シリコン・ツール類'],
+  ['その他造形資材','④ シリコン・ツール類'],['ツール','④ シリコン・ツール類'],['洗浄剤','④ シリコン・ツール類'],
+  ['ポリエステル樹脂','⑤ 樹脂・溶剤・梱包資材'],['ポリエステル樹脂硬化剤・添加剤','⑤ 樹脂・溶剤・梱包資材'],
+  ['エポキシ','⑤ 樹脂・溶剤・梱包資材'],['ウレタン','⑤ 樹脂・溶剤・梱包資材'],['塗料','⑤ 樹脂・溶剤・梱包資材'],
+  ['溶剤','⑤ 樹脂・溶剤・梱包資材'],['段ボール','⑤ 樹脂・溶剤・梱包資材'],['ビニール袋','⑤ 樹脂・溶剤・梱包資材'],
+  ['容器','⑤ 樹脂・溶剤・梱包資材'],['IBC','⑤ 樹脂・溶剤・梱包資材'],['備品','⑤ 樹脂・溶剤・梱包資材']
+].map(function(r){return {'カテゴリ':r[0],'グループ':r[1]};});
+let invGroupMap=INV_DEFAULT_GROUPS.slice();
+let invRecords=[];
+let invStatusOk=false;
 
 /* ============================================================
    ユーティリティ
@@ -603,9 +648,10 @@ async function loadData(){
     fetchJSON('getMinStockMaster'),
     fetchJSON('getMasterAll'),
     fetchJSON('getCategoryOrder'),
-    fetchJSON('getOpenOrders')
+    fetchJSON('getOpenOrders'),
+    fetchJSON('getInvStatus')
   ]);
-  const names=['商品マスタ','在庫サマリ','倉庫マスタ','在庫設定','商品マスタ全件','カテゴリ順','発注管理'];
+  const names=['商品マスタ','在庫サマリ','倉庫マスタ','在庫設定','商品マスタ全件','カテゴリ順','発注管理','棚卸し記録'];
   const failed=[];
   results.forEach(function(r,i){if(r.status!=='fulfilled')failed.push(names[i]);});
   const val=function(i){return results[i].status==='fulfilled'?results[i].value:null;};
@@ -618,6 +664,8 @@ async function loadData(){
   if(ma)masterAll=ma.data||ma;
   if(co)categoryOrder=co.data||[];
   if(oo)openOrders=oo.data||[];
+  applyInvStatus(val(7));
+  if(results[7].status==='fulfilled'&&!invStatusOk)failed.push('棚卸し記録');
 
   loadedAt=new Date();
   document.getElementById('foot-stamp').textContent='最終更新 '+timeStamp(loadedAt);
@@ -1274,7 +1322,7 @@ function invSaveDraft(){
   if(!filters.inv.wh)return;
   try{
     localStorage.setItem(invDraftKey(),JSON.stringify({
-      ts:Date.now(),counts:inv.counts,sysAt:inv.sysAt
+      ts:Date.now(),counts:inv.counts,sysAt:inv.sysAt,committed:inv.committed
     }));
   }catch(e){/* 保存できなくても入力は続行できる */}
 }
@@ -1284,13 +1332,14 @@ function invSaveDraftSoon(){
   invSaveTimer=setTimeout(invSaveDraft,500);
 }
 function invLoadDraft(){
-  inv.counts={};inv.sysAt={};inv.restoredAt=null;
+  inv.counts={};inv.sysAt={};inv.committed={};inv.restoredAt=null;
   try{
     const raw=localStorage.getItem(invDraftKey());
     if(!raw)return;
     const d=JSON.parse(raw);
     inv.counts=d.counts||{};
     inv.sysAt=d.sysAt||{};
+    inv.committed=d.committed||{};
     if(Object.keys(inv.counts).length)inv.restoredAt=new Date(d.ts||Date.now());
   }catch(e){/* 壊れた下書きは無視する */}
 }
@@ -1306,7 +1355,7 @@ function invClearDraft(){
     '<b>'+esc(filters.inv.wh)+'</b> に入力した実数をすべて消します。<br>まだ記録していない入力なので、在庫には影響しません。',
     '消す',
     function(){
-      inv.counts={};inv.sysAt={};inv.restoredAt=null;
+      inv.counts={};inv.sysAt={};inv.committed={};inv.restoredAt=null;
       localStorage.removeItem(invDraftKey());
       closeConfirm();
       render();
@@ -1318,10 +1367,12 @@ function invRows(){
   const f=filters.inv;
   const q=f.q.trim().toLowerCase();
   const key=stockKeyOf(f.wh);
+  const gset=f.group?invGroupSkuSet(f.wh,f.group):null;
   const rows=[];
   summary.forEach(function(item){
     const m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!isActive(m))return;
+    if(gset&&!gset[item['SKU_ID']])return;
     if(f.cat&&m['カテゴリ']!==f.cat)return;
     if(f.type==='import'&&m['商品区分']!=='輸入品')return;
     if(f.type==='other'&&m['商品区分']==='輸入品')return;
@@ -1357,7 +1408,9 @@ function renderInv(){
   const f=filters.inv;
   if(!f.wh){f.wh=warehouses[0]['倉庫名'];invLoadDraft();}
 
-  setActions('<button class="btn" onclick="printInvSheet()">棚卸しリストを印刷</button>');
+  setActions(
+    (f.group?'<button class="btn btn-primary" onclick="invCompleteGroup()">このグループの棚卸し完了を記録</button>':'')
+    +'<button class="btn" onclick="printInvSheet()">棚卸しリストを印刷</button>');
   setToolbar(
     '<div class="seg">'+warehouses.map(function(w){
       return '<button class="'+(w['倉庫名']===f.wh?'on':'')+'" onclick="invSetWarehouse(\''+jsq(w['倉庫名'])+'\')">'+esc(w['倉庫名'])+'</button>';
@@ -1365,7 +1418,7 @@ function renderInv(){
     +'<input type="text" class="search" id="tb-iq" placeholder="商品名・サイズ・SKU_IDで絞り込む" value="'+esc(f.q)+'">'
     +selectFilter('icat','全カテゴリ',allCategories(),f.cat,'filters.inv.cat')
     +'<div class="seg">'+[['','すべて'],['import','輸入品'],['other','輸入品以外']].map(function(t){
-      return '<button class="'+(f.type===t[0]?'on':'')+'" onclick="filters.inv.type=\''+t[0]+'\';render();">'+t[1]+'</button>';
+      return '<button class="'+(f.type===t[0]?'on':'')+'" onclick="filters.inv.type=\''+t[0]+'\';filters.inv.group=\'\';render();">'+t[1]+'</button>';
     }).join('')+'</div>'
     +'<label class="check"><input type="checkbox" '+(f.diffOnly?'checked':'')
       +' onchange="filters.inv.diffOnly=this.checked;render();">差異がある行だけ表示</label>'
@@ -1376,7 +1429,7 @@ function renderInv(){
   inv.rows=rows;
   setCount(rows.length+' 件');
 
-  let h='';
+  let h=renderInvGroups(f);
   if(inv.restoredAt){
     h+='<div class="banner">前回の入力を復元しました（'+esc(timeStamp(inv.restoredAt))+'）。'
       +'続きから数えられます。<button class="btn btn-sm" onclick="inv.restoredAt=null;render();">閉じる</button></div>';
@@ -1583,6 +1636,7 @@ async function commitInventory(){
       });
       delete inv.counts[x.sku];
       delete inv.sysAt[x.sku];
+      inv.committed[x.sku]=true;   // グループ完了記録で「差異件数」「入力件数」に数える
       done++;
     }catch(e){
       failed.push(x.name+' '+x.size+'：'+e.message);
@@ -1612,10 +1666,193 @@ async function commitInventory(){
   }
 }
 
+/* ---- 棚卸しグループ ---- */
+function applyInvStatus(v){
+  if(!v||v.success===false){invStatusOk=false;return;}
+  invStatusOk=true;
+  invRecords=v.records||[];
+  invGroupMap=(v.groups&&v.groups.length)?v.groups:INV_DEFAULT_GROUPS.slice();
+}
+async function loadInvStatus(){
+  try{applyInvStatus(await fetchJSON('getInvStatus'));}
+  catch(e){invStatusOk=false;}
+}
+function invGroupNameOf(p){
+  if(p['商品区分']==='輸入品')return INV_IMPORT_GROUP;
+  const cat=p['カテゴリ']||'';
+  const g=invGroupMap.find(function(r){return r['カテゴリ']===cat;});
+  return g?g['グループ']:INV_UNASSIGNED;
+}
+/* 棚卸し対象の商品（棚卸しリスト印刷と同じ条件：創造社倉庫の小分け品と、最低在庫0の小分け品は除く） */
+function invMembers(wName){
+  return masterAll.filter(function(p){
+    if(!isActive(p))return false;
+    if(p['商品区分']==='小分け品'){
+      if(wName==='創造社倉庫')return false;
+      const ms=msOf(p['SKU_ID'],wName);
+      if((ms?parseFloat(ms['最低在庫数'])||0:0)===0)return false;
+    }
+    return true;
+  });
+}
+function invGroupSkuSet(wName,gName){
+  const set={};
+  invMembers(wName).forEach(function(p){if(invGroupNameOf(p)===gName)set[p['SKU_ID']]=true;});
+  return set;
+}
+/* 表示順：輸入品 → ⑧シートの並び順 → 未割当。商品がないグループは出さない */
+function invGroupList(wName){
+  const cnt={};
+  invMembers(wName).forEach(function(p){
+    const g=invGroupNameOf(p);
+    cnt[g]=(cnt[g]||0)+1;
+  });
+  const order=[INV_IMPORT_GROUP];
+  invGroupMap.forEach(function(r){if(order.indexOf(r['グループ'])===-1)order.push(r['グループ']);});
+  order.push(INV_UNASSIGNED);
+  return order.filter(function(g){return cnt[g];}).map(function(g){return {name:g,count:cnt[g]};});
+}
+function invLastRecord(wName,gName){
+  let best=null,bestT=-Infinity;
+  invRecords.forEach(function(r){
+    if(r['倉庫']!==wName||r['グループ']!==gName)return;
+    const t=parseJSTDate(r['日時']).getTime();
+    if(!isNaN(t)&&t>bestT){bestT=t;best=r;}
+  });
+  return best;
+}
+function invDaysSince(rec){
+  if(!rec)return null;
+  const d=parseJSTDate(rec['日時']);
+  if(isNaN(d.getTime()))return null;
+  const a=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  const n=new Date();const b=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+  return Math.round((b-a)/86400000);
+}
+function invAgeText(rec){
+  const days=invDaysSince(rec);
+  if(days===null)return '記録なし';
+  const d=parseJSTDate(rec['日時']);
+  return (d.getMonth()+1)+'/'+d.getDate()+'（'+(days===0?'今日':days+'日前')+'）'
+    +(rec['担当者']?' '+rec['担当者']:'');
+}
+function invAgeLevel(rec){
+  const days=invDaysSince(rec);
+  if(days===null)return 'none';
+  if(days>INV_ALERT_DAYS)return 'danger';
+  if(days>INV_WARN_DAYS)return 'warn';
+  return 'ok';
+}
+function invSetGroup(g){
+  filters.inv.group=filters.inv.group===g?'':g;
+  filters.inv.type='';
+  render();
+}
+function renderInvGroups(f){
+  const list=invGroupList(f.wh);
+  if(!list.length)return '';
+  let h='<div class="ig-wrap"><div class="ig-head"><b>棚卸しグループ</b>'
+    +'<span class="dim">クリックでそのグループだけを表示・印刷します（もう一度クリックで解除）。'
+    +INV_WARN_DAYS+'日超で黄色、'+INV_ALERT_DAYS+'日超で赤になります。</span></div>';
+  if(!invStatusOk){
+    h+='<div class="banner" style="background:var(--warn-soft);border-color:#fbd9bf;color:#9a3412;">'
+      +'棚卸しの実施記録を読み込めませんでした。最終実施日は表示されません（GASの設定をご確認ください）。</div>';
+  }
+  h+='<div class="ig-grid">';
+  list.forEach(function(g){
+    const rec=invLastRecord(f.wh,g.name);
+    const lv=invAgeLevel(rec);
+    h+='<button class="ig-card lv-'+lv+(f.group===g.name?' on':'')+'" onclick="invSetGroup(\''+jsq(g.name)+'\')">'
+      +'<div class="ig-name">'+esc(g.name)+'<span class="ig-cnt">'+g.count+'品目</span></div>'
+      +'<div class="ig-last">最終 <b>'+esc(invAgeText(rec))+'</b></div>'
+      +(g.name===INV_UNASSIGNED?'<div class="ig-last" style="color:var(--warn)">⑧棚卸しグループでカテゴリの割当が必要です</div>':'')
+      +'</button>';
+  });
+  return h+'</div></div>';
+}
+async function invCompleteGroup(){
+  const f=filters.inv;
+  const g=f.group;
+  if(!g)return;
+  if(!staffName){
+    showToast('先に左下の担当者名を設定してください');
+    editStaff();
+    if(!staffName)return;
+  }
+  if(!invStatusOk){
+    showToast('棚卸し記録のシートに接続できないため記録できません。GASの設定をご確認ください。');
+    return;
+  }
+  const key=stockKeyOf(f.wh);
+  const map={};
+  summary.forEach(function(x){map[x['SKU_ID']]=x;});
+  const members=invMembers(f.wh).filter(function(p){return invGroupNameOf(p)===g;});
+  let entered=0,committed=0,pending=0;
+  members.forEach(function(p){
+    const sku=p['SKU_ID'];
+    if(inv.committed[sku]){entered++;committed++;return;}
+    const v=inv.counts[sku];
+    if(v===undefined||v==='')return;
+    entered++;
+    const n=parseFloat(v);
+    const si=map[sku];
+    if(!isNaN(n)&&si&&num2(n-num2(si[key]))!==0)pending++;
+  });
+  if(pending){
+    openConfirm('まだ確定していない差異があります',
+      '<b>'+esc(g)+'</b> に、差異が出ているのに記録していない行が <b>'+pending+'</b> 件あります。<br>'
+      +'先に下の「差異を確認して確定する」で②入出庫ログに記録してから、完了を記録してください。',
+      '閉じる',function(){closeConfirm();});
+    return;
+  }
+  const total=members.length;
+  const rest=total-entered;
+  const last=invLastRecord(f.wh,g);
+  const days=invDaysSince(last);
+  let body='<div style="line-height:1.9">'
+    +'倉庫：<b>'+esc(f.wh)+'</b><br>グループ：<b>'+esc(g)+'</b><br>'
+    +'品目数 '+total+' 件のうち 入力 <b>'+entered+'</b> 件（差異を記録 '+committed+' 件）<br>'
+    +'担当：'+esc(staffName)+'</div>';
+  if(rest>0){
+    body+='<div class="banner" style="margin-top:10px;background:var(--warn-soft);border-color:#fbd9bf;color:#9a3412;">'
+      +'未入力が '+rest+' 件あります。未入力のまま完了として記録しますか？</div>';
+  }
+  if(days!==null&&days<=INV_RECENT_DAYS){
+    body+='<div class="banner" style="margin-top:10px;background:var(--warn-soft);border-color:#fbd9bf;color:#9a3412;">'
+      +'このグループは '+esc(invAgeText(last))+' に記録済みです。ダブっていないかご確認ください。</div>';
+  }
+  body+='<div style="font-size:12px;color:var(--ink2);margin-top:10px;">⑨棚卸し実施記録シートに1行追加します。在庫数は変わりません。</div>';
+  openConfirm('棚卸し完了を記録',body,'完了を記録する',async function(){
+    try{
+      await post({
+        action:'addInvRecord',
+        '倉庫':f.wh,'グループ':g,
+        '品目数':total,'入力件数':entered,'差異件数':committed,
+        '担当者':staffName,
+        '備考':rest>0?'未入力'+rest+'件':''
+      });
+    }catch(e){
+      showToast('記録できませんでした：'+e.message);
+      return;
+    }
+    members.forEach(function(p){
+      const sku=p['SKU_ID'];
+      delete inv.counts[sku];delete inv.sysAt[sku];delete inv.committed[sku];
+    });
+    invSaveDraft();
+    closeConfirm();
+    await loadInvStatus();
+    render();
+    showToast('「'+g+'」の棚卸し完了を記録しました');
+  });
+}
+
 function printInvSheet(){
   /* スマホ版（index.html の printInventoryList）と同じ内容・書式で出力する */
   var wName=filters.inv.wh;
   var tFilter=filters.inv.type||'';   // 画面の「輸入品／輸入品以外」の選択を印刷にも反映
+  var gName=filters.inv.group||'';    // 棚卸しグループを選んでいれば、そのグループだけを印刷
+  var gSet=gName?invGroupSkuSet(wName,gName):null;
   if(!wName){showToast('倉庫を選択してください');return;}
   var stockKey=stockKeyOf(wName);
   var dateStr=timeStamp(new Date());
@@ -1623,6 +1860,7 @@ function printInvSheet(){
   master.forEach(function(p){
     if(wName==='創造社倉庫'&&p['商品区分']==='小分け品') return;
     if(tFilter==='import'&&p['商品区分']!=='輸入品') return;
+    if(gSet&&!gSet[p['SKU_ID']]) return;
     if(tFilter==='other'&&p['商品区分']==='輸入品') return;
     var ms=minStockData.find(function(r){return r['SKU_ID']===p['SKU_ID']&&r['倉庫名']===wName;});
     if((ms?parseFloat(ms['最低在庫数'])||0:0)===0&&p['商品区分']==='小分け品') return;
@@ -1633,7 +1871,7 @@ function printInvSheet(){
   });
   if(!Object.keys(grouped).length){showToast('印刷する行がありません');return;}
   Object.keys(grouped).forEach(function(cat){grouped[cat].sort(function(a,b){return jaSort(a['商品名'],b['商品名']);});});
-  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>棚卸しリスト - '+esc(wName)+'</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;font-size:12px;}h1{font-size:16px;margin-bottom:4px;}.meta{font-size:11px;color:#666;margin-bottom:16px;}.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}.notice{font-size:11px;color:#92400e;background:#fef3c7;padding:6px 10px;border-radius:4px;margin-bottom:12px;}table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}th{background:#f3f4f6;padding:7px 8px;text-align:left;border-bottom:2px solid #d1d5db;font-weight:600;font-size:11px;color:#6b7280;}td{padding:7px 8px;border-bottom:1px solid #e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}tr:nth-child(even){background:#f9fafb;}.check-col{text-align:center;border-left:1px solid #d1d5db;width:28%;}.total-col{text-align:center;border-left:2px solid #9ca3af;background:#fefce8;width:10%;}.qty-col{text-align:right;width:11%;}@media print{body{padding:8px;}@page{margin:10mm;margin-top:3cm;size:A4;}.category,.notice{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><h1>棚卸しリスト</h1><div class="meta">倉庫：'+esc(wName)+'　／　出力日時：'+dateStr+'　／　担当：'+esc(staffName||'')+'</div>'+(wName==='創造社倉庫'?'<div class="notice">※小分け品はリストから除外されています</div>':'')+(tFilter==='import'?'<div class="notice">※商品区分「輸入品」のみを表示しています</div>':'')+(tFilter==='other'?'<div class="notice">※商品区分「輸入品」以外を表示しています</div>':'');
+  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>棚卸しリスト - '+esc(wName)+(gName?' - '+esc(gName):'')+'</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;font-size:12px;}h1{font-size:16px;margin-bottom:4px;}.meta{font-size:11px;color:#666;margin-bottom:16px;}.category{font-size:13px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:4px;margin:16px 0 6px;}.notice{font-size:11px;color:#92400e;background:#fef3c7;padding:6px 10px;border-radius:4px;margin-bottom:12px;}table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}th{background:#f3f4f6;padding:7px 8px;text-align:left;border-bottom:2px solid #d1d5db;font-weight:600;font-size:11px;color:#6b7280;}td{padding:7px 8px;border-bottom:1px solid #e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}tr:nth-child(even){background:#f9fafb;}.check-col{text-align:center;border-left:1px solid #d1d5db;width:28%;}.total-col{text-align:center;border-left:2px solid #9ca3af;background:#fefce8;width:10%;}.qty-col{text-align:right;width:11%;}@media print{body{padding:8px;}@page{margin:10mm;margin-top:3cm;size:A4;}.category,.notice{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><h1>棚卸しリスト</h1><div class="meta">倉庫：'+esc(wName)+'　／　出力日時：'+dateStr+'　／　担当：'+esc(staffName||'')+'</div>'+(wName==='創造社倉庫'?'<div class="notice">※小分け品はリストから除外されています</div>':'')+(tFilter==='import'?'<div class="notice">※商品区分「輸入品」のみを表示しています</div>':'')+(tFilter==='other'?'<div class="notice">※商品区分「輸入品」以外を表示しています</div>':'')+(gName?'<div class="notice">※棚卸しグループ「'+esc(gName)+'」のみを表示しています</div>':'');
   Object.keys(grouped).sort().forEach(function(cat){
     html+='<div class="category">'+esc(cat)+'</div><table><colgroup><col style="width:27%"><col style="width:17%"><col style="width:7%"><col style="width:11%"><col style="width:24%"><col style="width:10%"></colgroup><tr><th>商品名</th><th>サイズ</th><th style="text-align:center;">単位</th><th class="qty-col">データ在庫</th><th class="check-col">実数記入</th><th class="total-col">集計</th></tr>';
     grouped[cat].forEach(function(item){html+='<tr><td>'+esc(item['商品名'])+'</td><td>'+esc(item['サイズ'])+'</td><td style="text-align:center;">'+esc(item['単位'])+'</td><td class="qty-col">'+fmtQty(item['在庫数'])+'</td><td class="check-col"></td><td class="total-col"></td></tr>';});
