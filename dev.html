@@ -535,7 +535,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',-apple-system,Blink
   </div>
   <div id="screen-replenish" class="screen">
     <div style="padding:10px 12px 6px;display:flex;flex-direction:column;gap:8px;">
-      <div id="replenish-warehouse-tabs" style="display:flex;gap:6px;overflow-x:auto;"></div>
+      <div id="replenish-warehouse-tabs" style="display:flex;flex-direction:column;gap:8px;min-width:0;"></div>
       <div style="display:flex;justify-content:flex-end;">
         <button onclick="printReplenishList()" style="background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;"><i class="ti ti-printer" style="margin-right:4px;"></i>PDF出力</button>
       </div>
@@ -1586,7 +1586,7 @@ function renderReplenish(){
     tabHtml+='<div class="filter-btn'+(w['倉庫名']===currentReplenishWarehouse?' active':'')+'" onclick="'+oc+'" style="white-space:nowrap;">'+w['倉庫名']+'</div>';
   });
   tabHtml+='</div>';
-  tabHtml+='<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-top:6px;">';
+  tabHtml+='<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;">';
   REPL_CATS.forEach(function(c){
     tabHtml+='<div class="filter-btn'+(c[0]===currentReplenishCat?' active':'')+'" onclick="switchReplenishCat(\''+c[0]+'\')" style="white-space:nowrap;">'+c[1]+'</div>';
   });
