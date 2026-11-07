@@ -1540,6 +1540,7 @@ function printReplenishList(){
   summary.forEach(function(item){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!m||!(m['有効']===true||m['有効']==='TRUE'))return;
+    if(!replCatMatch(m))return;
     var stock=num2(item[stockKey]);
     var ms=minStockData.find(function(r){return r['SKU_ID']===item['SKU_ID']&&r['倉庫名']===wName;});
     var minStock=ms?parseFloat(ms['最低在庫数'])||0:0,maxStock=ms?parseFloat(ms['最大在庫数'])||0:0;
@@ -1551,7 +1552,7 @@ function printReplenishList(){
   });
   var now=new Date();
   var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
-  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>補充確認リスト - '+wName+'</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;}h1{font-size:18px;margin-bottom:4px;}.meta{font-size:12px;color:#666;margin-bottom:16px;}h2{font-size:14px;margin:20px 0 8px;padding:4px 10px;border-radius:4px;}.reorder-title{background:#fef3c7;color:#92400e;}.shortage-title{background:#fee2e2;color:#991b1b;}table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px;}th{background:#f3f4f6;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-weight:600;}td{padding:8px 10px;border:1px solid #e5e7eb;}tr:nth-child(even){background:#f0f4ff;}.shortage-num{color:#dc2626;font-weight:700;}.empty{text-align:center;padding:20px;color:#9ca3af;font-size:13px;}@media print{body{padding:10px;}@page{margin:15mm;margin-top:3cm;}}</style></head><body><h1>補充確認リスト</h1><div class="meta">倉庫：'+wName+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+'</div>';
+  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>補充確認リスト - '+wName+(currentReplenishCat!=='all'?' - '+replCatLabel():'')+'</title><style>body{font-family:-apple-system,sans-serif;padding:20px;color:#111;}h1{font-size:18px;margin-bottom:4px;}.meta{font-size:12px;color:#666;margin-bottom:16px;}h2{font-size:14px;margin:20px 0 8px;padding:4px 10px;border-radius:4px;}.reorder-title{background:#fef3c7;color:#92400e;}.shortage-title{background:#fee2e2;color:#991b1b;}table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px;}th{background:#f3f4f6;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-weight:600;}td{padding:8px 10px;border:1px solid #e5e7eb;}tr:nth-child(even){background:#f0f4ff;}.shortage-num{color:#dc2626;font-weight:700;}.empty{text-align:center;padding:20px;color:#9ca3af;font-size:13px;}@media print{body{padding:10px;}@page{margin:15mm;margin-top:3cm;}}</style></head><body><h1>補充確認リスト</h1><div class="meta">倉庫：'+wName+'　／　出力日時：'+dateStr+'　／　担当：'+(session.staff||'')+(currentReplenishCat!=='all'?'　／　対象：'+replCatLabel():'')+'</div>';
   if(reorder.length>0){html+='<h2 class="reorder-title">⚠️ 要補充（'+reorder.length+'件）</h2><table><tr><th>商品名</th><th>サイズ</th><th>現在庫</th><th>最低在庫</th><th>最大在庫</th><th>不足数</th><th>確認</th></tr>';reorder.forEach(function(d){html+='<tr><td>'+(d.item['商品名']||'')+'</td><td>'+(d.item['サイズ']||'')+'</td><td>'+d.stock+' '+(d.item['単位']||'')+'</td><td>'+d.minStock+' '+(d.item['単位']||'')+'</td><td>'+(d.maxStock>0?d.maxStock+' '+(d.item['単位']||''):'-')+'</td><td class="shortage-num">'+d.needQty+' '+(d.item['単位']||'')+'</td><td style="width:60px;"></td></tr>';});html+='</table>';}
   if(needPurchase.length>0){html+='<h2 class="shortage-title">🚨 要仕入品（'+needPurchase.length+'件）</h2><table><tr><th>商品名</th><th>サイズ</th><th>現在庫</th><th>最低在庫</th><th>最大在庫</th><th>不足数</th><th>手配状況</th><th>確認</th></tr>';needPurchase.forEach(function(d){html+='<tr><td>'+(d.item['商品名']||'')+'</td><td>'+(d.item['サイズ']||'')+'</td><td>'+d.stock+' '+(d.item['単位']||'')+'</td><td>'+d.minStock+' '+(d.item['単位']||'')+'</td><td>'+(d.maxStock>0?d.maxStock+' '+(d.item['単位']||''):'-')+'</td><td class="shortage-num">'+d.needQty+' '+(d.item['単位']||'')+'</td><td>'+orderPrintText(d)+'</td><td style="width:60px;"></td></tr>';});html+='</table>';}
   if(reorder.length===0&&needPurchase.length===0) html+='<div class="empty">補充が必要な商品はありません</div>';
@@ -1559,6 +1560,23 @@ function printReplenishList(){
   var win=window.open('','_blank');win.document.write(html);win.document.close();win.print();
 }
 var currentReplenishWarehouse='';
+/* 補充確認の商品の絞り込み：すべて / AC100 / AC730（BASE・Liquid） / その他 */
+var currentReplenishCat='all';
+var REPL_CATS=[['all','すべて'],['AC100','AC100'],['AC730','AC730'],['other','その他']];
+function replCatMatch(m){
+  var cat=String(m['カテゴリ']||'');
+  var isAC100=cat==='AC100';
+  var isAC730=cat.indexOf('AC730')===0;
+  if(currentReplenishCat==='AC100')return isAC100;
+  if(currentReplenishCat==='AC730')return isAC730;
+  if(currentReplenishCat==='other')return !isAC100&&!isAC730;
+  return true;
+}
+function replCatLabel(){
+  var hit=REPL_CATS.find(function(c){return c[0]===currentReplenishCat;});
+  return hit?hit[1]:'すべて';
+}
+function switchReplenishCat(c){currentReplenishCat=c;renderReplenish();}
 function renderReplenish(){
   if(warehouses.length===0||minStockData.length===0||summary.length===0||masterAll.length===0){document.getElementById('replenish-list').innerHTML='<div class="loading">読み込み中...</div>';return;}
   if(!currentReplenishWarehouse&&warehouses.length>0) currentReplenishWarehouse=warehouses[0]['倉庫名'];
@@ -1566,6 +1584,11 @@ function renderReplenish(){
   warehouses.forEach(function(w){
     var oc="switchReplenishWarehouse('"+escAttr(w['倉庫名'])+"')";
     tabHtml+='<div class="filter-btn'+(w['倉庫名']===currentReplenishWarehouse?' active':'')+'" onclick="'+oc+'" style="white-space:nowrap;">'+w['倉庫名']+'</div>';
+  });
+  tabHtml+='</div>';
+  tabHtml+='<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-top:6px;">';
+  REPL_CATS.forEach(function(c){
+    tabHtml+='<div class="filter-btn'+(c[0]===currentReplenishCat?' active':'')+'" onclick="switchReplenishCat(\''+c[0]+'\')" style="white-space:nowrap;">'+c[1]+'</div>';
   });
   tabHtml+='</div>';
   document.getElementById('replenish-warehouse-tabs').innerHTML=tabHtml;
@@ -1907,6 +1930,7 @@ function renderReplenishList(){
   summary.forEach(function(item){
     var m=masterAll.find(function(p){return p['SKU_ID']===item['SKU_ID'];});
     if(!m||!(m['有効']===true||m['有効']==='TRUE'))return;
+    if(!replCatMatch(m))return;
     var stock=num2(item[stockKey]);
     var ms=minStockData.find(function(r){return r['SKU_ID']===item['SKU_ID']&&r['倉庫名']===wName;});
     var minStock=ms?parseFloat(ms['最低在庫数'])||0:0,maxStock=ms?parseFloat(ms['最大在庫数'])||0:0;
